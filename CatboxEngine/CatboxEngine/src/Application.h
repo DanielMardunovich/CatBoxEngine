@@ -22,6 +22,8 @@ private:
     int InitGlad();
     int InitImGui();
 
+    int InitImGui_Backup();
+
     GLFWwindow* window;
 
     int width, height;

@@ -146,6 +146,7 @@
     <ClCompile Include="src\Managers\InputManager.cpp" />
     <ClCompile Include="src\Managers\RenderManager.cpp" />
     <ClCompile Include="src\Managers\EntityManager.cpp" />
+    <ClCompile Include="src\Managers\UIManager.cpp" />
     <ClCompile Include="src\Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -164,6 +165,7 @@
     <ClInclude Include="src\Managers\EntityManager.h" />
     <ClInclude Include="src\Managers\InputManager.h" />
     <ClInclude Include="src\Managers\RenderManager.h" />
+    <ClInclude Include="src\Managers\UIManager.h" />
     <ClInclude Include="src\Renderable.h" />
     <ClInclude Include="src\Shader.h" />
   </ItemGroup>
