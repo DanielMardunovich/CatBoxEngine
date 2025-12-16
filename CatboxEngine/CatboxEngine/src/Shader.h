@@ -1,5 +1,7 @@
 #pragma once
 #include <string>
+#include <glm/glm.hpp>
+
 class Shader
 {
 private:
@@ -10,5 +12,10 @@ public:
 	unsigned int myShaderProgram;
 	void Initialize(const char* aVertexPath, const char* aFragmentPath);
 	void Use();
+
+	// Upload a 4x4 matrix uniform to the currently used shader program
+	void SetMat4(const std::string& name, const glm::mat4& mat);
+
+	void DumpActiveUniforms() const;
 };
 

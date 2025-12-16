@@ -1,8 +1,16 @@
 #include "Cube.h"
 #include <array>
+#include <glm/gtc/matrix_transform.hpp>
 
 Cube::Cube()
 {
+    m_Model = glm::mat4(1.0f);
+    SetupMesh();
+}
+
+Cube::Cube(const glm::vec3& position)
+{
+    m_Model = glm::translate(glm::mat4(1.0f), position);
     SetupMesh();
 }
 
@@ -66,9 +74,24 @@ void Cube::SetupMesh()
     glBindVertexArray(0);
 }
 
+void Cube::SetModel(const glm::vec3& position, const glm::vec3& rotationDeg)
+{
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, position);
+
+    // apply rotation in Z, Y, X order (adjust to your convention)
+    model = glm::rotate(model, glm::radians(rotationDeg.z), glm::vec3(0.0f, 0.0f, 1.0f));
+    model = glm::rotate(model, glm::radians(rotationDeg.y), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(rotationDeg.x), glm::vec3(1.0f, 0.0f, 0.0f));
+
+    m_Model = model;
+}
+
 void Cube::Render(Shader& aShader)
 {
-    (void)aShader; // shader used by caller - binding done there
+    // Upload this cube's model matrix before drawing so each cube can be placed independently.
+    aShader.SetMat4("model", m_Model);
+
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
