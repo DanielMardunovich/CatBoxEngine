@@ -44,10 +44,7 @@ int Application::Init()
     glEnable(GL_DEPTH_TEST);
 
     // initialize the simple shader (files must exist relative to working directory)
-    myShader.Initialize("shaders/basic.vert", "shaders/basic.frag");
-
-    // create a cube and register with RenderManager
-    RenderManager::Get().AddRenderable(new Cube());
+    myShader.Initialize("./src/shaders/VertexShader.vert", "./src/shaders/FragmentShader.frag");
 
     if (InitImGui() != 0)
         return -1;
@@ -73,7 +70,8 @@ void Application::Run()
         ImGui::Text("This is a simple window.");
         if (ImGui::Button("Click me!"))
         {
-            ImGui::Text("Button clicked!");
+            // create a cube and register with RenderManager
+            RenderManager::Get().AddRenderable(new Cube());
         }
         ImGui::End();
 

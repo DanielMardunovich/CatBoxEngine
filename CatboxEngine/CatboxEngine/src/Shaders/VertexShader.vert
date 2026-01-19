@@ -8,4 +8,4 @@ void main()
 {
 	gl_Position = vec4(aPos, 1.0);
 	vertexColor = vec4(0.2, 0.0, 0.6, 1.0); // Example color output
-})
+}
