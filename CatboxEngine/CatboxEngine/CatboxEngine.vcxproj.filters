@@ -135,9 +135,6 @@
     <ClCompile Include="resources\Scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="resources\Transform.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ui\ImGuiLayer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

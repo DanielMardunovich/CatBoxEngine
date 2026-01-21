@@ -1,5 +1,6 @@
 #pragma once
 #include "../graphics/Shader.h"
+#include "../resources/Entity.h"
 
 struct GLFWwindow;
 
@@ -47,4 +48,6 @@ private:
     bool imguiInitialized;
     
     Shader myShader;
+    
+    Entity cubeEntity;
 };

@@ -166,7 +166,6 @@
     <ClCompile Include="resources\Entity.cpp" />
     <ClCompile Include="resources\EntityManager.cpp" />
     <ClCompile Include="resources\Scene.cpp" />
-    <ClCompile Include="resources\Transform.cpp" />
     <ClCompile Include="ui\ImGuiLayer.cpp" />
     <ClCompile Include="ui\Inspectors\CameraInspector.cpp" />
     <ClCompile Include="ui\Inspectors\EntityInspector.cpp" />
@@ -221,12 +220,14 @@
   <ItemGroup>
     <Content Include="shaders\forward.frag" />
     <Content Include="shaders\forward.vert" />
+    <Content Include="shaders\FragmentShader.frag" />
     <Content Include="shaders\gbuffer.frag" />
     <Content Include="shaders\gbuffer.vert" />
     <Content Include="shaders\lighting.frag" />
     <Content Include="shaders\lighting.vert" />
     <Content Include="shaders\shadow.frag" />
     <Content Include="shaders\shadow.vert" />
+    <Content Include="shaders\VertexShader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

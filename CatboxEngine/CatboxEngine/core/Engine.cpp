@@ -8,8 +8,41 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <glfw3.h>
+#include <glm/fwd.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
 
 #include "Time.h"
+#include "../graphics/Mesh.h"
+
+Mesh CreateCubeMesh() 
+{
+    Mesh mesh;
+
+    mesh.Vertices = {
+        // positions              // normals         // uv (unused for now)
+        {{-0.5f,-0.5f,-0.5f}, {0,0,-1}, {0,0,0}},
+        {{ 0.5f,-0.5f,-0.5f}, {0,0,-1}, {1,0,0}},
+        {{ 0.5f, 0.5f,-0.5f}, {0,0,-1}, {1,1,0}},
+        {{-0.5f, 0.5f,-0.5f}, {0,0,-1}, {0,1,0}},
+
+        {{-0.5f,-0.5f, 0.5f}, {0,0,1}, {0,0,0}},
+        {{ 0.5f,-0.5f, 0.5f}, {0,0,1}, {1,0,0}},
+        {{ 0.5f, 0.5f, 0.5f}, {0,0,1}, {1,1,0}},
+        {{-0.5f, 0.5f, 0.5f}, {0,0,1}, {0,1,0}},
+    };
+
+    mesh.Indices = {
+        0,1,2, 2,3,0,
+        4,5,6, 6,7,4,
+        0,4,7, 7,3,0,
+        1,5,6, 6,2,1,
+        3,2,6, 6,7,3,
+        0,1,5, 5,4,0
+    };
+
+    return mesh;
+}
 
 void processInput(GLFWwindow* window)
 {
@@ -72,6 +105,38 @@ void Engine::Render()
 
     // Render ImGui
     ImGui::Render();
+    
+    //Render scene
+    myShader.Bind();
+    
+    glm::mat4 model = glm::translate(glm::mat4(1.0f),
+        glm::vec3(
+            cubeEntity.Transform.Position.x,
+            cubeEntity.Transform.Position.y,
+            cubeEntity.Transform.Position.z
+        )
+    );
+    
+    glm::mat4 view = glm::lookAt(
+        glm::vec3(0, 0, 3),
+        glm::vec3(0, 0, 0),
+        glm::vec3(0, 1, 0)
+    );
+    
+    glm::mat4 proj = glm::perspective(
+        glm::radians(60.0f),
+        (float)display_w / (float)display_h,
+        0.1f,
+        100.0f
+    );
+    
+    glm::mat4 mvp = proj * view * model;
+    myShader.SetMat4("u_MVP", mvp);
+    
+    cubeEntity.Mesh.Draw();
+
+    
+    
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     glfwSwapBuffers(GetWindow());
@@ -90,6 +155,11 @@ int Engine::Initialize()
     // initialize the simple shader (files must exist relative to working directory)
     //myShader.Initialize("./src/shaders/VertexShader.vert", "./src/shaders/FragmentShader.frag");
 
+    cubeEntity.name = "Cube";
+    cubeEntity.Mesh = CreateCubeMesh();
+    cubeEntity.Mesh.Use();
+
+    
     if (InitImGui() != 0)
         return -1;
 

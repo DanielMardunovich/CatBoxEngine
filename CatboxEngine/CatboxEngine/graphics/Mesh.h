@@ -1,7 +1,24 @@
 #pragma once
+#include <vector>
+#include "../resources/Math/Vec3.h"
 
-class Mesh
+struct Vertex 
+{
+	Vec3 Position;
+	Vec3 Normal;
+	Vec3 UV;
+};
+
+struct Mesh
 {
 public:
-    
+	std::vector<Vertex> Vertices;
+	std::vector<uint32_t> Indices;
+
+	uint32_t VAO = 0;
+	uint32_t VBO = 0;
+	uint32_t EBO = 0;
+
+	void Use();
+	void Draw() const;
 };
