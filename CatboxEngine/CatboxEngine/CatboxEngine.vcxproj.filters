@@ -281,5 +281,11 @@
     <ClInclude Include="ui\UIManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resources\Math\Vec3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\Math\Vec4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

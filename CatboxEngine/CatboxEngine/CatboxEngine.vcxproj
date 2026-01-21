@@ -209,6 +209,8 @@
     <ClInclude Include="platform\Window.h" />
     <ClInclude Include="resources\Entity.h" />
     <ClInclude Include="resources\EntityManager.h" />
+    <ClInclude Include="resources\Math\Vec3.h" />
+    <ClInclude Include="resources\Math\Vec4.h" />
     <ClInclude Include="resources\Scene.h" />
     <ClInclude Include="resources\Transform.h" />
     <ClInclude Include="ui\ImGuiLayer.h" />
