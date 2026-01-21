@@ -142,6 +142,7 @@
     <ClCompile Include="core\Logger.cpp" />
     <ClCompile Include="core\Memory.cpp" />
     <ClCompile Include="core\Time.cpp" />
+    <ClCompile Include="glad.c" />
     <ClCompile Include="graphics\Buffer.cpp" />
     <ClCompile Include="graphics\Camera.cpp" />
     <ClCompile Include="graphics\Frustum.cpp" />
