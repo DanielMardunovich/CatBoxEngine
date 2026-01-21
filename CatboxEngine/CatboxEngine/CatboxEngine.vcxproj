@@ -140,7 +140,7 @@
     <ClCompile Include="..\Dependencies\imgui\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="src\Application.cpp" />
-    <ClCompile Include="src\Cube.cpp" />
+    <ClCompile Include="src\Entities\Cube.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\Managers\RenderManager.cpp" />
     <ClCompile Include="src\Managers\EntityManager.cpp" />
@@ -157,7 +157,8 @@
     <ClInclude Include="..\Dependencies\imgui\imstb_textedit.h" />
     <ClInclude Include="..\Dependencies\imgui\imstb_truetype.h" />
     <ClInclude Include="src\Application.h" />
-    <ClInclude Include="src\Cube.h" />
+    <ClInclude Include="src\Entities\Cube.h" />
+    <ClInclude Include="src\Entity.h" />
     <ClInclude Include="src\Managers\EntityManager.h" />
     <ClInclude Include="src\Managers\RenderManager.h" />
     <ClInclude Include="src\Renderable.h" />

@@ -3,6 +3,7 @@
 
 Cube::Cube()
 {
+    name = "Cube";
     SetupMesh();
 }
 

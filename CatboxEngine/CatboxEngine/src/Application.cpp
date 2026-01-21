@@ -9,8 +9,7 @@
 #include <glfw3.h>
 
 #include "Managers/EntityManager.h"
-#include "Managers/RenderManager.h"
-#include "Cube.h"
+#include "Entities/Cube.h"
 
 // ... existing processInput unchanged ...
 
@@ -71,9 +70,19 @@ void Application::Run()
         if (ImGui::Button("Click me!"))
         {
             // create a cube and register with RenderManager
-            RenderManager::Get().AddRenderable(new Cube());
+            Cube* cube = EntityManager::Get().CreateEntity<Cube>();
+
+            std::cout << "cube created" << std::endl;
         }
+
         ImGui::End();
+
+
+        float timeValue = glfwGetTime();
+        float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+
+
+        myShader.setColor(greenValue,greenValue*0.1f,greenValue*0.2f);
 
         // Rendering
         ImGui::Render();

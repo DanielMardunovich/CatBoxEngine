@@ -5,6 +5,10 @@
 #include <iostream>
 #include <glad/glad.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 std::string Shader::LoadShader(const char* aPath)
 {
     std::string shaderCode;
@@ -91,6 +95,40 @@ void Shader::Initialize(const char* aVertexPath, const char* aFragmentPath)
 
     glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
+}
+
+void Shader::setBool(const std::string& name, bool value) const
+{
+    glUniform1i(glGetUniformLocation(myShaderProgram, name.c_str()), (int)value);
+}
+
+void Shader::setInt(const std::string& name, int value) const
+{
+    glUniform1i(glGetUniformLocation(myShaderProgram, name.c_str()), value);
+}
+
+void Shader::setFloat(const std::string& name, float value) const
+{
+    glUniform1f(glGetUniformLocation(myShaderProgram, name.c_str()), value);
+}
+
+void Shader::setColor(float r, float g, float b) const
+{
+    GLint location = glGetUniformLocation(myShaderProgram, "col");
+    glUniform3f(location, r, g, b);
+    
+}
+
+void Shader::setVec3(const std::string& name, float x, float y, float z) const
+{
+
+    glm::mat4 trans = glm::mat4(1.0f);
+    trans = glm::translate(trans, glm::vec3(x, y, z));
+    trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
+    trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+
+    unsigned int transformLoc = glGetUniformLocation(myShaderProgram, name.c_str());
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 }
 
 void Shader::Use()

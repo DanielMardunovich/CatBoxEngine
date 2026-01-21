@@ -1,8 +1,8 @@
 #pragma once
-#include "Renderable.h"
+#include "../Entity.h"
 #include <glad/glad.h>
 
-class Cube : public Renderable
+class Cube : public Entity
 {
 public:
     Cube();

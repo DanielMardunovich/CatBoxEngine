@@ -1,4 +1,5 @@
 #include "EntityManager.h"
+#include "../Entity.h"
 
 EntityManager& EntityManager::Get()
 {
@@ -6,14 +7,7 @@ EntityManager& EntityManager::Get()
     return instance;
 }
 
-void EntityManager::CreateEntity()
-{   
-    std::lock_guard<std::mutex> lock(mtx);
 
-    Entity* entity = new Entity();
-
-    entities.push_back(entity);
-}
 
 std::list<Entity*> EntityManager::GetAllEntities()
 {
