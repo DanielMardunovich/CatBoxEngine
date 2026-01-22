@@ -19,6 +19,6 @@ public:
 	uint32_t VBO = 0;
 	uint32_t EBO = 0;
 
-	void Use();
+	void Upload();
 	void Draw() const;
 };

@@ -2,8 +2,11 @@
 #include <glad/glad.h>
 #include "glfw3.h"
 
-void Mesh::Use()
+void Mesh::Upload()
 {
+    if (VAO != 0)
+        return;
+
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
@@ -31,7 +34,10 @@ void Mesh::Use()
     glEnableVertexAttribArray(0);
 
     // Normal
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+    glVertexAttribPointer(
+        1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+        (void*)offsetof(Vertex, Normal)
+    );
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);

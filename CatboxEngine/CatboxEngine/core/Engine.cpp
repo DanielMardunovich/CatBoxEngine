@@ -19,26 +19,54 @@ Mesh CreateCubeMesh()
     Mesh mesh;
 
     mesh.Vertices = {
-        // positions              // normals         // uv (unused for now)
-        {{-0.5f,-0.5f,-0.5f}, {0,0,-1}, {0,0,0}},
-        {{ 0.5f,-0.5f,-0.5f}, {0,0,-1}, {1,0,0}},
-        {{ 0.5f, 0.5f,-0.5f}, {0,0,-1}, {1,1,0}},
-        {{-0.5f, 0.5f,-0.5f}, {0,0,-1}, {0,1,0}},
+        // Front (+Z)
+        {{-0.5f, -0.5f,  0.5f}, {0, 0, 1}, {0, 0, 0}},
+        {{ 0.5f, -0.5f,  0.5f}, {0, 0, 1}, {1, 0, 0}},
+        {{ 0.5f,  0.5f,  0.5f}, {0, 0, 1}, {1, 1, 0}},
+        {{-0.5f,  0.5f,  0.5f}, {0, 0, 1}, {0, 1, 0}},
 
-        {{-0.5f,-0.5f, 0.5f}, {0,0,1}, {0,0,0}},
-        {{ 0.5f,-0.5f, 0.5f}, {0,0,1}, {1,0,0}},
-        {{ 0.5f, 0.5f, 0.5f}, {0,0,1}, {1,1,0}},
-        {{-0.5f, 0.5f, 0.5f}, {0,0,1}, {0,1,0}},
+        // Back (-Z)
+        {{ 0.5f, -0.5f, -0.5f}, {0, 0, -1}, {0, 0, 0}},
+        {{-0.5f, -0.5f, -0.5f}, {0, 0, -1}, {1, 0, 0}},
+        {{-0.5f,  0.5f, -0.5f}, {0, 0, -1}, {1, 1, 0}},
+        {{ 0.5f,  0.5f, -0.5f}, {0, 0, -1}, {0, 1, 0}},
+
+        // Left (-X)
+        {{-0.5f, -0.5f, -0.5f}, {-1, 0, 0}, {0, 0, 0}},
+        {{-0.5f, -0.5f,  0.5f}, {-1, 0, 0}, {1, 0, 0}},
+        {{-0.5f,  0.5f,  0.5f}, {-1, 0, 0}, {1, 1, 0}},
+        {{-0.5f,  0.5f, -0.5f}, {-1, 0, 0}, {0, 1, 0}},
+
+        // Right (+X)
+        {{ 0.5f, -0.5f,  0.5f}, {1, 0, 0}, {0, 0, 0}},
+        {{ 0.5f, -0.5f, -0.5f}, {1, 0, 0}, {1, 0, 0}},
+        {{ 0.5f,  0.5f, -0.5f}, {1, 0, 0}, {1, 1, 0}},
+        {{ 0.5f,  0.5f,  0.5f}, {1, 0, 0}, {0, 1, 0}},
+
+        // Top (+Y)
+        {{-0.5f,  0.5f,  0.5f}, {0, 1, 0}, {0, 0, 0}},
+        {{ 0.5f,  0.5f,  0.5f}, {0, 1, 0}, {1, 0, 0}},
+        {{ 0.5f,  0.5f, -0.5f}, {0, 1, 0}, {1, 1, 0}},
+        {{-0.5f,  0.5f, -0.5f}, {0, 1, 0}, {0, 1, 0}},
+
+        // Bottom (-Y)
+        {{-0.5f, -0.5f, -0.5f}, {0, -1, 0}, {0, 0, 0}},
+        {{ 0.5f, -0.5f, -0.5f}, {0, -1, 0}, {1, 0, 0}},
+        {{ 0.5f, -0.5f,  0.5f}, {0, -1, 0}, {1, 1, 0}},
+        {{-0.5f, -0.5f,  0.5f}, {0, -1, 0}, {0, 1, 0}},
     };
+
 
     mesh.Indices = {
         0,1,2, 2,3,0,
-        4,5,6, 6,7,4,
-        0,4,7, 7,3,0,
-        1,5,6, 6,2,1,
-        3,2,6, 6,7,3,
-        0,1,5, 5,4,0
+       4,5,6, 6,7,4,
+       0,4,7, 7,3,0,
+       1,5,6, 6,2,1,
+       3,2,6, 6,7,3,
+       0,1,5, 5,4,0
     };
+
+
 
     return mesh;
 }
@@ -130,12 +158,15 @@ void Engine::Render()
     );
     
     glm::mat4 mvp = proj * view * model;
-    myShader.SetMat4("u_MVP", mvp);
+    glm::vec4 vec(cubeEntity.Transform.Position.x,cubeEntity.Transform.Position.y, cubeEntity.Transform.Position.z ,1.0f);
+    glm::mat4 trans = glm::mat4(1.0f);
+    vec = trans * vec;
+    trans = glm::translate(trans, glm::vec3(0.3f, 0.3f, 0.3f));
+    trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(1.0, 0.0, 1.0));
+    trans = glm::scale(trans, glm::vec3(cubeEntity.Transform.Scale.x, cubeEntity.Transform.Scale.y, cubeEntity.Transform.Scale.z));  
     
-    if (cubeEntity.Mesh.VAO == 0)
-    {
-        std::cerr << "ERROR: Cube VAO is 0\n";
-    }
+    myShader.SetMat4("u_MVP", mvp);
+    myShader.SetMat4("transform", trans);
     
     cubeEntity.Mesh.Draw();
 
@@ -164,7 +195,10 @@ int Engine::Initialize()
 
     cubeEntity.name = "Cube";
     cubeEntity.Mesh = CreateCubeMesh();
-    cubeEntity.Mesh.Use();
+    cubeEntity.Transform.Position = {0,0,0};
+    cubeEntity.Transform.Rotation = {1,1,1};
+    cubeEntity.Transform.Scale = {0.5f,0.5f,0.5f};
+    cubeEntity.Mesh.Upload();
 
     
     if (InitImGui() != 0)
