@@ -8,7 +8,6 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <glfw3.h>
-#include <glm/fwd.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
@@ -107,7 +106,7 @@ void Engine::Render()
     ImGui::Render();
     
     //Render scene
-    myShader.Bind();
+    myShader.Use();
     
     glm::mat4 model = glm::translate(glm::mat4(1.0f),
         glm::vec3(
@@ -133,6 +132,11 @@ void Engine::Render()
     glm::mat4 mvp = proj * view * model;
     myShader.SetMat4("u_MVP", mvp);
     
+    if (cubeEntity.Mesh.VAO == 0)
+    {
+        std::cerr << "ERROR: Cube VAO is 0\n";
+    }
+    
     cubeEntity.Mesh.Draw();
 
     
@@ -153,7 +157,10 @@ int Engine::Initialize()
     glEnable(GL_DEPTH_TEST);
 
     // initialize the simple shader (files must exist relative to working directory)
-    //myShader.Initialize("./src/shaders/VertexShader.vert", "./src/shaders/FragmentShader.frag");
+    myShader.Initialize(
+    "./shaders/VertexShader.vert", 
+    "./shaders/FragmentShader.frag"
+    );
 
     cubeEntity.name = "Cube";
     cubeEntity.Mesh = CreateCubeMesh();
@@ -240,18 +247,4 @@ void Engine::Cleanup()
 
         glfwInitialized = false;
     }
-}
-
-float Engine::GetDeltaTime()
-{
-    static double lastTime = glfwGetTime();
-
-    double currentTime = glfwGetTime();
-    double frameTime = currentTime - lastTime;
-    lastTime = currentTime;
-    
-    constexpr double maxDelta = 0.1;
-    frameTime = std::min(frameTime, maxDelta);
-
-    return static_cast<float>(frameTime);
 }

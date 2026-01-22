@@ -118,15 +118,22 @@ void Shader::setColor(float r, float g, float b) const
 
 void Shader::setVec3(const std::string& name, float x, float y, float z) const
 {
-
-    glm::mat4 trans = glm::mat4(1.0f);
-    trans = glm::translate(trans, glm::vec3(x, y, z));
-    trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
-    trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
-
-    unsigned int transformLoc = glGetUniformLocation(myShaderProgram, name.c_str());
-    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+    GLint loc = glGetUniformLocation(myShaderProgram, name.c_str());
+    glUniform3f(loc, x, y, z);
 }
+
+void Shader::SetMat4(const std::string& name, const glm::mat4& mat) const
+{
+    GLint loc = glGetUniformLocation(myShaderProgram, name.c_str());
+    if (loc == -1)
+    {
+        std::cerr << "Uniform not found: " << name << '\n';
+        return;
+    }
+
+    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mat));
+}
+
 
 void Shader::Use() const
 {

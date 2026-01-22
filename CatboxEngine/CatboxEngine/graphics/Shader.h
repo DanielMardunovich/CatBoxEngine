@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <glm/fwd.hpp>
 
 class Shader
 {
@@ -8,7 +9,6 @@ private:
     static unsigned int LoadVertexShader(const char* aShaderPath, unsigned int aShaderType);
     static unsigned int LoadFragmentShader(const char* aShaderPath, unsigned int aShaderType);
 public:
-    unsigned int myShaderProgram;
     void Initialize(const char* aVertexPath, const char* aFragmentPath);
 
     // utility uniform functions
@@ -19,6 +19,10 @@ public:
     void setColor(float r, float g, float b) const;
 
     void setVec3(const std::string& name, float x, float y, float z) const;
+    void SetMat4(const std::string& name, const glm::mat4& mat) const;
+
 
     void Use() const;
+    
+    unsigned int myShaderProgram;
 };

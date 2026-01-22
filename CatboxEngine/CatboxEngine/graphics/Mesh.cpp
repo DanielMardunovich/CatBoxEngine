@@ -1,6 +1,6 @@
 #include "Mesh.h"
-#include "glfw3.h"
 #include <glad/glad.h>
+#include "glfw3.h"
 
 void Mesh::Use()
 {

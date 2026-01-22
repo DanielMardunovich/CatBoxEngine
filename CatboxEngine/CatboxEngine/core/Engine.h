@@ -34,7 +34,6 @@ private:
     
     void Cleanup();
 
-    static float GetDeltaTime();
     GLFWwindow* GetWindow() { return window; }
     
     //------------- variables -----------------

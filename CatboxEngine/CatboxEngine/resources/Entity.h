@@ -11,5 +11,5 @@ public:
 
     Transform Transform;
     Mesh Mesh;
-    Material Material;
+    //Material Material;
 };
