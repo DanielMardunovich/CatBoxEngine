@@ -2,6 +2,7 @@
 #include "../graphics/Shader.h"
 #include "../resources/Entity.h"
 #include "../resources/Camera.h"
+#include "../resources/EntityManager.h"
 #include <vector>
 #include "../resources/Math/Vec3.h"
 
@@ -55,7 +56,7 @@ private:
     
     // Prototype cube mesh and spawned entities
     Mesh cubeMesh;
-    std::vector<Entity> entities;
+    EntityManager entityManager;
 
     Camera camera;
     // UI spawn parameters

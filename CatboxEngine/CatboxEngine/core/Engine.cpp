@@ -14,6 +14,7 @@
 
 #include "Time.h"
 #include "../graphics/Mesh.h"
+#include "../resources/EntityManager.h"
 
 Mesh CreateCubeMesh() 
 {
@@ -71,6 +72,7 @@ Mesh CreateCubeMesh()
 
     return mesh;
 }
+
 
 void Engine::OnMouseMove(double xpos, double ypos)
 {
@@ -149,9 +151,28 @@ void Engine::Update(float deltaTime)
         e.Mesh = cubeMesh;
         e.Transform.Position = spawnPosition;
         e.Transform.Scale = spawnScale;
-        entities.push_back(e);
+        entityManager.Add(e);
         std::cout << "Spawned cube at " << spawnPosition.x << "," << spawnPosition.y << "," << spawnPosition.z << '\n';
     }
+
+    ImGui::Separator();
+    ImGui::Text("Entities (%d)", (int)entityManager.Size());
+    ImGui::BeginChild("EntityList", ImVec2(0, 200), true);
+    auto& list = entityManager.GetAll();
+    for (size_t i = 0; i < list.size(); ++i)
+    {
+        ImGui::PushID((int)i);
+        ImGui::Text("%s", list[i].name.c_str());
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Delete"))
+        {
+            entityManager.RemoveAt(i);
+            ImGui::PopID();
+            break; // changed list, break out to avoid iterator invalidation
+        }
+        ImGui::PopID();
+    }
+    ImGui::EndChild();
 
     // Display timing
     ImGui::Separator();
@@ -184,7 +205,7 @@ void Engine::Render()
     glm::mat4 vp = proj * view;
 
     // Draw all spawned entities using cubeMesh
-    for (const auto& e : entities)
+    for (const auto& e : entityManager.GetAll())
     {
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(e.Transform.Position.x, e.Transform.Position.y, e.Transform.Position.z));
