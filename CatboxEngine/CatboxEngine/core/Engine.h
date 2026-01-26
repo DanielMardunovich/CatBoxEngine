@@ -25,7 +25,7 @@ public:
 
     void app();
     void OnMouseMove(double xpos, double ypos);
-    void OnMouseButton(int button, int action, int mods);
+    void OnMouseButton(GLFWwindow* window, int button, int action, int mods);
     
 private:
     void Update(float deltaTime);
@@ -61,8 +61,5 @@ private:
     // UI spawn parameters
     Vec3 spawnPosition{0,0,0};
     Vec3 spawnScale{0.5f,0.5f,0.5f};
-    // Mouse look state
-    float lastX = 0.0f;
-    float lastY = 0.0f;
-    bool firstMouse = true;
+    // mouse state moved to Camera
 };

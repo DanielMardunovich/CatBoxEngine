@@ -72,70 +72,17 @@ Mesh CreateCubeMesh()
     return mesh;
 }
 
-void Engine::OnMouseButton(int button, int action, int mods)
+void Engine::OnMouseMove(double xpos, double ypos)
 {
-    if (button != GLFW_MOUSE_BUTTON_LEFT)
-        return;
-
-    if (action == GLFW_PRESS)
-    {
-        // capture/hide cursor
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        firstMouse = true; // reset so we don't get a jump
-    }
-    else if (action == GLFW_RELEASE)
-    {
-        // release/show cursor
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        firstMouse = true;
-    }
+    camera.OnMouseMove(xpos, ypos);
 }
 
-void processInput(GLFWwindow* window, Camera& camera, float deltaTime)
+void Engine::OnMouseButton(GLFWwindow* window, int button, int action, int mods)
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-    // Camera movement (WASD)
-    float speed = 2.5f * deltaTime;
-    glm::vec3 camPos(camera.Position.x, camera.Position.y, camera.Position.z);
-    glm::vec3 camFront(camera.Front.x, camera.Front.y, camera.Front.z);
-    glm::vec3 camUp(camera.Up.x, camera.Up.y, camera.Up.z);
-
-    glm::vec3 forward = glm::normalize(camFront);
-    glm::vec3 right = glm::normalize(glm::cross(forward, camUp));
-
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    {
-        camPos += forward * speed;
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    {
-        camPos -= forward * speed;
-    }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    {
-        camPos -= right * speed;
-    }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    {
-        camPos += right * speed;
-    }
-
-    // Up and down
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-    {
-        camPos += camUp * speed;
-    }
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-    {
-        camPos -= camUp * speed;
-    }
-
-    camera.Position = { camPos.x, camPos.y, camPos.z };
-    // Keep Target in sync with front for compatibility
-    camera.Target = { camera.Position.x + camera.Front.x, camera.Position.y + camera.Front.y, camera.Position.z + camera.Front.z };
+    camera.OnMouseButton(window, button, action, mods);
 }
+
+// mouse handling moved to Camera
 
 Engine::~Engine()
 {
@@ -154,7 +101,7 @@ static void MouseButtonCallback(GLFWwindow* window, int button, int action, int 
 {
     Engine* eng = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
     if (!eng) return;
-    eng->OnMouseButton(button, action, mods);
+    eng->OnMouseButton(window, button, action, mods);
 }
 
 void Engine::app()
@@ -170,27 +117,16 @@ void Engine::app()
     }
 }
 
-void Engine::OnMouseMove(double xpos, double ypos)
-{
-    if (firstMouse)
-    {
-        lastX = (float)xpos;
-        lastY = (float)ypos;
-        firstMouse = false;
-    }
-
-    float xoffset = (float)xpos - lastX;
-    float yoffset = lastY - (float)ypos; // reversed since y-coordinates go from bottom to top
-
-    lastX = (float)xpos;
-    lastY = (float)ypos;
-
-    camera.ProcessMouseMovement(xoffset, yoffset);
-}
+// mouse movement handled in Camera
 
 void Engine::Update(float deltaTime)
 {
-    processInput(GetWindow(), camera, deltaTime);
+    // handle window-level input
+    if (glfwGetKey(GetWindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(GetWindow(), true);
+
+    // let camera handle inputs
+    camera.Update(GetWindow(), deltaTime);
     glfwPollEvents();
 
     // Start ImGui frame (logic)
@@ -297,12 +233,6 @@ int Engine::Initialize()
     camera.SetTarget({0,0,0});
     camera.SetUp({0,1,0});
     camera.SetPerspective(60.0f, width / height, 0.1f, 100.0f);
-
-    // initialize mouse coordinates
-    int w = static_cast<int>(width);
-    int h = static_cast<int>(height);
-    lastX = w / 2.0f;
-    lastY = h / 2.0f;
 
     
     if (InitImGui() != 0)

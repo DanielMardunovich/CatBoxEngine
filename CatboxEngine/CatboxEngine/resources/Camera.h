@@ -1,5 +1,6 @@
 #pragma once
 #include "Math/Vec3.h"
+struct GLFWwindow;
 #include <glm/glm.hpp>
 
 struct Camera
@@ -33,7 +34,21 @@ struct Camera
 
     // Mouse input (xoffset, yoffset) in pixels
     void ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch = true);
+    
+    // Update camera (keyboard movement)
+    void Update(GLFWwindow* window, float deltaTime);
+
+    // Callbacks
+    void OnMouseMove(double xpos, double ypos);
+    void OnMouseButton(GLFWwindow* window, int button, int action, int mods);
 
     glm::mat4 GetViewMatrix() const;
     glm::mat4 GetProjectionMatrix() const;
+
+private:
+    // internal mouse state
+    float lastX = 0.0f;
+    float lastY = 0.0f;
+    bool firstMouse = true;
+    bool cursorCaptured = false;
 };
