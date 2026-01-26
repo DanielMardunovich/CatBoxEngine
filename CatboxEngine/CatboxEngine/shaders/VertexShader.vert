@@ -7,5 +7,5 @@ uniform mat4 transform;
 
 void main()
 {
-    gl_Position = transform * u_MVP * vec4(aPos, 1.0);
+    gl_Position = u_MVP * transform * vec4(aPos, 1.0);
 }

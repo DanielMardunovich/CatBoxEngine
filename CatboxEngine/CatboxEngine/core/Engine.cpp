@@ -10,6 +10,7 @@
 #include <glfw3.h>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/glm.hpp>
 
 #include "Time.h"
 #include "../graphics/Mesh.h"
@@ -71,15 +72,63 @@ Mesh CreateCubeMesh()
     return mesh;
 }
 
-void processInput(GLFWwindow* window)
+void processInput(GLFWwindow* window, Camera& camera, float deltaTime)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    // Camera movement (WASD)
+    float speed = 2.5f * deltaTime;
+    glm::vec3 camPos(camera.Position.x, camera.Position.y, camera.Position.z);
+    glm::vec3 camFront(camera.Front.x, camera.Front.y, camera.Front.z);
+    glm::vec3 camUp(camera.Up.x, camera.Up.y, camera.Up.z);
+
+    glm::vec3 forward = glm::normalize(camFront);
+    glm::vec3 right = glm::normalize(glm::cross(forward, camUp));
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        camPos += forward * speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        camPos -= forward * speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        camPos -= right * speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        camPos += right * speed;
+    }
+
+    // Up and down
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    {
+        camPos += camUp * speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    {
+        camPos -= camUp * speed;
+    }
+
+    camera.Position = { camPos.x, camPos.y, camPos.z };
+    // Keep Target in sync with front for compatibility
+    camera.Target = { camera.Position.x + camera.Front.x, camera.Position.y + camera.Front.y, camera.Position.z + camera.Front.z };
 }
 
 Engine::~Engine()
 {
     Cleanup();
+}
+
+// Forward declare a static callback that will be set on the GLFW window
+static void MouseCallback(GLFWwindow* window, double xpos, double ypos)
+{
+    Engine* eng = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
+    if (!eng) return;
+    eng->OnMouseMove(xpos, ypos);
 }
 
 void Engine::app()
@@ -95,9 +144,27 @@ void Engine::app()
     }
 }
 
+void Engine::OnMouseMove(double xpos, double ypos)
+{
+    if (firstMouse)
+    {
+        lastX = (float)xpos;
+        lastY = (float)ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = (float)xpos - lastX;
+    float yoffset = lastY - (float)ypos; // reversed since y-coordinates go from bottom to top
+
+    lastX = (float)xpos;
+    lastY = (float)ypos;
+
+    camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
 void Engine::Update(float deltaTime)
 {
-    processInput(GetWindow());
+    processInput(GetWindow(), camera, deltaTime);
     glfwPollEvents();
 
     // Start ImGui frame (logic)
@@ -144,19 +211,10 @@ void Engine::Render()
         )
     );
     
-    glm::mat4 view = glm::lookAt(
-        glm::vec3(0, 0, 3),
-        glm::vec3(0, 0, 0),
-        glm::vec3(0, 1, 0)
-    );
-    
-    glm::mat4 proj = glm::perspective(
-        glm::radians(60.0f),
-        (float)display_w / (float)display_h,
-        0.1f,
-        100.0f
-    );
-    
+    // Use camera for view/projection
+    camera.Aspect = (float)display_w / (float)display_h;
+    glm::mat4 view = camera.GetViewMatrix();
+    glm::mat4 proj = camera.GetProjectionMatrix();
     glm::mat4 mvp = proj * view * model;
     glm::vec4 vec(cubeEntity.Transform.Position.x,cubeEntity.Transform.Position.y, cubeEntity.Transform.Position.z ,1.0f);
     glm::mat4 trans = glm::mat4(1.0f);
@@ -200,6 +258,18 @@ int Engine::Initialize()
     cubeEntity.Transform.Scale = {0.5f,0.5f,0.5f};
     cubeEntity.Mesh.Upload();
 
+    // Initialize camera
+    camera.SetPosition({0,0,3});
+    camera.SetTarget({0,0,0});
+    camera.SetUp({0,1,0});
+    camera.SetPerspective(60.0f, width / height, 0.1f, 100.0f);
+
+    // initialize mouse coordinates
+    int w = static_cast<int>(width);
+    int h = static_cast<int>(height);
+    lastX = w / 2.0f;
+    lastY = h / 2.0f;
+
     
     if (InitImGui() != 0)
         return -1;
@@ -226,9 +296,16 @@ int Engine::InitGlfw()
         glfwTerminate();
         return -1;
     }
-
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
+
+    // Set user pointer so callbacks can access the Engine instance
+    glfwSetWindowUserPointer(window, this);
+
+    // Capture and hide cursor for FPS-style mouse look
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // set mouse callback
+    glfwSetCursorPosCallback(window, MouseCallback);
 
     glfwInitialized = true;
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "../graphics/Shader.h"
 #include "../resources/Entity.h"
+#include "../resources/Camera.h"
 
 struct GLFWwindow;
 
@@ -21,6 +22,7 @@ public:
     ~Engine();
 
     void app();
+    void OnMouseMove(double xpos, double ypos);
     
 private:
     void Update(float deltaTime);
@@ -49,4 +51,10 @@ private:
     Shader myShader;
     
     Entity cubeEntity;
+
+    Camera camera;
+    // Mouse look state
+    float lastX = 0.0f;
+    float lastY = 0.0f;
+    bool firstMouse = true;
 };

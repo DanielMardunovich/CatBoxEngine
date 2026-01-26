@@ -163,6 +163,7 @@
     <ClCompile Include="messaging\MessageQueue.cpp" />
     <ClCompile Include="platform\Input.cpp" />
     <ClCompile Include="platform\Window.cpp" />
+    <ClCompile Include="resources\Camera.cpp" />
     <ClCompile Include="resources\Entity.cpp" />
     <ClCompile Include="resources\EntityManager.cpp" />
     <ClCompile Include="resources\Scene.cpp" />
@@ -206,6 +207,7 @@
     <ClInclude Include="messaging\MessageQueue.h" />
     <ClInclude Include="platform\Input.h" />
     <ClInclude Include="platform\Window.h" />
+    <ClInclude Include="resources\Camera.h" />
     <ClInclude Include="resources\Entity.h" />
     <ClInclude Include="resources\EntityManager.h" />
     <ClInclude Include="resources\Math\Vec3.h" />
