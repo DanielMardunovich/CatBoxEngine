@@ -37,12 +37,14 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     ImGui::BeginChild("EntityList", ImVec2(0, 200), true);
     auto& list = entityManager.GetAll();
     ImGui::Columns(2);
+    // reserve a small fixed width for the action column (delete button)
+    ImGui::SetColumnWidth(1, 90.0f);
     for (size_t i = 0; i < list.size(); ++i)
     {
         ImGui::PushID((int)i);
         bool isSelected = (selectedIndex == (int)i);
-        // Left column: selectable name
-        if (ImGui::Selectable(list[i].name.c_str(), isSelected, ImGuiSelectableFlags_SpanAllColumns))
+        // Left column: selectable name (do NOT span into the action column)
+        if (ImGui::Selectable(list[i].name.c_str(), isSelected))
         {
             selectedIndex = (int)i;
         }
