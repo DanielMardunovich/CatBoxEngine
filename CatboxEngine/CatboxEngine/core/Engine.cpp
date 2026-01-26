@@ -229,10 +229,7 @@ int Engine::Initialize()
     cubeMesh.Upload();
 
     // Initialize camera
-    camera.SetPosition({0,0,3});
-    camera.SetTarget({0,0,0});
-    camera.SetUp({0,1,0});
-    camera.SetPerspective(60.0f, width / height, 0.1f, 100.0f);
+    camera.Initialize({0,0,3}, {0,0,0}, {0,1,0}, 60.0f, width / height, 0.1f, 100.0f);
 
     
     if (InitImGui() != 0)

@@ -42,6 +42,10 @@ struct Camera
     void OnMouseMove(double xpos, double ypos);
     void OnMouseButton(GLFWwindow* window, int button, int action, int mods);
 
+    // Initialize camera fields and compute initial orientation
+    void Initialize(const Vec3& position, const Vec3& target, const Vec3& up,
+                    float fovDegrees, float aspect, float nearPlane, float farPlane);
+
     glm::mat4 GetViewMatrix() const;
     glm::mat4 GetProjectionMatrix() const;
 

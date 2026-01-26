@@ -25,6 +25,26 @@ void Camera::Update(GLFWwindow* window, float deltaTime)
     Position = { camPos.x, camPos.y, camPos.z };
 }
 
+void Camera::Initialize(const Vec3& position, const Vec3& target, const Vec3& up,
+                        float fovDegrees, float aspect, float nearPlane, float farPlane)
+{
+    Position = position;
+    Target = target;
+    Up = up;
+    FOV = fovDegrees;
+    Aspect = aspect;
+    Near = nearPlane;
+    Far = farPlane;
+
+    // compute initial front vector from target
+    glm::vec3 dir = glm::normalize(glm::vec3(target.x - position.x, target.y - position.y, target.z - position.z));
+    Front = { dir.x, dir.y, dir.z };
+
+    // compute initial yaw/pitch from front
+    Yaw = glm::degrees(atan2(dir.z, dir.x));
+    Pitch = glm::degrees(asin(dir.y));
+}
+
 void Camera::OnMouseMove(double xpos, double ypos)
 {
     if (!cursorCaptured) return;
