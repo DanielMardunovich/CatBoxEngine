@@ -72,6 +72,25 @@ Mesh CreateCubeMesh()
     return mesh;
 }
 
+void Engine::OnMouseButton(int button, int action, int mods)
+{
+    if (button != GLFW_MOUSE_BUTTON_LEFT)
+        return;
+
+    if (action == GLFW_PRESS)
+    {
+        // capture/hide cursor
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        firstMouse = true; // reset so we don't get a jump
+    }
+    else if (action == GLFW_RELEASE)
+    {
+        // release/show cursor
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        firstMouse = true;
+    }
+}
+
 void processInput(GLFWwindow* window, Camera& camera, float deltaTime)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -131,6 +150,13 @@ static void MouseCallback(GLFWwindow* window, double xpos, double ypos)
     eng->OnMouseMove(xpos, ypos);
 }
 
+static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    Engine* eng = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
+    if (!eng) return;
+    eng->OnMouseButton(button, action, mods);
+}
+
 void Engine::app()
 {
     Initialize();
@@ -175,12 +201,24 @@ void Engine::Update(float deltaTime)
     // UI logic
     ImGui::Begin("Hello, Catbox!");
     ImGui::Text("This is a simple window.");
-    if (ImGui::Button("Click me!"))
+
+    ImGui::Separator();
+    ImGui::Text("Spawn Cube");
+    ImGui::InputFloat3("Position", &spawnPosition.x);
+    ImGui::InputFloat3("Scale", &spawnScale.x);
+    if (ImGui::Button("Spawn"))
     {
-        std::cout << "cube created" << '\n';
+        Entity e;
+        e.name = "Cube";
+        e.Mesh = cubeMesh;
+        e.Transform.Position = spawnPosition;
+        e.Transform.Scale = spawnScale;
+        entities.push_back(e);
+        std::cout << "Spawned cube at " << spawnPosition.x << "," << spawnPosition.y << "," << spawnPosition.z << '\n';
     }
 
-    //Displaying time and delta time
+    // Display timing
+    ImGui::Separator();
     ImGui::Text("Delta: %.4f", Time::DeltaTime());
     ImGui::Text("FPS: %.1f", 1.0f / Time::DeltaTime());
 
@@ -200,33 +238,32 @@ void Engine::Render()
     // Render ImGui
     ImGui::Render();
     
-    //Render scene
+    // Render scene
     myShader.Use();
-    
-    glm::mat4 model = glm::translate(glm::mat4(1.0f),
-        glm::vec3(
-            cubeEntity.Transform.Position.x,
-            cubeEntity.Transform.Position.y,
-            cubeEntity.Transform.Position.z
-        )
-    );
-    
+
     // Use camera for view/projection
     camera.Aspect = (float)display_w / (float)display_h;
     glm::mat4 view = camera.GetViewMatrix();
     glm::mat4 proj = camera.GetProjectionMatrix();
-    glm::mat4 mvp = proj * view * model;
-    glm::vec4 vec(cubeEntity.Transform.Position.x,cubeEntity.Transform.Position.y, cubeEntity.Transform.Position.z ,1.0f);
-    glm::mat4 trans = glm::mat4(1.0f);
-    vec = trans * vec;
-    trans = glm::translate(trans, glm::vec3(0.3f, 0.3f, 0.3f));
-    trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(1.0, 0.0, 1.0));
-    trans = glm::scale(trans, glm::vec3(cubeEntity.Transform.Scale.x, cubeEntity.Transform.Scale.y, cubeEntity.Transform.Scale.z));  
-    
-    myShader.SetMat4("u_MVP", mvp);
-    myShader.SetMat4("transform", trans);
-    
-    cubeEntity.Mesh.Draw();
+    glm::mat4 vp = proj * view;
+
+    // Draw all spawned entities using cubeMesh
+    for (const auto& e : entities)
+    {
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(e.Transform.Position.x, e.Transform.Position.y, e.Transform.Position.z));
+        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(1.0f, 0.0f, 1.0f));
+        model = glm::scale(model, glm::vec3(e.Transform.Scale.x, e.Transform.Scale.y, e.Transform.Scale.z));
+
+        myShader.SetMat4("u_MVP", vp);
+        myShader.SetMat4("transform", model);
+
+        // draw cube mesh
+        if (e.Mesh.VAO != 0)
+            e.Mesh.Draw();
+        else
+            cubeMesh.Draw();
+    }
 
     
     
@@ -251,12 +288,9 @@ int Engine::Initialize()
     "./shaders/FragmentShader.frag"
     );
 
-    cubeEntity.name = "Cube";
-    cubeEntity.Mesh = CreateCubeMesh();
-    cubeEntity.Transform.Position = {0,0,0};
-    cubeEntity.Transform.Rotation = {1,1,1};
-    cubeEntity.Transform.Scale = {0.5f,0.5f,0.5f};
-    cubeEntity.Mesh.Upload();
+    // prepare prototype cube mesh
+    cubeMesh = CreateCubeMesh();
+    cubeMesh.Upload();
 
     // Initialize camera
     camera.SetPosition({0,0,3});
@@ -302,10 +336,9 @@ int Engine::InitGlfw()
     // Set user pointer so callbacks can access the Engine instance
     glfwSetWindowUserPointer(window, this);
 
-    // Capture and hide cursor for FPS-style mouse look
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    // set mouse callback
+    // set mouse callbacks
     glfwSetCursorPosCallback(window, MouseCallback);
+    glfwSetMouseButtonCallback(window, MouseButtonCallback);
 
     glfwInitialized = true;
 

@@ -2,6 +2,8 @@
 #include "../graphics/Shader.h"
 #include "../resources/Entity.h"
 #include "../resources/Camera.h"
+#include <vector>
+#include "../resources/Math/Vec3.h"
 
 struct GLFWwindow;
 
@@ -23,6 +25,7 @@ public:
 
     void app();
     void OnMouseMove(double xpos, double ypos);
+    void OnMouseButton(int button, int action, int mods);
     
 private:
     void Update(float deltaTime);
@@ -50,9 +53,14 @@ private:
     
     Shader myShader;
     
-    Entity cubeEntity;
+    // Prototype cube mesh and spawned entities
+    Mesh cubeMesh;
+    std::vector<Entity> entities;
 
     Camera camera;
+    // UI spawn parameters
+    Vec3 spawnPosition{0,0,0};
+    Vec3 spawnScale{0.5f,0.5f,0.5f};
     // Mouse look state
     float lastX = 0.0f;
     float lastY = 0.0f;
