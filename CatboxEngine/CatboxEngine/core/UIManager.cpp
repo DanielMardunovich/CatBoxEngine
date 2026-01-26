@@ -5,6 +5,7 @@
 #include "../resources/EntityManager.h"
 #include "../resources/Entity.h"
 #include "../ui/Inspectors/EntityInspector.h"
+#include <string>
 
 void UIManager::NewFrame()
 {
@@ -35,24 +36,34 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     ImGui::Text("Entities (%d)", (int)entityManager.Size());
     ImGui::BeginChild("EntityList", ImVec2(0, 200), true);
     auto& list = entityManager.GetAll();
+    ImGui::Columns(2);
     for (size_t i = 0; i < list.size(); ++i)
     {
         ImGui::PushID((int)i);
         bool isSelected = (selectedIndex == (int)i);
-        if (ImGui::Selectable(list[i].name.c_str(), isSelected))
+        // Left column: selectable name
+        if (ImGui::Selectable(list[i].name.c_str(), isSelected, ImGuiSelectableFlags_SpanAllColumns))
         {
             selectedIndex = (int)i;
         }
-        ImGui::SameLine();
-        if (ImGui::SmallButton("Delete"))
+        ImGui::NextColumn();
+
+        // Right column: delete button
+        ImGui::AlignTextToFramePadding();
+        std::string btnId = std::string("Delete##") + std::to_string(i);
+        if (ImGui::SmallButton(btnId.c_str()))
         {
             entityManager.RemoveAt(i);
             if (selectedIndex == (int)i) selectedIndex = -1;
+            else if (selectedIndex > (int)i) selectedIndex -= 1;
             ImGui::PopID();
             break; // changed list, break out to avoid iterator invalidation
         }
+
+        ImGui::NextColumn();
         ImGui::PopID();
     }
+    ImGui::Columns(1);
     ImGui::EndChild();
 
     // Display timing
