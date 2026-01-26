@@ -6,6 +6,7 @@
 #include "../resources/Entity.h"
 #include "../ui/Inspectors/EntityInspector.h"
 #include <string>
+#include "../resources/Camera.h"
 
 void UIManager::NewFrame()
 {
@@ -14,7 +15,7 @@ void UIManager::NewFrame()
     ImGui::NewFrame();
 }
 
-void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, float deltaTime, int& selectedIndex)
+void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, float deltaTime, int& selectedIndex, Camera& camera)
 {
     ImGui::Begin("Hello, Catbox!");
     ImGui::Text("This is a simple window.");
@@ -82,6 +83,28 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
         auto& ent = entityManager.GetAll()[selectedIndex];
         inspector.Draw(ent);
     }
+
+    // Camera window
+    ImGui::Begin("Camera");
+    float fov = camera.FOV;
+    if (ImGui::SliderFloat("FOV", &fov, 10.0f, 120.0f))
+    {
+        camera.FOV = fov;
+    }
+    float nearP = camera.Near;
+    float farP = camera.Far;
+    if (ImGui::InputFloat("Near", &nearP)) camera.Near = nearP;
+    if (ImGui::InputFloat("Far", &farP)) camera.Far = farP;
+
+    float sens = camera.MouseSensitivity;
+    if (ImGui::SliderFloat("Mouse Sensitivity", &sens, 0.01f, 1.0f)) camera.MouseSensitivity = sens;
+
+    ImGui::Text("Position: %.2f, %.2f, %.2f", camera.Position.x, camera.Position.y, camera.Position.z);
+    if (ImGui::Button("Reset Camera"))
+    {
+        camera.Initialize({0,0,3}, {0,0,0}, {0,1,0}, 60.0f, camera.Aspect, 0.1f, 100.0f);
+    }
+    ImGui::End();
 }
 
 void UIManager::Render()

@@ -133,7 +133,7 @@ void Engine::Update(float deltaTime)
 
     // UI frame and draw
     uiManager.NewFrame();
-    uiManager.Draw(entityManager, spawnPosition, spawnScale, deltaTime, selectedEntityIndex);
+    uiManager.Draw(entityManager, spawnPosition, spawnScale, deltaTime, selectedEntityIndex, camera);
     // ensure newly spawned entities get the cube mesh
     if (entityManager.Size() > 0)
     {
