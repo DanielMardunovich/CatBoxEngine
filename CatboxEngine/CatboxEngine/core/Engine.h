@@ -3,6 +3,7 @@
 #include "../resources/Entity.h"
 #include "../resources/Camera.h"
 #include "../resources/EntityManager.h"
+#include "UIManager.h"
 #include <vector>
 #include "../resources/Math/Vec3.h"
 
@@ -57,6 +58,7 @@ private:
     // Prototype cube mesh and spawned entities
     Mesh cubeMesh;
     EntityManager entityManager;
+    UIManager uiManager;
 
     Camera camera;
     // UI spawn parameters

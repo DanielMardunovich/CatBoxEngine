@@ -131,55 +131,17 @@ void Engine::Update(float deltaTime)
     camera.Update(GetWindow(), deltaTime);
     glfwPollEvents();
 
-    // Start ImGui frame (logic)
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    // UI logic
-    ImGui::Begin("Hello, Catbox!");
-    ImGui::Text("This is a simple window.");
-
-    ImGui::Separator();
-    ImGui::Text("Spawn Cube");
-    ImGui::InputFloat3("Position", &spawnPosition.x);
-    ImGui::InputFloat3("Scale", &spawnScale.x);
-    if (ImGui::Button("Spawn"))
+    // UI frame and draw
+    uiManager.NewFrame();
+    uiManager.Draw(entityManager, spawnPosition, spawnScale, deltaTime);
+    // ensure newly spawned entities get the cube mesh
+    if (entityManager.Size() > 0)
     {
-        Entity e;
-        e.name = "Cube";
-        e.Mesh = cubeMesh;
-        e.Transform.Position = spawnPosition;
-        e.Transform.Scale = spawnScale;
-        entityManager.Add(e);
-        std::cout << "Spawned cube at " << spawnPosition.x << "," << spawnPosition.y << "," << spawnPosition.z << '\n';
+        auto& list = entityManager.GetAll();
+        Entity& last = list.back();
+        if (last.Mesh.VAO == 0)
+            last.Mesh = cubeMesh;
     }
-
-    ImGui::Separator();
-    ImGui::Text("Entities (%d)", (int)entityManager.Size());
-    ImGui::BeginChild("EntityList", ImVec2(0, 200), true);
-    auto& list = entityManager.GetAll();
-    for (size_t i = 0; i < list.size(); ++i)
-    {
-        ImGui::PushID((int)i);
-        ImGui::Text("%s", list[i].name.c_str());
-        ImGui::SameLine();
-        if (ImGui::SmallButton("Delete"))
-        {
-            entityManager.RemoveAt(i);
-            ImGui::PopID();
-            break; // changed list, break out to avoid iterator invalidation
-        }
-        ImGui::PopID();
-    }
-    ImGui::EndChild();
-
-    // Display timing
-    ImGui::Separator();
-    ImGui::Text("Delta: %.4f", Time::DeltaTime());
-    ImGui::Text("FPS: %.1f", 1.0f / Time::DeltaTime());
-
-    ImGui::End();
 
 }
 
@@ -224,7 +186,7 @@ void Engine::Render()
 
     
     
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    uiManager.Render();
 
     glfwSwapBuffers(GetWindow());
 }
