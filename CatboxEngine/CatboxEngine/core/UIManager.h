@@ -13,7 +13,8 @@ public:
     void NewFrame();
 
     // Build UI (spawning, listing entities, stats)
-    void Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, float deltaTime);
+    // selectedIndex is an in/out parameter: UI may change selection
+    void Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, float deltaTime, int& selectedIndex);
 
     // Render ImGui draw data
     void Render();

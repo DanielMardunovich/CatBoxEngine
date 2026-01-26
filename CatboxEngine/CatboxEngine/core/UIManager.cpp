@@ -4,6 +4,7 @@
 #include "imgui_impl_opengl3.h"
 #include "../resources/EntityManager.h"
 #include "../resources/Entity.h"
+#include "../ui/Inspectors/EntityInspector.h"
 
 void UIManager::NewFrame()
 {
@@ -12,7 +13,7 @@ void UIManager::NewFrame()
     ImGui::NewFrame();
 }
 
-void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, float deltaTime)
+void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, float deltaTime, int& selectedIndex)
 {
     ImGui::Begin("Hello, Catbox!");
     ImGui::Text("This is a simple window.");
@@ -37,11 +38,16 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     for (size_t i = 0; i < list.size(); ++i)
     {
         ImGui::PushID((int)i);
-        ImGui::Text("%s", list[i].name.c_str());
+        bool isSelected = (selectedIndex == (int)i);
+        if (ImGui::Selectable(list[i].name.c_str(), isSelected))
+        {
+            selectedIndex = (int)i;
+        }
         ImGui::SameLine();
         if (ImGui::SmallButton("Delete"))
         {
             entityManager.RemoveAt(i);
+            if (selectedIndex == (int)i) selectedIndex = -1;
             ImGui::PopID();
             break; // changed list, break out to avoid iterator invalidation
         }
@@ -55,6 +61,14 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     ImGui::Text("FPS: %.1f", 1.0f / deltaTime);
 
     ImGui::End();
+
+    // Inspector window
+    if (selectedIndex >= 0 && selectedIndex < (int)entityManager.Size())
+    {
+        EntityInspector inspector;
+        auto& ent = entityManager.GetAll()[selectedIndex];
+        inspector.Draw(ent);
+    }
 }
 
 void UIManager::Render()

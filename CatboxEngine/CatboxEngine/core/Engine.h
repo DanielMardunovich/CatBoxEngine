@@ -64,5 +64,6 @@ private:
     // UI spawn parameters
     Vec3 spawnPosition{0,0,0};
     Vec3 spawnScale{0.5f,0.5f,0.5f};
+    int selectedEntityIndex = -1;
     // mouse state moved to Camera
 };
