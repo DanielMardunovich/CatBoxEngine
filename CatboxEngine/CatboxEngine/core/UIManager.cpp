@@ -8,6 +8,10 @@
 #include <string>
 #include "../resources/Camera.h"
 #include "../ui/Inspectors/CameraInspector.h"
+#if defined(_WIN32)
+#include <windows.h>
+#include <commdlg.h>
+#endif
 
 void UIManager::NewFrame()
 {
@@ -27,6 +31,26 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     ImGui::InputFloat3("Scale", &spawnScale.x);
     static char modelPath[260] = "";
     ImGui::InputText("Model Path", modelPath, IM_ARRAYSIZE(modelPath));
+    ImGui::SameLine();
+    if (ImGui::Button("Browse..."))
+    {
+#if defined(_WIN32)
+        OPENFILENAMEA ofn;
+        CHAR szFile[260] = {0};
+        ZeroMemory(&ofn, sizeof(ofn));
+        ofn.lStructSize = sizeof(ofn);
+        ofn.hwndOwner = NULL;
+        ofn.lpstrFile = szFile;
+        ofn.nMaxFile = sizeof(szFile);
+        ofn.lpstrFilter = "OBJ Files\0*.obj\0All\0*.*\0";
+        ofn.nFilterIndex = 1;
+        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+        if (GetOpenFileNameA(&ofn))
+        {
+            strncpy_s(modelPath, ofn.lpstrFile, sizeof(modelPath));
+        }
+#endif
+    }
     if (ImGui::Button("Spawn"))
     {
         Entity e;

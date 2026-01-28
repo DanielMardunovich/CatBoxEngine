@@ -23,4 +23,6 @@ public:
 	void Upload();
 	void Draw() const;
     bool LoadFromOBJ(const std::string& path);
+    // simple material
+    Vec3 DiffuseColor{0.8f, 0.8f, 0.9f};
 };
