@@ -7,10 +7,15 @@
 #include <string>
 #include <unordered_map>
 #include <iostream>
-// image loading: use stb_image for PNG/JPEG/BMP
-#define STB_IMAGE_IMPLEMENTATION
-#include "../Dependencies/stb_image.h"
 #include <cstring>
+
+// GLTF support - tinygltf will handle stb_image internally
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define TINYGLTF_NOEXCEPTION
+#define JSON_NOEXCEPTION
+#include "../Dependencies/tiny_gltf.h"
 
 // Minimal OBJ loader supporting positions, normals and triangular faces
 bool Mesh::LoadFromOBJ(const std::string& path)
@@ -515,9 +520,412 @@ bool Mesh::LoadFromOBJ(const std::string& path)
 
 bool Mesh::LoadFromGLTF(const std::string& path)
 {
-    // glTF loader not implemented yet. Return false so caller can fallback to OBJ.
-    (void)path;
+    // Note: You need to download tiny_gltf.h and place it in Dependencies/
+    // See docs/GLTF_Setup.md for instructions
+    #ifdef TINYGLTF_IMPLEMENTATION
+    
+    // Helper function to load texture from GLTF image (handles both embedded and external)
+    auto LoadGLTFTexture = [&](const tinygltf::Model& model, int texIndex, const std::string& dir) -> unsigned int {
+        if (texIndex < 0 || texIndex >= (int)model.textures.size())
+        {
+            std::cerr << "    ? Invalid texture index: " << texIndex << std::endl;
+            return 0;
+        }
+        
+        const tinygltf::Texture& tex = model.textures[texIndex];
+        if (tex.source < 0 || tex.source >= (int)model.images.size())
+        {
+            std::cerr << "    ? Invalid image source: " << tex.source << std::endl;
+            return 0;
+        }
+        
+        const tinygltf::Image& img = model.images[tex.source];
+        unsigned char* data = nullptr;
+        int width = 0, height = 0, channels = 0;
+        
+        std::cout << "    Image info: uri='" << img.uri << "', embedded_size=" << img.image.size() 
+                  << ", component=" << img.component << ", pixel_type=" << img.pixel_type << std::endl;
+        
+        // Check if embedded (GLB) or external file
+        if (img.image.size() > 0)
+        {
+            // Embedded image data
+            std::cout << "    Loading embedded texture (size=" << img.image.size() << " bytes)..." << std::endl;
+            data = stbi_load_from_memory(img.image.data(), (int)img.image.size(), &width, &height, &channels, 4);
+            
+            // If embedded load failed but we have a URI, try external as fallback
+            if (!data && !img.uri.empty())
+            {
+                std::cerr << "    ? Embedded decode failed, trying external file as fallback..." << std::endl;
+                std::string texPath = dir + img.uri;
+                std::cout << "      Trying: " << texPath << std::endl;
+                data = stbi_load(texPath.c_str(), &width, &height, &channels, 4);
+            }
+        }
+        else if (!img.uri.empty())
+        {
+            // External file
+            std::string texPath = dir + img.uri;
+            std::cout << "    Loading external texture:" << std::endl;
+            std::cout << "      URI: " << img.uri << std::endl;
+            std::cout << "      Dir: " << dir << std::endl;
+            std::cout << "      Full path: " << texPath << std::endl;
+            data = stbi_load(texPath.c_str(), &width, &height, &channels, 4);
+            
+            if (!data)
+            {
+                std::cerr << "    ? Failed to load from: " << texPath << std::endl;
+                std::cerr << "      stbi_failure_reason: " << stbi_failure_reason() << std::endl;
+            }
+        }
+        else
+        {
+            std::cerr << "    ? Image has no data and no URI!" << std::endl;
+            return 0;
+        }
+        
+        if (!data)
+        {
+            std::cerr << "    ? Failed to decode image data" << std::endl;
+            return 0;
+        }
+        
+        // Create OpenGL texture
+        unsigned int texID;
+        glGenTextures(1, &texID);
+        glBindTexture(GL_TEXTURE_2D, texID);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        stbi_image_free(data);
+        
+        std::cout << "    ? Texture loaded successfully (ID=" << texID << ", " << width << "x" << height << ")" << std::endl;
+        return texID;
+    };
+    
+    tinygltf::Model model;
+    tinygltf::TinyGLTF loader;
+    std::string err, warn;
+    
+    // Determine if binary or ASCII format
+    bool isBinary = (path.find(".glb") != std::string::npos);
+    bool ret = isBinary ? 
+        loader.LoadBinaryFromFile(&model, &err, &warn, path) :
+        loader.LoadASCIIFromFile(&model, &err, &warn, path);
+    
+    if (!warn.empty()) std::cout << "GLTF Warning: " << warn << std::endl;
+    if (!err.empty()) std::cerr << "GLTF Error: " << err << std::endl;
+    if (!ret) return false;
+    
+    std::cout << "Loading GLTF: " << path << std::endl;
+    std::cout << "  Meshes: " << model.meshes.size() << std::endl;
+    std::cout << "  Materials: " << model.materials.size() << std::endl;
+    std::cout << "  Textures: " << model.textures.size() << std::endl;
+    std::cout << "  Images: " << model.images.size() << std::endl;
+    
+    // Get directory for texture loading
+    std::string dir;
+    size_t pos = path.find_last_of("/\\");
+    if (pos != std::string::npos) dir = path.substr(0, pos + 1);
+    
+    std::vector<Vertex> allVertices;
+    std::vector<SubMesh> allSubMeshes;
+    
+    // Process all meshes in the GLTF file
+    for (size_t meshIdx = 0; meshIdx < model.meshes.size(); ++meshIdx)
+    {
+        const tinygltf::Mesh& gltfMesh = model.meshes[meshIdx];
+        std::cout << "  Processing mesh '" << gltfMesh.name << "' with " << gltfMesh.primitives.size() << " primitives" << std::endl;
+        
+        // Each primitive in GLTF is like a submesh
+        for (size_t primIdx = 0; primIdx < gltfMesh.primitives.size(); ++primIdx)
+        {
+            const tinygltf::Primitive& primitive = gltfMesh.primitives[primIdx];
+            
+            SubMesh sub;
+            sub.BaseVertex = (uint32_t)allVertices.size();
+            sub.MaterialName = (primitive.material >= 0) ? 
+                model.materials[primitive.material].name : "default";
+            
+            std::cout << "    Primitive " << primIdx << " - Material: " << sub.MaterialName << std::endl;
+            
+            // Load vertex positions
+            std::vector<glm::vec3> positions;
+            if (primitive.attributes.count("POSITION"))
+            {
+                const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.at("POSITION")];
+                const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+                const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+                
+                const float* data = reinterpret_cast<const float*>(
+                    &buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+                
+                for (size_t i = 0; i < accessor.count; ++i)
+                {
+                    positions.push_back(glm::vec3(data[i * 3], data[i * 3 + 1], data[i * 3 + 2]));
+                }
+            }
+            
+            // Load normals
+            std::vector<glm::vec3> normals;
+            if (primitive.attributes.count("NORMAL"))
+            {
+                const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.at("NORMAL")];
+                const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+                const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+                
+                const float* data = reinterpret_cast<const float*>(
+                    &buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+                
+                for (size_t i = 0; i < accessor.count; ++i)
+                {
+                    normals.push_back(glm::vec3(data[i * 3], data[i * 3 + 1], data[i * 3 + 2]));
+                }
+            }
+            
+            // Load UVs
+            std::vector<glm::vec2> uvs;
+            if (primitive.attributes.count("TEXCOORD_0"))
+            {
+                const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
+                const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+                const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+                
+                const float* data = reinterpret_cast<const float*>(
+                    &buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+                
+                for (size_t i = 0; i < accessor.count; ++i)
+                {
+                    uvs.push_back(glm::vec2(data[i * 2], data[i * 2 + 1]));
+                }
+            }
+            
+            // Load tangents
+            std::vector<glm::vec3> tangents;
+            if (primitive.attributes.count("TANGENT"))
+            {
+                const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.at("TANGENT")];
+                const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+                const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+                
+                const float* data = reinterpret_cast<const float*>(
+                    &buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+                
+                for (size_t i = 0; i < accessor.count; ++i)
+                {
+                    tangents.push_back(glm::vec3(data[i * 4], data[i * 4 + 1], data[i * 4 + 2]));
+                }
+            }
+            
+            // Build vertices
+            size_t vertexCount = positions.size();
+            for (size_t i = 0; i < vertexCount; ++i)
+            {
+                Vertex v;
+                v.Position = {positions[i].x, positions[i].y, positions[i].z};
+                v.Normal = (i < normals.size()) ? 
+                    Vec3{normals[i].x, normals[i].y, normals[i].z} : Vec3{0, 1, 0};
+                v.UV = (i < uvs.size()) ? 
+                    Vec3{uvs[i].x, uvs[i].y, 0} : Vec3{0, 0, 0};
+                v.Tangent = (i < tangents.size()) ? 
+                    Vec3{tangents[i].x, tangents[i].y, tangents[i].z} : Vec3{0, 0, 0};
+                
+                allVertices.push_back(v);
+            }
+            
+            // Load indices
+            if (primitive.indices >= 0)
+            {
+                const tinygltf::Accessor& accessor = model.accessors[primitive.indices];
+                const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+                const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+                
+                const uint8_t* data = &buffer.data[bufferView.byteOffset + accessor.byteOffset];
+                
+                for (size_t i = 0; i < accessor.count; ++i)
+                {
+                    uint32_t index = 0;
+                    if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+                    {
+                        index = reinterpret_cast<const uint16_t*>(data)[i];
+                    }
+                    else if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
+                    {
+                        index = reinterpret_cast<const uint32_t*>(data)[i];
+                    }
+                    else if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
+                    {
+                        index = data[i];
+                    }
+                    sub.Indices.push_back(index + sub.BaseVertex);
+                }
+            }
+            
+            // Load material
+            if (primitive.material >= 0)
+            {
+                const tinygltf::Material& mat = model.materials[primitive.material];
+                
+                std::cout << "    Material '" << mat.name << "' properties:" << std::endl;
+                std::cout << "      values keys: ";
+                for (auto& kv : mat.values) std::cout << kv.first << " ";
+                std::cout << std::endl;
+                std::cout << "      additionalValues keys: ";
+                for (auto& kv : mat.additionalValues) std::cout << kv.first << " ";
+                std::cout << std::endl;
+                
+                // PBR metallic-roughness
+                if (mat.values.count("baseColorFactor"))
+                {
+                    auto& factor = mat.values.at("baseColorFactor");
+                    if (factor.number_array.size() >= 3)
+                    {
+                        sub.DiffuseColor = Vec3{
+                            (float)factor.number_array[0],
+                            (float)factor.number_array[1],
+                            (float)factor.number_array[2]
+                        };
+                        std::cout << "      baseColorFactor: " << sub.DiffuseColor.x << ", " 
+                                  << sub.DiffuseColor.y << ", " << sub.DiffuseColor.z << std::endl;
+                    }
+                }
+                
+                // Base color texture (diffuse) - proper GLTF 2.0 parsing
+                int baseColorTexIndex = -1;
+                if (mat.values.count("baseColorTexture"))
+                {
+                    // baseColorTexture is a JSON object with "index" property
+                    auto& baseColorTex = mat.values.at("baseColorTexture");
+                    if (baseColorTex.has_number_value)
+                    {
+                        baseColorTexIndex = (int)baseColorTex.number_value;
+                    }
+                    else if (!baseColorTex.json_double_value.empty())
+                    {
+                        // Try to get "index" from json_double_value map
+                        if (baseColorTex.json_double_value.count("index"))
+                        {
+                            baseColorTexIndex = (int)baseColorTex.json_double_value.at("index");
+                        }
+                    }
+                }
+                
+                if (baseColorTexIndex >= 0)
+                {
+                    std::cout << "    Loading baseColor texture (index=" << baseColorTexIndex << ")..." << std::endl;
+                    
+                    sub.DiffuseTexture = LoadGLTFTexture(model, baseColorTexIndex, dir);
+                    if (sub.DiffuseTexture != 0)
+                    {
+                        sub.HasDiffuseTexture = true;
+                        sub.DiffuseTexturePath = (baseColorTexIndex < (int)model.textures.size() && 
+                                                  model.textures[baseColorTexIndex].source < (int)model.images.size()) ?
+                            model.images[model.textures[baseColorTexIndex].source].uri : "[embedded]";
+                    }
+                }
+                else
+                {
+                    std::cout << "    No baseColorTexture found in material" << std::endl;
+                    
+                    // FALLBACK: Try emissive texture if baseColor is missing
+                    int emissiveTexIndex = -1;
+                    if (mat.additionalValues.count("emissiveTexture"))
+                    {
+                        auto& emissiveTex = mat.additionalValues.at("emissiveTexture");
+                        if (emissiveTex.has_number_value)
+                        {
+                            emissiveTexIndex = (int)emissiveTex.number_value;
+                        }
+                        else if (!emissiveTex.json_double_value.empty())
+                        {
+                            if (emissiveTex.json_double_value.count("index"))
+                            {
+                                emissiveTexIndex = (int)emissiveTex.json_double_value.at("index");
+                            }
+                        }
+                    }
+                    
+                    if (emissiveTexIndex >= 0)
+                    {
+                        std::cout << "    ? Using emissiveTexture as diffuse fallback (index=" << emissiveTexIndex << ")..." << std::endl;
+                        sub.DiffuseTexture = LoadGLTFTexture(model, emissiveTexIndex, dir);
+                        if (sub.DiffuseTexture != 0)
+                        {
+                            sub.HasDiffuseTexture = true;
+                            sub.DiffuseTexturePath = (emissiveTexIndex < (int)model.textures.size() && 
+                                                      model.textures[emissiveTexIndex].source < (int)model.images.size()) ?
+                                model.images[model.textures[emissiveTexIndex].source].uri : "[embedded]";
+                            // Set a white color so texture shows properly
+                            sub.DiffuseColor = Vec3{1.0f, 1.0f, 1.0f};
+                        }
+                    }
+                    else if (sub.DiffuseColor.x == 0 && sub.DiffuseColor.y == 0 && sub.DiffuseColor.z == 0)
+                    {
+                        // No texture and black color - set default gray
+                        std::cout << "    ? No texture and black baseColor - using default gray" << std::endl;
+                        sub.DiffuseColor = Vec3{0.8f, 0.8f, 0.8f};
+                    }
+                }
+                
+                // Normal map
+                int normalTexIndex = -1;
+                if (mat.additionalValues.count("normalTexture"))
+                {
+                    auto& normalTex = mat.additionalValues.at("normalTexture");
+                    if (normalTex.has_number_value)
+                    {
+                        normalTexIndex = (int)normalTex.number_value;
+                    }
+                    else if (!normalTex.json_double_value.empty())
+                    {
+                        if (normalTex.json_double_value.count("index"))
+                        {
+                            normalTexIndex = (int)normalTex.json_double_value.at("index");
+                        }
+                    }
+                }
+                
+                if (normalTexIndex >= 0)
+                {
+                    std::cout << "    Loading normal texture (index=" << normalTexIndex << ")..." << std::endl;
+                    
+                    sub.NormalTexture = LoadGLTFTexture(model, normalTexIndex, dir);
+                    if (sub.NormalTexture != 0)
+                    {
+                        sub.HasNormalTexture = true;
+                        sub.NormalTexturePath = (normalTexIndex < (int)model.textures.size() && 
+                                                 model.textures[normalTexIndex].source < (int)model.images.size()) ?
+                            model.images[model.textures[normalTexIndex].source].uri : "[embedded]";
+                    }
+                }
+            }
+            
+            allSubMeshes.push_back(std::move(sub));
+        }
+    }
+    
+    if (allVertices.empty())
+    {
+        std::cerr << "GLTF: No vertices loaded" << std::endl;
+        return false;
+    }
+    
+    Vertices = std::move(allVertices);
+    SubMeshes = std::move(allSubMeshes);
+    
+    std::cout << "GLTF loaded: " << Vertices.size() << " vertices, " 
+              << SubMeshes.size() << " submeshes" << std::endl;
+    
+    Upload();
+    return true;
+    
+    #else
+    std::cerr << "GLTF support not compiled. Add tiny_gltf.h to Dependencies and define TINYGLTF_IMPLEMENTATION" << std::endl;
     return false;
+    #endif
 }
 
 // Load a 2D texture from disk and create an OpenGL texture object

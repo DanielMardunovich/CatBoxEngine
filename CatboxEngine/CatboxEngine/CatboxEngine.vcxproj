@@ -191,7 +191,10 @@
     <ClInclude Include="core\Platform.h" />
     <ClInclude Include="core\Time.h" />
     <ClInclude Include="core\UIManager.h" />
+    <ClInclude Include="Dependencies\json.hpp" />
     <ClInclude Include="Dependencies\stb_image.h" />
+    <ClInclude Include="Dependencies\stb_image_write.h" />
+    <ClInclude Include="Dependencies\tiny_gltf.h" />
     <ClInclude Include="graphics\Buffer.h" />
     <ClInclude Include="graphics\Frustum.h" />
     <ClInclude Include="graphics\GLDebug.h" />
@@ -238,6 +241,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Dependencies\stb_image.h.orig" />
+    <None Include="docs\GLTF_Implementation_Guide.md" />
+    <None Include="docs\GLTF_QuickStart.md" />
+    <None Include="docs\GLTF_Setup.md" />
+    <None Include="docs\GLTF_Texture_Troubleshooting.md" />
     <None Include="docs\MessageSystem.md" />
     <None Include="docs\MultiMaterialSupport.md" />
   </ItemGroup>

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Gigi
+* source:	https://sketchfab.com/3d-models/gigi-a3f7aef5144e4327b62b7204fc097fd7
+* author:	pyr0xene (https://sketchfab.com/pyr0xene)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Gigi" (https://sketchfab.com/3d-models/gigi-a3f7aef5144e4327b62b7204fc097fd7) by pyr0xene (https://sketchfab.com/pyr0xene) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

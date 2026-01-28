@@ -33,7 +33,7 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     if (ImGui::Button("Browse..."))
     {
         char szFile[260] = {0};
-        if (Platform::OpenFileDialog(szFile, sizeof(szFile), "OBJ Files\0*.obj\0All\0*.*\0"))
+        if (Platform::OpenFileDialog(szFile, sizeof(szFile), "3D Models\0*.obj;*.gltf;*.glb\0OBJ Files\0*.obj\0GLTF Files\0*.gltf;*.glb\0All\0*.*\0"))
         {
             strncpy_s(modelPath, szFile, sizeof(modelPath));
             // if selected file is an image, preview and assign to selected entity texture

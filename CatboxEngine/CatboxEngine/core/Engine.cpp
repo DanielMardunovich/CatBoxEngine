@@ -210,6 +210,18 @@ void Engine::Render()
                 
                 for (const auto& sub : mesh->SubMeshes)
                 {
+                    // DEBUG: Print texture info
+                    static bool debugPrinted = false;
+                    if (!debugPrinted)
+                    {
+                        std::cout << "=== RENDERING SUBMESH ===" << std::endl;
+                        std::cout << "Material: " << sub.MaterialName << std::endl;
+                        std::cout << "HasDiffuseTexture: " << sub.HasDiffuseTexture << std::endl;
+                        std::cout << "DiffuseTexture ID: " << sub.DiffuseTexture << std::endl;
+                        std::cout << "DiffuseColor: " << sub.DiffuseColor.x << ", " << sub.DiffuseColor.y << ", " << sub.DiffuseColor.z << std::endl;
+                        debugPrinted = true;
+                    }
+                    
                     // Set material properties for this submesh
                     myShader.setVec3("u_DiffuseColor", sub.DiffuseColor.x, sub.DiffuseColor.y, sub.DiffuseColor.z);
                     myShader.SetBool("u_HasDiffuseMap", sub.HasDiffuseTexture);

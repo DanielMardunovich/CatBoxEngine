@@ -311,10 +311,23 @@
     <ClInclude Include="core\MessageQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Dependencies\tiny_gltf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\json.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\stb_image_write.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Dependencies\stb_image.h.orig" />
     <None Include="docs\MessageSystem.md" />
     <None Include="docs\MultiMaterialSupport.md" />
+    <None Include="docs\GLTF_Setup.md" />
+    <None Include="docs\GLTF_Implementation_Guide.md" />
+    <None Include="docs\GLTF_QuickStart.md" />
+    <None Include="docs\GLTF_Texture_Troubleshooting.md" />
   </ItemGroup>
 </Project>
