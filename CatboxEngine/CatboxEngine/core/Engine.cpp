@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "Platform.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -21,6 +22,7 @@
 
 void Engine::OnMouseMove(double xpos, double ypos)
 {
+    // forward mouse movement to camera (camera itself ignores movement when not captured)
     camera.OnMouseMove(xpos, ypos);
 }
 
@@ -41,6 +43,12 @@ static void MouseCallback(GLFWwindow* window, double xpos, double ypos)
 {
     Engine* eng = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
     if (!eng) return;
+    // If ImGui is initialized and wants the mouse, don't forward
+    if (ImGui::GetCurrentContext())
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.WantCaptureMouse) return;
+    }
     eng->OnMouseMove(xpos, ypos);
 }
 
@@ -48,6 +56,12 @@ static void MouseButtonCallback(GLFWwindow* window, int button, int action, int 
 {
     Engine* eng = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
     if (!eng) return;
+    if (ImGui::GetCurrentContext())
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        bool overUI = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || ImGui::IsAnyItemHovered();
+        if (io.WantCaptureMouse && overUI) return;
+    }
     eng->OnMouseButton(window, button, action, mods);
 }
 
@@ -128,25 +142,31 @@ void Engine::Render()
 
 int Engine::Initialize()
 {
-    if (InitGlfw() != 0)
+    // platform (GLFW window)
+    if (!platform.Init((int)width, (int)height, name))
         return -1;
-    if (InitGlad() != 0)
+
+    window = platform.GetWindow();
+
+    // Set user pointer so callbacks can access the Engine instance
+    glfwSetWindowUserPointer(window, this);
+    // install input callbacks
+    glfwSetCursorPosCallback(window, MouseCallback);
+    glfwSetMouseButtonCallback(window, MouseButtonCallback);
+
+    // glad
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         return -1;
-    
+
     glEnable(GL_DEPTH_TEST);
 
-    // initialize the simple shader (files must exist relative to working directory)
-    myShader.Initialize(
-    "./shaders/VertexShader.vert", 
-    "./shaders/FragmentShader.frag"
-    );
-
-    // no prototype cube; entities create their own meshes on spawn
+    // initialize the simple shader
+    myShader.Initialize("./shaders/VertexShader.vert", "./shaders/FragmentShader.frag");
 
     // Initialize camera
     camera.Initialize({0,0,3}, {0,0,0}, {0,1,0}, 60.0f, width / height, 0.1f, 100.0f);
 
-    
+    // ImGui
     if (InitImGui() != 0)
         return -1;
 
@@ -155,46 +175,13 @@ int Engine::Initialize()
 
 int Engine::InitGlfw()
 {
-    if (!glfwInit())
-    {
-        std::cout << "Failed to initialize GLFW" << '\n';
-        return -1;
-    }
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-
-    window = glfwCreateWindow(static_cast<int>(width), static_cast<int>(height), name, nullptr, nullptr);
-    if (!window) {
-        std::cerr << "Failed to create GLFW window\n";
-        glfwTerminate();
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1); // Enable vsync
-
-    // Set user pointer so callbacks can access the Engine instance
-    glfwSetWindowUserPointer(window, this);
-
-    // set mouse callbacks
-    glfwSetCursorPosCallback(window, MouseCallback);
-    glfwSetMouseButtonCallback(window, MouseButtonCallback);
-
-    glfwInitialized = true;
-
+    // removed: platform initialization is handled by Platform class
     return 0;
 }
 
 int Engine::InitGlad()
 {
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        std::cout << "Failed to initialize GLAD" << '\n';
-        return -1;
-    }
-
+    // handled in Initialize
     return 0;
 }
 

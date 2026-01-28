@@ -62,9 +62,27 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
         e.Transform.Scale = spawnScale;
         if (modelPath[0] != '\0')
         {
-            // try load model
+            // try load model (try glTF first, then OBJ)
             Mesh m;
-            if (m.LoadFromOBJ(modelPath))
+            bool loaded = false;
+            std::string pathStr(modelPath);
+            auto extPos = pathStr.find_last_of('.');
+            std::string ext = extPos != std::string::npos ? pathStr.substr(extPos+1) : std::string();
+            if (!ext.empty())
+            {
+                for (auto &c : ext) c = (char)tolower(c);
+            }
+
+            if (ext == "gltf" || ext == "glb")
+            {
+                if (m.LoadFromGLTF(pathStr)) loaded = true;
+            }
+            else
+            {
+                if (m.LoadFromOBJ(pathStr)) loaded = true;
+            }
+
+            if (loaded)
             {
                 m.Upload();
                 e.Mesh = m;
@@ -114,6 +132,7 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     {
         ImGui::PushID((int)i);
         bool isSelected = (selectedIndex == (int)i);
+        // Left column: selectable name (do NOT span into the action column)
         // Left column: selectable name (do NOT span into the action column)
         if (ImGui::Selectable(list[i].name.c_str(), isSelected))
         {

@@ -156,6 +156,9 @@
     <ClCompile Include="core\UIManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="core\Platform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Dependencies\imgui\imgui.h">
@@ -289,6 +292,9 @@
     </ClInclude>
     <ClInclude Include="ui\Inspectors\CameraInspector.h">
       <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="core\Platform.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

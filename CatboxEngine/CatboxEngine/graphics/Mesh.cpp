@@ -155,6 +155,13 @@ bool Mesh::LoadFromOBJ(const std::string& path)
     return true;
 }
 
+bool Mesh::LoadFromGLTF(const std::string& path)
+{
+    // glTF loader not implemented yet. Return false so caller can fallback to OBJ.
+    (void)path;
+    return false;
+}
+
 void Mesh::Upload()
 {
     if (VAO != 0)

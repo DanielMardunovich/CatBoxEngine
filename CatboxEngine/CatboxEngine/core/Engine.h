@@ -6,6 +6,7 @@
 #include "UIManager.h"
 #include <vector>
 #include "../resources/Math/Vec3.h"
+#include "Platform.h"
 
 struct GLFWwindow;
 
@@ -34,10 +35,11 @@ private:
     void Render();
     
     int Initialize();
-    
     int InitGlfw();
     int InitGlad();
+    
     int InitImGui();
+    
     
     void Cleanup();
 
@@ -46,12 +48,14 @@ private:
     //------------- variables -----------------
 private:
     GLFWwindow* window;
+    Platform platform;
 
     float width, height;
     const char* name;
 
     bool glfwInitialized;
     bool imguiInitialized;
+    
     
     Shader myShader;
     
