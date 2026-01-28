@@ -6,7 +6,10 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
-// image loading: simple BMP loader implemented in LoadTextureFromFile below
+// image loading: use stb_image for PNG/JPEG/BMP
+#define STB_IMAGE_IMPLEMENTATION
+#include "../Dependencies/stb_image.h"
+#include <cstring>
 
 // Minimal OBJ loader supporting positions, normals and triangular faces
 bool Mesh::LoadFromOBJ(const std::string& path)
@@ -32,7 +35,12 @@ bool Mesh::LoadFromOBJ(const std::string& path)
     std::string line;
     std::string currentMtl;
     std::unordered_map<std::string, Vec3> mtlColors;
+    std::unordered_map<std::string, Vec3> mtlSpecular;
+    std::unordered_map<std::string, float> mtlShininess;
+    std::unordered_map<std::string, float> mtlAlpha;
     std::unordered_map<std::string, std::string> mtlMaps;
+    std::unordered_map<std::string, std::string> mtlSpecularMaps;
+    std::unordered_map<std::string, std::string> mtlNormalMaps;
     while (std::getline(in, line))
     {
         if (line.size() < 2) continue;
@@ -56,8 +64,24 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                     ms >> mprefix;
                     if (mprefix == "newmtl") { ms >> cur; }
                     else if (mprefix == "Kd") { float r,g,b; ms >> r >> g >> b; mtlColors[cur] = {r,g,b}; }
+                    else if (mprefix == "Ks") { float r,g,b; ms >> r >> g >> b; mtlSpecular[cur] = {r,g,b}; }
+                    else if (mprefix == "Ns") { float ns; ms >> ns; mtlShininess[cur] = ns; }
+                    else if (mprefix == "d") { float d; ms >> d; mtlAlpha[cur] = d; }
                     else if (mprefix == "map_Kd") { std::string tex; ms >> tex; if (!tex.empty()) mtlMaps[cur] = tex; }
+                    else if (mprefix == "map_Ks") { std::string tex; ms >> tex; if (!tex.empty()) mtlSpecularMaps[cur] = tex; }
+                    else if (mprefix == "map_Bump" || mprefix == "bump") { std::string tex; ms >> tex; if (!tex.empty()) mtlNormalMaps[cur] = tex; }
                 }
+        auto itnm = mtlNormalMaps.find(currentMtl);
+        if (itnm != mtlNormalMaps.end())
+        {
+            std::string texPath = itnm->second;
+            std::string objDir;
+            size_t p = path.find_last_of("/\\");
+            if (p != std::string::npos) objDir = path.substr(0, p+1);
+            std::string full = texPath;
+            if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) full = objDir + texPath;
+            if (LoadNormalTexture(full)) NormalTexturePath = full;
+        }
 
 // (Mesh::LoadTexture and UnloadTexture are implemented after LoadTextureFromFile)
             }
@@ -144,31 +168,85 @@ bool Mesh::LoadFromOBJ(const std::string& path)
     Vertices = std::move(outVerts);
     Indices = std::move(outIndices);
 
+    // compute tangents if we have UVs
+    std::vector<glm::vec3> tanAccum(Vertices.size(), glm::vec3(0.0f));
+    bool haveUV = false;
+    for (const auto &v : Vertices) if (v.UV.x != 0.0f || v.UV.y != 0.0f) { haveUV = true; break; }
+    if (haveUV)
+    {
+        for (size_t i = 0; i + 2 < Indices.size(); i += 3)
+        {
+            uint32_t i0 = Indices[i];
+            uint32_t i1 = Indices[i+1];
+            uint32_t i2 = Indices[i+2];
+
+            glm::vec3 p0(Vertices[i0].Position.x, Vertices[i0].Position.y, Vertices[i0].Position.z);
+            glm::vec3 p1(Vertices[i1].Position.x, Vertices[i1].Position.y, Vertices[i1].Position.z);
+            glm::vec3 p2(Vertices[i2].Position.x, Vertices[i2].Position.y, Vertices[i2].Position.z);
+
+            glm::vec2 uv0(Vertices[i0].UV.x, Vertices[i0].UV.y);
+            glm::vec2 uv1(Vertices[i1].UV.x, Vertices[i1].UV.y);
+            glm::vec2 uv2(Vertices[i2].UV.x, Vertices[i2].UV.y);
+
+            glm::vec3 dp1 = p1 - p0;
+            glm::vec3 dp2 = p2 - p0;
+            glm::vec2 duv1 = uv1 - uv0;
+            glm::vec2 duv2 = uv2 - uv0;
+
+            float r = (duv1.x * duv2.y - duv2.x * duv1.y);
+            if (r == 0.0f) continue;
+            r = 1.0f / r;
+
+            glm::vec3 tangent = (dp1 * duv2.y - dp2 * duv1.y) * r;
+
+            tanAccum[i0] += tangent;
+            tanAccum[i1] += tangent;
+            tanAccum[i2] += tangent;
+        }
+
+        for (size_t i = 0; i < Vertices.size(); ++i)
+        {
+            glm::vec3 t = glm::normalize(tanAccum[i]);
+            Vertices[i].Tangent = { t.x, t.y, t.z };
+        }
+    }
+
     // apply material color if found
     if (!currentMtl.empty())
     {
         auto itc = mtlColors.find(currentMtl);
-        if (itc != mtlColors.end())
-        {
-            DiffuseColor = { itc->second.x, itc->second.y, itc->second.z };
-        }
+        if (itc != mtlColors.end()) DiffuseColor = { itc->second.x, itc->second.y, itc->second.z };
+
+        auto its = mtlSpecular.find(currentMtl);
+        if (its != mtlSpecular.end()) SpecularColor = its->second;
+
+        auto itn = mtlShininess.find(currentMtl);
+        if (itn != mtlShininess.end()) Shininess = itn->second;
+
+        auto itd = mtlAlpha.find(currentMtl);
+        if (itd != mtlAlpha.end()) Alpha = itd->second;
+
         auto itm = mtlMaps.find(currentMtl);
         if (itm != mtlMaps.end())
         {
-            // try load texture referenced by MTL (relative path)
             std::string texPath = itm->second;
-            // if path is relative, try same directory as OBJ
             std::string objDir;
             size_t p = path.find_last_of("/\\");
             if (p != std::string::npos) objDir = path.substr(0, p+1);
             std::string full = texPath;
-            if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos)
-                full = objDir + texPath;
-
-            if (LoadTexture(full))
-            {
-                DiffuseTexturePath = full;
-            }
+            if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) full = objDir + texPath;
+            if (LoadTexture(full)) DiffuseTexturePath = full;
+        }
+        auto itsm = mtlSpecularMaps.find(currentMtl);
+        if (itsm != mtlSpecularMaps.end())
+        {
+            std::string texPath = itsm->second;
+            std::string objDir;
+            size_t p = path.find_last_of("/\\");
+            if (p != std::string::npos) objDir = path.substr(0, p+1);
+            std::string full = texPath;
+            if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) full = objDir + texPath;
+            if (LoadSpecularTexture(full)) SpecularTexturePath = full;
         }
     }
 
@@ -188,33 +266,14 @@ bool Mesh::LoadFromGLTF(const std::string& path)
 // Load a 2D texture from disk and create an OpenGL texture object
 static unsigned int LoadTextureFromFile(const std::string& path)
 {
-    // very minimal BMP loader (supports 24-bit BMP)
-    std::ifstream in(path, std::ios::binary);
-    if (!in.is_open()) return 0;
-
-    unsigned char header[54];
-    in.read((char*)header, 54);
-    int dataPos = *(int*)&(header[0x0A]);
-    int imageSize = *(int*)&(header[0x22]);
-    int width = *(int*)&(header[0x12]);
-    int height = *(int*)&(header[0x16]);
-
-    if (imageSize == 0) imageSize = width * height * 3;
-    if (dataPos == 0) dataPos = 54;
-
-    std::vector<unsigned char> data(imageSize);
-    in.seekg(dataPos);
-    in.read((char*)data.data(), imageSize);
-    in.close();
-
-    // BMP stores BGR; convert to RGB
-    for (int i = 0; i < imageSize; i += 3)
-        std::swap(data[i], data[i+2]);
+    int width, height, channels;
+    unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 4);
+    if (!data) return 0;
 
     unsigned int tex;
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -222,6 +281,7 @@ static unsigned int LoadTextureFromFile(const std::string& path)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+    stbi_image_free(data);
     return tex;
 }
 
@@ -270,6 +330,15 @@ void Mesh::Upload()
     );
     glEnableVertexAttribArray(2);
 
+    // Tangent attribute
+    glVertexAttribPointer(
+        3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+        (void*)offsetof(Vertex, Tangent)
+    );
+    glEnableVertexAttribArray(3);
+
+    // Specular not stored in vertex, it's a material property
+
     glBindVertexArray(0);
 }
 
@@ -279,6 +348,7 @@ bool Mesh::LoadTexture(const std::string& path)
     if (tex == 0) return false;
     DiffuseTexture = tex;
     HasDiffuseTexture = true;
+    DiffuseTexturePath = path;
     return true;
 }
 
@@ -289,6 +359,46 @@ void Mesh::UnloadTexture()
         glDeleteTextures(1, &DiffuseTexture);
         DiffuseTexture = 0;
         HasDiffuseTexture = false;
+    }
+}
+
+bool Mesh::LoadSpecularTexture(const std::string& path)
+{
+    unsigned int tex = LoadTextureFromFile(path);
+    if (tex == 0) return false;
+    SpecularTexture = tex;
+    HasSpecularTexture = true;
+    SpecularTexturePath = path;
+    return true;
+}
+
+void Mesh::UnloadSpecularTexture()
+{
+    if (SpecularTexture != 0)
+    {
+        glDeleteTextures(1, &SpecularTexture);
+        SpecularTexture = 0;
+        HasSpecularTexture = false;
+    }
+}
+
+bool Mesh::LoadNormalTexture(const std::string& path)
+{
+    unsigned int tex = LoadTextureFromFile(path);
+    if (tex == 0) return false;
+    NormalTexture = tex;
+    HasNormalTexture = true;
+    NormalTexturePath = path;
+    return true;
+}
+
+void Mesh::UnloadNormalTexture()
+{
+    if (NormalTexture != 0)
+    {
+        glDeleteTextures(1, &NormalTexture);
+        NormalTexture = 0;
+        HasNormalTexture = false;
     }
 }
 

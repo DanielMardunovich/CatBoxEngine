@@ -55,12 +55,37 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
                     auto p = sel.find_last_of('.');
                     if (p != std::string::npos) ext = sel.substr(p+1);
                     for (auto &c : ext) c = (char)tolower(c);
-                    if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "bmp")
+                    if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
                     {
                         if (selectedIndex >= 0)
                         {
-                            entityManager.GetAll()[selectedIndex].Mesh.LoadTexture(sel);
-                            entityManager.GetAll()[selectedIndex].Mesh.DiffuseTexturePath = sel;
+                            // Show a small popup to let the user choose which map to assign
+                            ImGui::OpenPopup("AssignTexturePopup");
+                            // store selected path into a temp char buffer in UIManager scope
+                            static std::string pendingTexPath;
+                            pendingTexPath = sel;
+                            if (ImGui::BeginPopup("AssignTexturePopup"))
+                            {
+                                if (ImGui::MenuItem("Diffuse"))
+                                {
+                                    if (entityManager.GetAll()[selectedIndex].Mesh.LoadTexture(pendingTexPath))
+                                        entityManager.GetAll()[selectedIndex].Mesh.DiffuseTexturePath = pendingTexPath;
+                                    ImGui::CloseCurrentPopup();
+                                }
+                                if (ImGui::MenuItem("Specular"))
+                                {
+                                    if (entityManager.GetAll()[selectedIndex].Mesh.LoadSpecularTexture(pendingTexPath))
+                                        entityManager.GetAll()[selectedIndex].Mesh.SpecularTexturePath = pendingTexPath;
+                                    ImGui::CloseCurrentPopup();
+                                }
+                                if (ImGui::MenuItem("Normal"))
+                                {
+                                    if (entityManager.GetAll()[selectedIndex].Mesh.LoadNormalTexture(pendingTexPath))
+                                        entityManager.GetAll()[selectedIndex].Mesh.NormalTexturePath = pendingTexPath;
+                                    ImGui::CloseCurrentPopup();
+                                }
+                                ImGui::EndPopup();
+                            }
                         }
                     }
                 }

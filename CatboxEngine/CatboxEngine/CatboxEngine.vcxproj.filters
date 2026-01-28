@@ -300,4 +300,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Dependencies\stb_image.h.orig" />
+  </ItemGroup>
 </Project>

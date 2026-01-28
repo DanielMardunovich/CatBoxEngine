@@ -26,6 +26,41 @@ void Engine::OnMouseMove(double xpos, double ypos)
     camera.OnMouseMove(xpos, ypos);
 }
 
+void Engine::OnDrop(const std::vector<std::string>& paths)
+{
+    if (paths.empty()) return;
+    // handle first dropped path: try load model or texture depending on extension
+    std::string p = paths[0];
+    std::string ext;
+    auto pos = p.find_last_of('.');
+    if (pos != std::string::npos) ext = p.substr(pos+1);
+    for (auto &c : ext) c = (char)tolower(c);
+
+    if (ext == "obj" || ext == "gltf" || ext == "glb")
+    {
+        Mesh m;
+        bool ok = false;
+        if (ext == "gltf" || ext == "glb") ok = m.LoadFromGLTF(p);
+        else ok = m.LoadFromOBJ(p);
+        if (ok)
+        {
+            m.Upload();
+            Entity e; e.name = std::string("Model: ") + p; e.Mesh = m;
+            entityManager.AddEntity(e, useSharedCube);
+        }
+    }
+    else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
+    {
+        // assign to selected entity if any
+        if (selectedEntityIndex >= 0 && selectedEntityIndex < (int)entityManager.Size())
+        {
+            auto& ent = entityManager.GetAll()[selectedEntityIndex];
+            ent.Mesh.LoadTexture(p);
+            ent.Mesh.DiffuseTexturePath = p;
+        }
+    }
+}
+
 void Engine::OnMouseButton(GLFWwindow* window, int button, int action, int mods)
 {
     camera.OnMouseButton(window, button, action, mods);
@@ -94,6 +129,17 @@ void Engine::Update(float deltaTime)
     uiManager.NewFrame();
     uiManager.Draw(entityManager, spawnPosition, spawnScale, deltaTime, selectedEntityIndex, camera, useSharedCube);
 
+    // check clipboard for dropped path (used as a bridge by DropCallback)
+    const char* clip = glfwGetClipboardString(GetWindow());
+    static std::string lastClip;
+    if (clip && std::string(clip) != lastClip)
+    {
+        lastClip = clip;
+        std::vector<std::string> paths;
+        paths.push_back(std::string(clip));
+        OnDrop(paths);
+    }
+
 }
 
 void Engine::Render()
@@ -144,6 +190,26 @@ void Engine::Render()
             glBindTexture(GL_TEXTURE_2D, e.Mesh.DiffuseTexture);
             myShader.SetTexture("u_DiffuseMap", 0);
         }
+        if (e.Mesh.HasNormalTexture)
+        {
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, e.Mesh.NormalTexture);
+            myShader.SetTexture("u_NormalMap", 2);
+            myShader.SetBool("u_HasNormalMap", true);
+        }
+        else myShader.SetBool("u_HasNormalMap", false);
+        // specular
+        myShader.setVec3("u_SpecularColor", e.Mesh.SpecularColor.x, e.Mesh.SpecularColor.y, e.Mesh.SpecularColor.z);
+        myShader.setFloat("u_Shininess", e.Mesh.Shininess);
+        myShader.setFloat("u_Alpha", e.Mesh.Alpha);
+        if (e.Mesh.HasSpecularTexture)
+        {
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, e.Mesh.SpecularTexture);
+            myShader.SetTexture("u_SpecularMap", 1);
+            myShader.SetBool("u_HasSpecularMap", true);
+        }
+        else myShader.SetBool("u_HasSpecularMap", false);
 
         // draw entity mesh (assume mesh uploaded)
         if (e.Mesh.VAO != 0)
@@ -171,6 +237,8 @@ int Engine::Initialize()
     // install input callbacks
     glfwSetCursorPosCallback(window, MouseCallback);
     glfwSetMouseButtonCallback(window, MouseButtonCallback);
+    // install drop callback
+    Platform::InstallDropCallback(window);
 
     // glad
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))

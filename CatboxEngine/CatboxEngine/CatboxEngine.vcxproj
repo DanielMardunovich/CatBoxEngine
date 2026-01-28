@@ -232,6 +232,9 @@
     <Content Include="shaders\shadow.vert" />
     <Content Include="shaders\VertexShader.vert" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Dependencies\stb_image.h.orig" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

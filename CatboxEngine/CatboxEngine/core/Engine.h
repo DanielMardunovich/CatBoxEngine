@@ -29,6 +29,7 @@ public:
     void app();
     void OnMouseMove(double xpos, double ypos);
     void OnMouseButton(GLFWwindow* window, int button, int action, int mods);
+    void OnDrop(const std::vector<std::string>& paths);
     
 private:
     void Update(float deltaTime);

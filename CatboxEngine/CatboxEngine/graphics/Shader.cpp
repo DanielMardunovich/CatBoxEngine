@@ -131,11 +131,14 @@ void Shader::SetBool(const std::string& name, bool value) const
     if (loc != -1) glUniform1i(loc, value ? 1 : 0);
 }
 
+
 void Shader::setVec3(const std::string& name, float x, float y, float z) const
 {
     GLint loc = glGetUniformLocation(myShaderProgram, name.c_str());
     glUniform3f(loc, x, y, z);
 }
+
+// setFloat already implemented above; keep only one definition
 
 void Shader::SetMat4(const std::string& name, const glm::mat4& mat) const
 {
