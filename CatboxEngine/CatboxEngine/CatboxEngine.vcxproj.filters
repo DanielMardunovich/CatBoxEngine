@@ -333,5 +333,6 @@
     <None Include="docs\MemoryTracking.md" />
     <None Include="docs\SceneSystem.md" />
     <None Include="docs\SceneEntitySync.md" />
+    <None Include="docs\ScenePersistenceFix.md" />
   </ItemGroup>
 </Project>

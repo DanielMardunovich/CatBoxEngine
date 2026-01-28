@@ -249,6 +249,7 @@
     <None Include="docs\MessageSystem.md" />
     <None Include="docs\MultiMaterialSupport.md" />
     <None Include="docs\SceneEntitySync.md" />
+    <None Include="docs\ScenePersistenceFix.md" />
     <None Include="docs\SceneSystem.md" />
     <None Include="README.md" />
   </ItemGroup>

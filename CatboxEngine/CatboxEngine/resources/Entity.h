@@ -10,4 +10,6 @@ public:
     Transform Transform;
     // store mesh by handle (managed by MeshManager)
     MeshHandle MeshHandle = 0;
+    // store mesh path for scene persistence
+    std::string MeshPath = "";
 };

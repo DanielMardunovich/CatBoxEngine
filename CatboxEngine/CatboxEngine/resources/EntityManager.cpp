@@ -16,12 +16,14 @@ int EntityManager::AddEntity(const Entity& e, bool useSharedCube)
         {
             MeshHandle h = MeshManager::Instance().GetSharedCubeHandle();
             ent.MeshHandle = h;
+            ent.MeshPath = "[cube]";  // Mark as shared cube
         }
         else
         {
             // create a unique cube for this entity
             MeshHandle h = MeshManager::Instance().GetSharedCubeHandle();
             ent.MeshHandle = h;
+            ent.MeshPath = "[cube]";  // Mark as shared cube
         }
     }
 

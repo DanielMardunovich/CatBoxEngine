@@ -1,5 +1,6 @@
 #include "Scene.h"
 #include "EntityManager.h"
+#include "../graphics/MeshManager.h"
 #include "../core/MessageQueue.h"
 #include <fstream>
 #include <sstream>
@@ -168,7 +169,7 @@ bool Scene::SaveToFile(const std::string& path) const
         out << "Position=" << e.Transform.Position.x << "," << e.Transform.Position.y << "," << e.Transform.Position.z << std::endl;
         out << "Rotation=" << e.Transform.Rotation.x << "," << e.Transform.Rotation.y << "," << e.Transform.Rotation.z << std::endl;
         out << "Scale=" << e.Transform.Scale.x << "," << e.Transform.Scale.y << "," << e.Transform.Scale.z << std::endl;
-        out << "MeshHandle=" << e.MeshHandle << std::endl;
+        out << "MeshPath=" << e.MeshPath << std::endl;  // Save path instead of handle
     }
     
     out.close();
@@ -256,7 +257,25 @@ bool Scene::LoadFromFile(const std::string& path)
             else if (key == "Position") currentEntity.Transform.Position = parseVec3(value);
             else if (key == "Rotation") currentEntity.Transform.Rotation = parseVec3(value);
             else if (key == "Scale") currentEntity.Transform.Scale = parseVec3(value);
-            else if (key == "MeshHandle") currentEntity.MeshHandle = std::stoull(value);
+            else if (key == "MeshPath") 
+            {
+                currentEntity.MeshPath = value;
+                // Load mesh and get handle
+                if (value == "[cube]")
+                {
+                    currentEntity.MeshHandle = MeshManager::Instance().GetSharedCubeHandle();
+                }
+                else if (!value.empty())
+                {
+                    currentEntity.MeshHandle = MeshManager::Instance().LoadMeshSync(value);
+                }
+            }
+            // Legacy support: load by handle (deprecated)
+            else if (key == "MeshHandle" && currentEntity.MeshPath.empty())
+            {
+                // Old format - try to load but it probably won't work
+                currentEntity.MeshHandle = std::stoull(value);
+            }
         }
     }
     

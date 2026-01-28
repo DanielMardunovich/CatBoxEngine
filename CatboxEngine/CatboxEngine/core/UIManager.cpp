@@ -105,6 +105,7 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
             if (h != 0)
             {
                 e.MeshHandle = h;
+                e.MeshPath = pathStr;  // Store path for persistence
                 e.name = std::string("Model: ") + pathStr;
                 entityManager.AddEntity(e, useSharedCube);
             }
@@ -136,6 +137,7 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
             if (h != 0)
             {
                 entityManager.GetAll()[selectedIndex].MeshHandle = h;
+                entityManager.GetAll()[selectedIndex].MeshPath = std::string(modelPath);  // Store path
                 entityManager.GetAll()[selectedIndex].name = std::string("Model: ") + modelPath;
             }
             else

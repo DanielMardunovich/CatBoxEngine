@@ -6,6 +6,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <iostream>
+#include <fstream>
 #include <glad/glad.h>
 #include <glfw3.h>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -15,6 +16,7 @@
 #include "../graphics/Mesh.h"
 #include "../graphics/MeshManager.h"
 #include "../resources/EntityManager.h"
+#include "../resources/SceneManager.h"
 
 
 void Engine::OnMouseMove(double xpos, double ypos)
@@ -82,6 +84,15 @@ void Engine::OnMouseButton(GLFWwindow* window, int button, int action, int mods)
 
 Engine::~Engine()
 {
+    // Auto-save active scene before shutdown
+    auto& sceneMgr = SceneManager::Instance();
+    auto* activeScene = sceneMgr.GetActiveScene();
+    if (activeScene)
+    {
+        std::cout << "Auto-saving active scene: " << activeScene->GetName() << std::endl;
+        sceneMgr.SaveScene(sceneMgr.GetActiveSceneID(), "autosave.scene", entityManager);
+    }
+    
     Cleanup();
     
     // Check for memory leaks at shutdown
@@ -340,6 +351,27 @@ int Engine::Initialize()
 
     // Subscribe to messages
     SetupMessageSubscriptions();
+    
+    // Try to load autosave scene
+    auto& sceneMgr = SceneManager::Instance();
+    std::ifstream checkFile("autosave.scene");
+    if (checkFile.good())
+    {
+        checkFile.close();
+        std::cout << "Loading autosave scene..." << std::endl;
+        SceneID id = sceneMgr.LoadScene("autosave.scene");
+        if (id != 0)
+        {
+            sceneMgr.SetActiveScene(id, entityManager);
+        }
+    }
+    else
+    {
+        // No autosave, create default scene
+        std::cout << "No autosave found, creating default scene..." << std::endl;
+        SceneID defaultScene = sceneMgr.CreateScene("Default Scene");
+        sceneMgr.SetActiveScene(defaultScene, entityManager);
+    }
 
     return 0;
 }
