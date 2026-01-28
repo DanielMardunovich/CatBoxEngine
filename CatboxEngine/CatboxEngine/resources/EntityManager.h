@@ -17,9 +17,10 @@ public:
 
 private:
     std::vector<Entity> m_entities;
-    // shared cube mesh
-    Mesh sharedCube;
+    // mesh manager
+    Mesh sharedCube; // kept for compatibility
     bool sharedInitialized = false;
+    // mesh manager is accessed via MeshManager::Instance()
     
     // create a cube mesh
     static Mesh CreateCubeMesh()
@@ -83,3 +84,4 @@ private:
         return mesh;
     }
 };
+

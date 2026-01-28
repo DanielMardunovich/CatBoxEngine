@@ -150,6 +150,7 @@
     <ClCompile Include="graphics\GLDebug.cpp" />
     <ClCompile Include="graphics\Material.cpp" />
     <ClCompile Include="graphics\Mesh.cpp" />
+    <ClCompile Include="graphics\MeshManager.cpp" />
     <ClCompile Include="graphics\passes\ForwardPass.cpp" />
     <ClCompile Include="graphics\passes\GBufferPass.cpp" />
     <ClCompile Include="graphics\passes\LightingPass.cpp" />
@@ -194,6 +195,7 @@
     <ClInclude Include="graphics\GLDebug.h" />
     <ClInclude Include="graphics\Material.h" />
     <ClInclude Include="graphics\Mesh.h" />
+    <ClInclude Include="graphics\MeshManager.h" />
     <ClInclude Include="graphics\passes\ForwardPass.h" />
     <ClInclude Include="graphics\passes\GBufferPass.h" />
     <ClInclude Include="graphics\passes\LightingPass.h" />

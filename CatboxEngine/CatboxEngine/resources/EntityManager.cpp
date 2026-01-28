@@ -1,4 +1,5 @@
 #include "EntityManager.h"
+#include "../graphics/MeshManager.h"
 
 int EntityManager::AddEntity(const Entity& e, bool useSharedCube)
 {
@@ -10,13 +11,10 @@ int EntityManager::AddEntity(const Entity& e, bool useSharedCube)
     {
         if (useSharedCube)
         {
-            if (!sharedInitialized)
-            {
-                sharedCube = CreateCubeMesh();
-                sharedCube.Upload();
-                sharedInitialized = true;
-            }
-            ent.Mesh = sharedCube;
+            MeshHandle h = MeshManager::Instance().GetSharedCubeHandle();
+            Mesh* shared = MeshManager::Instance().GetMesh(h);
+            if (shared) ent.Mesh = *shared;
+            // keep handle alive by not releasing here; Entity owns its copy
         }
         else
         {

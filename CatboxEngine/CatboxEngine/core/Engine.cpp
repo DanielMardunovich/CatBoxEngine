@@ -238,7 +238,7 @@ int Engine::Initialize()
     glfwSetCursorPosCallback(window, MouseCallback);
     glfwSetMouseButtonCallback(window, MouseButtonCallback);
     // install drop callback
-    Platform::InstallDropCallback(window);
+    // Platform::InstallDropCallback(window);
 
     // glad
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
