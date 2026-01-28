@@ -30,5 +30,5 @@ Position=0,0,0
 Rotation=0,0,0
 Scale=0.5,0.5,0.5
 MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\scene.gltf
-Shininess=32
-Alpha=1
+Shininess=199.385
+Alpha=0.092

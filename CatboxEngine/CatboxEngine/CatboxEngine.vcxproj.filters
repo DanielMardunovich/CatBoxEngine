@@ -162,6 +162,12 @@
     <ClCompile Include="resources\SceneManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="graphics\LightManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ui\Inspectors\LightInspector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Dependencies\imgui\imgui.h">
@@ -320,6 +326,15 @@
     <ClInclude Include="resources\SceneManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="graphics\Light.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\LightManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ui\Inspectors\LightInspector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Dependencies\stb_image.h.orig" />
@@ -338,5 +353,8 @@
     <None Include="docs\PerEntityTextures.md" />
     <None Include="docs\BlendShapes_MorphTargets.md" />
     <None Include="docs\FrustumCulling.md" />
+    <None Include="shaders\ShadowMap.vert" />
+    <None Include="shaders\ShadowMap.frag" />
+    <None Include="docs\AdvancedRendering.md" />
   </ItemGroup>
 </Project>

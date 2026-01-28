@@ -149,6 +149,7 @@
     <ClCompile Include="graphics\Buffer.cpp" />
     <ClCompile Include="graphics\Frustum.cpp" />
     <ClCompile Include="graphics\GLDebug.cpp" />
+    <ClCompile Include="graphics\LightManager.cpp" />
     <ClCompile Include="graphics\Material.cpp" />
     <ClCompile Include="graphics\Mesh.cpp" />
     <ClCompile Include="graphics\MeshManager.cpp" />
@@ -172,6 +173,7 @@
     <ClCompile Include="ui\ImGuiLayer.cpp" />
     <ClCompile Include="ui\Inspectors\CameraInspector.cpp" />
     <ClCompile Include="ui\Inspectors\EntityInspector.cpp" />
+    <ClCompile Include="ui\Inspectors\LightInspector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Dependencies\imgui\imconfig.h" />
@@ -199,6 +201,8 @@
     <ClInclude Include="graphics\Buffer.h" />
     <ClInclude Include="graphics\Frustum.h" />
     <ClInclude Include="graphics\GLDebug.h" />
+    <ClInclude Include="graphics\Light.h" />
+    <ClInclude Include="graphics\LightManager.h" />
     <ClInclude Include="graphics\Material.h" />
     <ClInclude Include="graphics\Mesh.h" />
     <ClInclude Include="graphics\MeshManager.h" />
@@ -226,6 +230,7 @@
     <ClInclude Include="ui\ImGuiLayer.h" />
     <ClInclude Include="ui\Inspectors\CameraInspector.h" />
     <ClInclude Include="ui\Inspectors\EntityInspector.h" />
+    <ClInclude Include="ui\Inspectors\LightInspector.h" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="shaders\forward.frag" />
@@ -241,6 +246,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Dependencies\stb_image.h.orig" />
+    <None Include="docs\AdvancedRendering.md" />
     <None Include="docs\BlendShapes_MorphTargets.md" />
     <None Include="docs\FrustumCulling.md" />
     <None Include="docs\GLTF_Implementation_Guide.md" />
@@ -256,6 +262,8 @@
     <None Include="docs\ScenePersistenceFix.md" />
     <None Include="docs\SceneSystem.md" />
     <None Include="README.md" />
+    <None Include="shaders\ShadowMap.frag" />
+    <None Include="shaders\ShadowMap.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
