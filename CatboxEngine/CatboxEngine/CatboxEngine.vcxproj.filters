@@ -117,12 +117,6 @@
     <ClCompile Include="graphics\Texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="messaging\Message.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="messaging\MessageQueue.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="platform\Input.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -246,12 +240,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="graphics\Texture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="messaging\Message.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="messaging\MessageQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="platform\Input.h">

@@ -162,8 +162,6 @@
     <ClCompile Include="graphics\Shader.cpp" />
     <ClCompile Include="graphics\Texture.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="messaging\Message.cpp" />
-    <ClCompile Include="messaging\MessageQueue.cpp" />
     <ClCompile Include="platform\Input.cpp" />
     <ClCompile Include="platform\Window.cpp" />
     <ClCompile Include="resources\Camera.cpp" />
@@ -214,8 +212,6 @@
     <ClInclude Include="graphics\RenderPipeline.h" />
     <ClInclude Include="graphics\Shader.h" />
     <ClInclude Include="graphics\Texture.h" />
-    <ClInclude Include="messaging\Message.h" />
-    <ClInclude Include="messaging\MessageQueue.h" />
     <ClInclude Include="platform\Input.h" />
     <ClInclude Include="platform\Window.h" />
     <ClInclude Include="resources\Camera.h" />
