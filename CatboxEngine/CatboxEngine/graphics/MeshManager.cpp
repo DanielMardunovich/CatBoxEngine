@@ -1,8 +1,10 @@
 #include "MeshManager.h"
 #include "Mesh.h"
+#include "../core/MessageQueue.h"
 #include <algorithm>
 #include <iostream>
 #include <queue>
+#include <memory>
 
 MeshManager::MeshManager() {}
 MeshManager::~MeshManager() {}
@@ -59,10 +61,20 @@ MeshHandle MeshManager::LoadMeshSync(const std::string& path)
         }
         else ok = m.LoadFromOBJ(path);
 
-        if (!ok) return 0;
+        if (!ok)
+        {
+            // Post failure message
+            auto msg = std::make_shared<MeshLoadFailedMessage>(path, "Failed to load mesh");
+            MessageQueue::Instance().Post(msg);
+            return 0;
+        }
         m.Upload();
         e->mesh = std::move(m);
         e->loaded = true;
+        
+        // Post success message
+        auto msg = std::make_shared<MeshLoadedMessage>(path, h);
+        MessageQueue::Instance().Post(msg);
     }
     return h;
 }
@@ -87,7 +99,13 @@ MeshHandle MeshManager::LoadMeshAsync(const std::string& path)
         }
         else ok = m.LoadFromOBJ(path);
 
-        if (!ok) return;
+        if (!ok)
+        {
+            // Post failure message
+            auto msg = std::make_shared<MeshLoadFailedMessage>(path, "Failed to load mesh");
+            MessageQueue::Instance().Post(msg);
+            return;
+        }
         m.Upload();
         auto e = m_entries[h];
         e->mesh = std::move(m);
@@ -97,6 +115,10 @@ MeshHandle MeshManager::LoadMeshAsync(const std::string& path)
             std::lock_guard<std::mutex> lk(m_mutex);
             m_completed.push(h);
         }
+        
+        // Post success message
+        auto msg = std::make_shared<MeshLoadedMessage>(path, h);
+        MessageQueue::Instance().Post(msg);
     }).detach();
 
     return h;

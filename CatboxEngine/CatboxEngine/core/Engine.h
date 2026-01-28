@@ -32,19 +32,20 @@ public:
     void OnDrop(const std::vector<std::string>& paths);
     
 private:
-    void Update(float deltaTime);
-    void Render();
+void Update(float deltaTime);
+void Render();
     
-    int Initialize();
-    int InitGlfw();
-    int InitGlad();
+int Initialize();
+int InitGlfw();
+int InitGlad();
     
-    int InitImGui();
+int InitImGui();
+void SetupMessageSubscriptions();
     
     
-    void Cleanup();
+void Cleanup();
 
-    GLFWwindow* GetWindow() { return window; }
+GLFWwindow* GetWindow() { return window; }
     
     //------------- variables -----------------
 private:

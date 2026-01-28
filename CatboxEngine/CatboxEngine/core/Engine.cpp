@@ -1,5 +1,6 @@
 #include "Engine.h"
 #include "Platform.h"
+#include "MessageQueue.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -33,6 +34,10 @@ void Engine::OnDrop(const std::vector<std::string>& paths)
 
     if (ext == "obj" || ext == "gltf" || ext == "glb")
     {
+        // Post model dropped message
+        auto msg = std::make_shared<ModelDroppedMessage>(p);
+        MessageQueue::Instance().Post(msg);
+        
         MeshHandle h = MeshManager::Instance().LoadMeshSync(p);
         if (h != 0)
         {
@@ -42,6 +47,10 @@ void Engine::OnDrop(const std::vector<std::string>& paths)
     }
     else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
     {
+        // Post texture dropped message
+        auto msg = std::make_shared<TextureDroppedMessage>(p);
+        MessageQueue::Instance().Post(msg);
+        
         // assign to selected entity if any
         if (selectedEntityIndex >= 0 && selectedEntityIndex < (int)entityManager.Size())
         {
@@ -49,7 +58,15 @@ void Engine::OnDrop(const std::vector<std::string>& paths)
             if (ent.MeshHandle != 0)
             {
                 Mesh* mptr = MeshManager::Instance().GetMesh(ent.MeshHandle);
-                if (mptr) { mptr->LoadTexture(p); mptr->DiffuseTexturePath = p; }
+                if (mptr)
+                {
+                    mptr->LoadTexture(p);
+                    mptr->DiffuseTexturePath = p;
+                    
+                    // Post texture loaded message
+                    auto loadMsg = std::make_shared<TextureLoadedMessage>(p, selectedEntityIndex);
+                    MessageQueue::Instance().Post(loadMsg);
+                }
             }
         }
     }
@@ -125,6 +142,9 @@ void Engine::Update(float deltaTime)
 
     // poll mesh manager for completed async loads and invoke callbacks
     MeshManager::Instance().PollCompleted();
+    
+    // process message queue
+    MessageQueue::Instance().ProcessMessages();
 
     // check clipboard for dropped path (used as a bridge by DropCallback)
     const char* clip = glfwGetClipboardString(GetWindow());
@@ -256,7 +276,35 @@ int Engine::Initialize()
     if (InitImGui() != 0)
         return -1;
 
+    // Subscribe to messages
+    SetupMessageSubscriptions();
+
     return 0;
+}
+
+void Engine::SetupMessageSubscriptions()
+{
+    // Subscribe to entity events
+    MessageQueue::Instance().Subscribe(MessageType::EntityCreated, [](const Message& msg) {
+        const auto& m = static_cast<const EntityCreatedMessage&>(msg);
+        std::cout << "Entity created: " << m.entityName << " at index " << m.entityIndex << std::endl;
+    });
+
+    MessageQueue::Instance().Subscribe(MessageType::EntityDestroyed, [](const Message& msg) {
+        const auto& m = static_cast<const EntityDestroyedMessage&>(msg);
+        std::cout << "Entity destroyed: " << m.entityName << " at index " << m.entityIndex << std::endl;
+    });
+
+    // Subscribe to mesh events
+    MessageQueue::Instance().Subscribe(MessageType::MeshLoaded, [](const Message& msg) {
+        const auto& m = static_cast<const MeshLoadedMessage&>(msg);
+        std::cout << "Mesh loaded: " << m.path << " (handle: " << m.handle << ")" << std::endl;
+    });
+
+    MessageQueue::Instance().Subscribe(MessageType::MeshLoadFailed, [](const Message& msg) {
+        const auto& m = static_cast<const MeshLoadFailedMessage&>(msg);
+        std::cerr << "Mesh load failed: " << m.path << " - " << m.error << std::endl;
+    });
 }
 
 int Engine::InitGlfw()

@@ -186,6 +186,8 @@
     <ClInclude Include="core\Engine.h" />
     <ClInclude Include="core\Logger.h" />
     <ClInclude Include="core\Memory.h" />
+    <ClInclude Include="core\Message.h" />
+    <ClInclude Include="core\MessageQueue.h" />
     <ClInclude Include="core\Platform.h" />
     <ClInclude Include="core\Time.h" />
     <ClInclude Include="core\UIManager.h" />
@@ -236,6 +238,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Dependencies\stb_image.h.orig" />
+    <None Include="docs\MessageSystem.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

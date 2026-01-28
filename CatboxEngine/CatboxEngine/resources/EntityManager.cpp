@@ -1,5 +1,7 @@
 #include "EntityManager.h"
 #include "../graphics/MeshManager.h"
+#include "../core/MessageQueue.h"
+#include <memory>
 
 int EntityManager::AddEntity(const Entity& e, bool useSharedCube)
 {
@@ -22,6 +24,10 @@ int EntityManager::AddEntity(const Entity& e, bool useSharedCube)
             ent.MeshHandle = h;
         }
     }
+
+    // Post entity created message
+    auto msg = std::make_shared<EntityCreatedMessage>(idx, ent.name);
+    MessageQueue::Instance().Post(msg);
 
     return idx;
 }
