@@ -145,7 +145,6 @@
     <ClCompile Include="core\UIManager.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="graphics\Buffer.cpp" />
-    <ClCompile Include="graphics\Camera.cpp" />
     <ClCompile Include="graphics\Frustum.cpp" />
     <ClCompile Include="graphics\GLDebug.cpp" />
     <ClCompile Include="graphics\Material.cpp" />
@@ -171,7 +170,6 @@
     <ClCompile Include="ui\ImGuiLayer.cpp" />
     <ClCompile Include="ui\Inspectors\CameraInspector.cpp" />
     <ClCompile Include="ui\Inspectors\EntityInspector.cpp" />
-    <ClCompile Include="ui\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Dependencies\imgui\imconfig.h" />
@@ -189,7 +187,6 @@
     <ClInclude Include="core\Time.h" />
     <ClInclude Include="core\UIManager.h" />
     <ClInclude Include="graphics\Buffer.h" />
-    <ClInclude Include="graphics\Camera.h" />
     <ClInclude Include="graphics\Frustum.h" />
     <ClInclude Include="graphics\GLDebug.h" />
     <ClInclude Include="graphics\Material.h" />
@@ -219,7 +216,6 @@
     <ClInclude Include="ui\ImGuiLayer.h" />
     <ClInclude Include="ui\Inspectors\CameraInspector.h" />
     <ClInclude Include="ui\Inspectors\EntityInspector.h" />
-    <ClInclude Include="ui\UIManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="shaders\forward.frag" />

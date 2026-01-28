@@ -31,6 +31,9 @@
     <Filter Include="Source Files\Entity">
       <UniqueIdentifier>{7c8a0b36-ea13-4b3a-b306-c9b1b6348a27}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Entety">
+      <UniqueIdentifier>{07cc13aa-ee5d-4b4c-85af-037a9a7ac078}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -70,9 +73,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="graphics\Buffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="graphics\Frustum.cpp">
@@ -144,9 +144,6 @@
     <ClCompile Include="ui\Inspectors\EntityInspector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ui\UIManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -200,9 +197,6 @@
     <ClInclude Include="graphics\Buffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="graphics\Camera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="graphics\Frustum.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -210,9 +204,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="graphics\Material.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="graphics\passes\ForwardPass.h">
@@ -231,9 +222,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="graphics\RenderCommand.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="graphics\RenderItem.h">
@@ -260,12 +248,6 @@
     <ClInclude Include="platform\Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resources\Entity.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resources\EntityManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="resources\Scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -281,9 +263,6 @@
     <ClInclude Include="ui\Inspectors\EntityInspector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ui\UIManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="resources\Math\Vec3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -294,7 +273,19 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="core\UIManager.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\EntityManager.h">
+      <Filter>Header Files\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\Entity.h">
+      <Filter>Header Files\Entety</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\Mesh.h">
+      <Filter>Header Files\Entety</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\Renderer.h">
+      <Filter>Header Files\Entety</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
