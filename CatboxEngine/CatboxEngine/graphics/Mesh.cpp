@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+// image loading: simple BMP loader implemented in LoadTextureFromFile below
 
 // Minimal OBJ loader supporting positions, normals and triangular faces
 bool Mesh::LoadFromOBJ(const std::string& path)
@@ -55,6 +56,8 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                     if (mprefix == "newmtl") { ms >> cur; }
                     else if (mprefix == "Kd") { float r,g,b; ms >> r >> g >> b; mtlColors[cur] = {r,g,b}; }
                 }
+
+// (Mesh::LoadTexture and UnloadTexture are implemented after LoadTextureFromFile)
             }
             continue;
         }
@@ -162,6 +165,46 @@ bool Mesh::LoadFromGLTF(const std::string& path)
     return false;
 }
 
+// Load a 2D texture from disk and create an OpenGL texture object
+static unsigned int LoadTextureFromFile(const std::string& path)
+{
+    // very minimal BMP loader (supports 24-bit BMP)
+    std::ifstream in(path, std::ios::binary);
+    if (!in.is_open()) return 0;
+
+    unsigned char header[54];
+    in.read((char*)header, 54);
+    int dataPos = *(int*)&(header[0x0A]);
+    int imageSize = *(int*)&(header[0x22]);
+    int width = *(int*)&(header[0x12]);
+    int height = *(int*)&(header[0x16]);
+
+    if (imageSize == 0) imageSize = width * height * 3;
+    if (dataPos == 0) dataPos = 54;
+
+    std::vector<unsigned char> data(imageSize);
+    in.seekg(dataPos);
+    in.read((char*)data.data(), imageSize);
+    in.close();
+
+    // BMP stores BGR; convert to RGB
+    for (int i = 0; i < imageSize; i += 3)
+        std::swap(data[i], data[i+2]);
+
+    unsigned int tex;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data.data());
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    return tex;
+}
+
 void Mesh::Upload()
 {
     if (VAO != 0)
@@ -200,7 +243,33 @@ void Mesh::Upload()
     );
     glEnableVertexAttribArray(1);
 
+    // UV (vec2 stored in Vec3 UV.x, UV.y)
+    glVertexAttribPointer(
+        2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+        (void*)offsetof(Vertex, UV)
+    );
+    glEnableVertexAttribArray(2);
+
     glBindVertexArray(0);
+}
+
+bool Mesh::LoadTexture(const std::string& path)
+{
+    unsigned int tex = LoadTextureFromFile(path);
+    if (tex == 0) return false;
+    DiffuseTexture = tex;
+    HasDiffuseTexture = true;
+    return true;
+}
+
+void Mesh::UnloadTexture()
+{
+    if (DiffuseTexture != 0)
+    {
+        glDeleteTextures(1, &DiffuseTexture);
+        DiffuseTexture = 0;
+        HasDiffuseTexture = false;
+    }
 }
 
 void Mesh::Draw() const

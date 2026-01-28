@@ -188,6 +188,7 @@
     <ClInclude Include="core\Platform.h" />
     <ClInclude Include="core\Time.h" />
     <ClInclude Include="core\UIManager.h" />
+    <ClInclude Include="Dependencies\stb_image.h" />
     <ClInclude Include="graphics\Buffer.h" />
     <ClInclude Include="graphics\Frustum.h" />
     <ClInclude Include="graphics\GLDebug.h" />

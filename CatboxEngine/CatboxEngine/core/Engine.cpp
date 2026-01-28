@@ -133,6 +133,18 @@ void Engine::Render()
         myShader.SetMat4("u_MVP", vp);
         myShader.SetMat4("transform", model);
 
+        // set material uniforms
+        myShader.SetMat4("u_MVP", vp);
+        myShader.SetMat4("transform", model);
+        myShader.setVec3("u_DiffuseColor", e.Mesh.DiffuseColor.x, e.Mesh.DiffuseColor.y, e.Mesh.DiffuseColor.z);
+        myShader.SetBool("u_HasDiffuseMap", e.Mesh.HasDiffuseTexture);
+        if (e.Mesh.HasDiffuseTexture)
+        {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, e.Mesh.DiffuseTexture);
+            myShader.SetTexture("u_DiffuseMap", 0);
+        }
+
         // draw entity mesh (assume mesh uploaded)
         if (e.Mesh.VAO != 0)
             e.Mesh.Draw();

@@ -116,6 +116,21 @@ void Shader::setColor(float r, float g, float b) const
     
 }
 
+void Shader::SetTexture(const std::string& name, int unit) const
+{
+    GLint loc = glGetUniformLocation(myShaderProgram, name.c_str());
+    if (loc != -1)
+    {
+        glUniform1i(loc, unit);
+    }
+}
+
+void Shader::SetBool(const std::string& name, bool value) const
+{
+    GLint loc = glGetUniformLocation(myShaderProgram, name.c_str());
+    if (loc != -1) glUniform1i(loc, value ? 1 : 0);
+}
+
 void Shader::setVec3(const std::string& name, float x, float y, float z) const
 {
     GLint loc = glGetUniformLocation(myShaderProgram, name.c_str());

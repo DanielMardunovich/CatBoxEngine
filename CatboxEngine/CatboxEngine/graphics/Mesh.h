@@ -26,4 +26,10 @@ public:
     bool LoadFromGLTF(const std::string& path);
     // simple material
     Vec3 DiffuseColor{0.8f, 0.8f, 0.9f};
+    // texture handle
+    unsigned int DiffuseTexture = 0;
+    bool HasDiffuseTexture = false;
+    // Load a texture from file and assign as diffuse
+    bool LoadTexture(const std::string& path);
+    void UnloadTexture();
 };

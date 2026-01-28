@@ -12,6 +12,7 @@
 #include <windows.h>
 #include <commdlg.h>
 #endif
+#include <filesystem>
 
 void UIManager::NewFrame()
 {
@@ -48,6 +49,19 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
         if (GetOpenFileNameA(&ofn))
         {
             strncpy_s(modelPath, ofn.lpstrFile, sizeof(modelPath));
+                // if selected file is an image, preview and assign to selected entity texture
+                std::string sel(modelPath);
+                std::string ext;
+                auto p = sel.find_last_of('.');
+                if (p != std::string::npos) ext = sel.substr(p+1);
+                for (auto &c : ext) c = (char)tolower(c);
+                if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
+                {
+                    if (selectedIndex >= 0)
+                    {
+                        entityManager.GetAll()[selectedIndex].Mesh.LoadTexture(sel);
+                    }
+                }
         }
 #endif
     }
