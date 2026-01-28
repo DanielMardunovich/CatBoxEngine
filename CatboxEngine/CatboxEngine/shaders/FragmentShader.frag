@@ -1,5 +1,7 @@
 #version 440 core
 in vec2 TexCoord;
+in vec3 FragNormal;
+in vec3 FragTangent;
 out vec4 FragColor;
 
 uniform vec3 u_DiffuseColor;
@@ -21,12 +23,16 @@ void main()
         base *= texture(u_DiffuseMap, TexCoord).rgb;
     }
     // simple lighting: ambient + diffuse + specular using a single directional light
-    vec3 N = normalize(vec3(0,0,1));
+    vec3 N = normalize(FragNormal);
+    vec3 T = normalize(FragTangent);
     if (u_HasNormalMap)
     {
         vec3 nmap = texture(u_NormalMap, TexCoord).rgb;
         nmap = nmap * 2.0 - 1.0;
-        N = normalize(nmap);
+        // transform normal from tangent space to model space
+        vec3 B = normalize(cross(N, T));
+        mat3 TBN = mat3(T, B, N);
+        N = normalize(TBN * nmap);
     }
     vec3 L = normalize(vec3(0.5, 0.7, 1.0));
     vec3 V = normalize(vec3(0,0,1));

@@ -22,14 +22,14 @@ bool Mesh::LoadFromOBJ(const std::string& path)
     std::vector<glm::vec3> normals;
     std::vector<glm::vec2> texcoords;
 
-    struct PackedVert { int p, n; };
     std::vector<uint32_t> outIndices;
     std::vector<Vertex> outVerts;
 
-    std::unordered_map<uint64_t, uint32_t> cache;
+    // key must include position, texcoord and normal indices to avoid merging vertices that differ by UVs
+    std::unordered_map<std::string, uint32_t> cache;
 
-    auto packKey = [](int p, int n) {
-        return (uint64_t((uint32_t)p) << 32) | uint64_t((uint32_t)n);
+    auto packKey = [](int p, int t, int n) {
+        return std::to_string(p) + ":" + std::to_string(t) + ":" + std::to_string(n);
     };
 
     std::string line;
@@ -105,13 +105,16 @@ bool Mesh::LoadFromOBJ(const std::string& path)
         }
         else if (prefix == "f")
         {
-            // supports formats like v//vn or v/vt/vn or v
-            std::string a,b,c;
-            ss >> a >> b >> c;
-            std::string arr[3] = {a,b,c};
-            for (int i=0;i<3;i++)
+            // supports polygons with arbitrary vertex counts; triangulate as a fan
+            std::vector<std::string> tokens;
+            std::string tok;
+            while (ss >> tok)
             {
-                std::string token = arr[i];
+                tokens.push_back(tok);
+            }
+            if (tokens.size() < 3) continue;
+
+            auto processToken = [&](const std::string& token) -> uint32_t {
                 int vi=0, ni=-1, ti=-1;
                 size_t p1 = token.find('/');
                 if (p1==std::string::npos)
@@ -137,27 +140,33 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                     }
                 }
 
-                uint64_t key = packKey(vi, ni);
+                std::string key = packKey(vi, ti, ni);
                 auto it = cache.find(key);
-                if (it != cache.end())
-                {
-                    outIndices.push_back(it->second);
-                }
-                else
-                {
-                    Vertex v{};
-                    glm::vec3 p = positions[vi];
-                    v.Position = {p.x, p.y, p.z};
-                    if (ni >=0 && ni < (int)normals.size()) { glm::vec3 n = normals[ni]; v.Normal = {n.x, n.y, n.z}; }
-                    else v.Normal = {0,0,0};
-                    if (ti >=0 && ti < (int)texcoords.size()) { glm::vec2 uv = texcoords[ti]; v.UV = {uv.x, uv.y, 0}; }
-                    else v.UV = {0,0,0};
+                if (it != cache.end()) return it->second;
 
-                    uint32_t newIndex = (uint32_t)outVerts.size();
-                    outVerts.push_back(v);
-                    cache[key] = newIndex;
-                    outIndices.push_back(newIndex);
-                }
+                Vertex v{};
+                glm::vec3 p = positions[vi];
+                v.Position = {p.x, p.y, p.z};
+                if (ni >=0 && ni < (int)normals.size()) { glm::vec3 n = normals[ni]; v.Normal = {n.x, n.y, n.z}; }
+                else v.Normal = {0,0,0};
+                if (ti >=0 && ti < (int)texcoords.size()) { glm::vec2 uv = texcoords[ti]; v.UV = {uv.x, uv.y, 0}; }
+                else v.UV = {0,0,0};
+
+                uint32_t newIndex = (uint32_t)outVerts.size();
+                outVerts.push_back(v);
+                cache[key] = newIndex;
+                return newIndex;
+            };
+
+            // triangulate fan: (0,1,2), (0,2,3), ...
+            for (size_t k = 1; k + 1 < tokens.size(); ++k)
+            {
+                uint32_t i0 = processToken(tokens[0]);
+                uint32_t i1 = processToken(tokens[k]);
+                uint32_t i2 = processToken(tokens[k+1]);
+                outIndices.push_back(i0);
+                outIndices.push_back(i1);
+                outIndices.push_back(i2);
             }
         }
     }
@@ -167,6 +176,35 @@ bool Mesh::LoadFromOBJ(const std::string& path)
 
     Vertices = std::move(outVerts);
     Indices = std::move(outIndices);
+
+    // compute per-vertex normals if model did not provide them
+    bool haveNormals = false;
+    for (const auto &v : Vertices) if (!(v.Normal.x == 0.0f && v.Normal.y == 0.0f && v.Normal.z == 0.0f)) { haveNormals = true; break; }
+    if (!haveNormals)
+    {
+        std::vector<glm::vec3> normAccum(Vertices.size(), glm::vec3(0.0f));
+        for (size_t i = 0; i + 2 < Indices.size(); i += 3)
+        {
+            uint32_t i0 = Indices[i];
+            uint32_t i1 = Indices[i+1];
+            uint32_t i2 = Indices[i+2];
+
+            glm::vec3 p0(Vertices[i0].Position.x, Vertices[i0].Position.y, Vertices[i0].Position.z);
+            glm::vec3 p1(Vertices[i1].Position.x, Vertices[i1].Position.y, Vertices[i1].Position.z);
+            glm::vec3 p2(Vertices[i2].Position.x, Vertices[i2].Position.y, Vertices[i2].Position.z);
+
+            glm::vec3 faceN = glm::normalize(glm::cross(p1 - p0, p2 - p0));
+            normAccum[i0] += faceN;
+            normAccum[i1] += faceN;
+            normAccum[i2] += faceN;
+        }
+        for (size_t i = 0; i < Vertices.size(); ++i)
+        {
+            glm::vec3 n = glm::normalize(normAccum[i]);
+            if (glm::length(n) == 0.0f) n = glm::vec3(0.0f, 1.0f, 0.0f);
+            Vertices[i].Normal = { n.x, n.y, n.z };
+        }
+    }
 
     // compute tangents if we have UVs
     std::vector<glm::vec3> tanAccum(Vertices.size(), glm::vec3(0.0f));

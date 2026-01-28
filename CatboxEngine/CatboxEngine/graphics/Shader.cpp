@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <unordered_set>
 
 std::string Shader::LoadShader(const char* aPath)
 {
@@ -142,13 +143,9 @@ void Shader::setVec3(const std::string& name, float x, float y, float z) const
 
 void Shader::SetMat4(const std::string& name, const glm::mat4& mat) const
 {
+    if (myShaderProgram == 0) return;
     GLint loc = glGetUniformLocation(myShaderProgram, name.c_str());
-    if (loc == -1)
-    {
-        std::cerr << "Uniform not found: " << name << '\n';
-        return;
-    }
-
+    if (loc == -1) return;
     glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mat));
 }
 
