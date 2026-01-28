@@ -239,6 +239,7 @@
   <ItemGroup>
     <None Include="Dependencies\stb_image.h.orig" />
     <None Include="docs\MessageSystem.md" />
+    <None Include="docs\MultiMaterialSupport.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

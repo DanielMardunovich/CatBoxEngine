@@ -202,37 +202,86 @@ void Engine::Render()
 
         if (mesh)
         {
-            myShader.setVec3("u_DiffuseColor", mesh->DiffuseColor.x, mesh->DiffuseColor.y, mesh->DiffuseColor.z);
-            myShader.SetBool("u_HasDiffuseMap", mesh->HasDiffuseTexture);
-            if (mesh->HasDiffuseTexture)
+            // Check if this is a multi-material mesh
+            if (!mesh->SubMeshes.empty())
             {
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, mesh->DiffuseTexture);
-                myShader.SetTexture("u_DiffuseMap", 0);
-            }
-            if (mesh->HasNormalTexture)
-            {
-                glActiveTexture(GL_TEXTURE2);
-                glBindTexture(GL_TEXTURE_2D, mesh->NormalTexture);
-                myShader.SetTexture("u_NormalMap", 2);
-                myShader.SetBool("u_HasNormalMap", true);
-            }
-            else myShader.SetBool("u_HasNormalMap", false);
+                // Multi-material rendering: draw each submesh with its own material
+                glBindVertexArray(mesh->VAO);
+                
+                for (const auto& sub : mesh->SubMeshes)
+                {
+                    // Set material properties for this submesh
+                    myShader.setVec3("u_DiffuseColor", sub.DiffuseColor.x, sub.DiffuseColor.y, sub.DiffuseColor.z);
+                    myShader.SetBool("u_HasDiffuseMap", sub.HasDiffuseTexture);
+                    if (sub.HasDiffuseTexture)
+                    {
+                        glActiveTexture(GL_TEXTURE0);
+                        glBindTexture(GL_TEXTURE_2D, sub.DiffuseTexture);
+                        myShader.SetTexture("u_DiffuseMap", 0);
+                    }
+                    
+                    if (sub.HasNormalTexture)
+                    {
+                        glActiveTexture(GL_TEXTURE2);
+                        glBindTexture(GL_TEXTURE_2D, sub.NormalTexture);
+                        myShader.SetTexture("u_NormalMap", 2);
+                        myShader.SetBool("u_HasNormalMap", true);
+                    }
+                    else myShader.SetBool("u_HasNormalMap", false);
 
-            myShader.setVec3("u_SpecularColor", mesh->SpecularColor.x, mesh->SpecularColor.y, mesh->SpecularColor.z);
-            myShader.setFloat("u_Shininess", mesh->Shininess);
-            myShader.setFloat("u_Alpha", mesh->Alpha);
-            if (mesh->HasSpecularTexture)
-            {
-                glActiveTexture(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_2D, mesh->SpecularTexture);
-                myShader.SetTexture("u_SpecularMap", 1);
-                myShader.SetBool("u_HasSpecularMap", true);
+                    myShader.setVec3("u_SpecularColor", sub.SpecularColor.x, sub.SpecularColor.y, sub.SpecularColor.z);
+                    myShader.setFloat("u_Shininess", sub.Shininess);
+                    myShader.setFloat("u_Alpha", sub.Alpha);
+                    
+                    if (sub.HasSpecularTexture)
+                    {
+                        glActiveTexture(GL_TEXTURE1);
+                        glBindTexture(GL_TEXTURE_2D, sub.SpecularTexture);
+                        myShader.SetTexture("u_SpecularMap", 1);
+                        myShader.SetBool("u_HasSpecularMap", true);
+                    }
+                    else myShader.SetBool("u_HasSpecularMap", false);
+                    
+                    // Draw this submesh
+                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sub.EBO);
+                    glDrawElements(GL_TRIANGLES, (GLsizei)sub.Indices.size(), GL_UNSIGNED_INT, 0);
+                }
             }
-            else myShader.SetBool("u_HasSpecularMap", false);
+            else
+            {
+                // Legacy single-material rendering
+                myShader.setVec3("u_DiffuseColor", mesh->DiffuseColor.x, mesh->DiffuseColor.y, mesh->DiffuseColor.z);
+                myShader.SetBool("u_HasDiffuseMap", mesh->HasDiffuseTexture);
+                if (mesh->HasDiffuseTexture)
+                {
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, mesh->DiffuseTexture);
+                    myShader.SetTexture("u_DiffuseMap", 0);
+                }
+                if (mesh->HasNormalTexture)
+                {
+                    glActiveTexture(GL_TEXTURE2);
+                    glBindTexture(GL_TEXTURE_2D, mesh->NormalTexture);
+                    myShader.SetTexture("u_NormalMap", 2);
+                    myShader.SetBool("u_HasNormalMap", true);
+                }
+                else myShader.SetBool("u_HasNormalMap", false);
 
-            if (mesh->VAO != 0)
-                mesh->Draw();
+                myShader.setVec3("u_SpecularColor", mesh->SpecularColor.x, mesh->SpecularColor.y, mesh->SpecularColor.z);
+                myShader.setFloat("u_Shininess", mesh->Shininess);
+                myShader.setFloat("u_Alpha", mesh->Alpha);
+                if (mesh->HasSpecularTexture)
+                {
+                    glActiveTexture(GL_TEXTURE1);
+                    glBindTexture(GL_TEXTURE_2D, mesh->SpecularTexture);
+                    myShader.SetTexture("u_SpecularMap", 1);
+                    myShader.SetBool("u_HasSpecularMap", true);
+                }
+                else myShader.SetBool("u_HasSpecularMap", false);
+
+                if (mesh->VAO != 0)
+                    mesh->Draw();
+            }
         }
     }
 

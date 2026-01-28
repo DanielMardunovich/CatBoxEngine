@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <iostream>
 // image loading: use stb_image for PNG/JPEG/BMP
 #define STB_IMAGE_IMPLEMENTATION
 #include "../Dependencies/stb_image.h"
@@ -24,6 +25,15 @@ bool Mesh::LoadFromOBJ(const std::string& path)
 
     std::vector<uint32_t> outIndices;
     std::vector<Vertex> outVerts;
+    
+    // Track material groups for multi-material support
+    struct MaterialGroup
+    {
+        std::string materialName;
+        std::vector<uint32_t> indices;
+    };
+    std::vector<MaterialGroup> materialGroups;
+    MaterialGroup* currentGroup = nullptr;
 
     // key must include position, texcoord and normal indices to avoid merging vertices that differ by UVs
     std::unordered_map<std::string, uint32_t> cache;
@@ -57,7 +67,20 @@ bool Mesh::LoadFromOBJ(const std::string& path)
             ss >> mtlFile;
             // attempt to parse mtl (try given path first, then relative to OBJ)
             std::ifstream mtlin(mtlFile);
-            if (!mtlin.is_open() && !objDir.empty()) mtlin.open(objDir + mtlFile);
+            if (!mtlin.is_open() && !objDir.empty())
+            {
+                std::string fullMtlPath = objDir + mtlFile;
+                mtlin.open(fullMtlPath);
+                if (mtlin.is_open())
+                {
+                    std::cout << "Loaded MTL file: " << fullMtlPath << std::endl;
+                }
+            }
+            else if (mtlin.is_open())
+            {
+                std::cout << "Loaded MTL file: " << mtlFile << std::endl;
+            }
+            
             if (mtlin.is_open())
             {
                 std::string mline;
@@ -74,12 +97,31 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                     else if (mprefix == "d") { float d; ms >> d; mtlAlpha[cur] = d; }
                     else if (mprefix == "map_Kd") { std::string tex; ms >> tex; if (!tex.empty()) mtlMaps[cur] = tex; }
                     else if (mprefix == "map_Ks") { std::string tex; ms >> tex; if (!tex.empty()) mtlSpecularMaps[cur] = tex; }
-                    else if (mprefix == "map_Bump" || mprefix == "bump") { std::string tex; ms >> tex; if (!tex.empty()) mtlNormalMaps[cur] = tex; }
+                    else if (mprefix == "map_Bump" || mprefix == "bump" || mprefix == "map_bump" || mprefix == "norm") 
+                    { 
+                        std::string tex; 
+                        ms >> tex; 
+                        if (!tex.empty()) mtlNormalMaps[cur] = tex;
+                    }
                 }
+                std::cout << "MTL parsing complete. Found " << mtlMaps.size() << " diffuse maps, " 
+                          << mtlSpecularMaps.size() << " specular maps, " 
+                          << mtlNormalMaps.size() << " normal maps" << std::endl;
+            }
+            else
+            {
+                std::cerr << "Failed to open MTL file: " << mtlFile << std::endl;
             }
             continue;
         }
-        if (prefix == "usemtl") { ss >> currentMtl; continue; }
+        if (prefix == "usemtl")
+        {
+            ss >> currentMtl;
+            // Start a new material group
+            materialGroups.push_back({currentMtl, {}});
+            currentGroup = &materialGroups.back();
+            continue;
+        }
         if (prefix == "v")
         {
             float x, y, z; ss >> x >> y >> z;
@@ -174,9 +216,20 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                 uint32_t i0 = processToken(tokens[0]);
                 uint32_t i1 = processToken(tokens[k]);
                 uint32_t i2 = processToken(tokens[k+1]);
-                outIndices.push_back(i0);
-                outIndices.push_back(i1);
-                outIndices.push_back(i2);
+                
+                // Add to current material group if exists, otherwise to legacy indices
+                if (currentGroup)
+                {
+                    currentGroup->indices.push_back(i0);
+                    currentGroup->indices.push_back(i1);
+                    currentGroup->indices.push_back(i2);
+                }
+                else
+                {
+                    outIndices.push_back(i0);
+                    outIndices.push_back(i1);
+                    outIndices.push_back(i2);
+                }
             }
         }
     }
@@ -259,42 +312,198 @@ bool Mesh::LoadFromOBJ(const std::string& path)
         }
     }
 
-    // apply material color if found
-    if (!currentMtl.empty())
+    // apply material color if found (try currentMtl first, then first available)
+    std::string materialToUse = currentMtl;
+    if (materialToUse.empty() && !mtlColors.empty())
     {
-        auto itc = mtlColors.find(currentMtl);
+        materialToUse = mtlColors.begin()->first;
+    }
+    
+    // Create SubMeshes for multi-material models
+    if (!materialGroups.empty())
+    {
+        std::cout << "Creating " << materialGroups.size() << " submeshes for multi-material model" << std::endl;
+        
+        for (auto& group : materialGroups)
+        {
+            if (group.indices.empty()) continue;
+            
+            SubMesh sub;
+            sub.MaterialName = group.materialName;
+            sub.Indices = std::move(group.indices);
+            sub.BaseVertex = 0;
+            
+            // Apply material properties
+            auto itc = mtlColors.find(group.materialName);
+            if (itc != mtlColors.end()) sub.DiffuseColor = itc->second;
+            
+            auto its = mtlSpecular.find(group.materialName);
+            if (its != mtlSpecular.end()) sub.SpecularColor = its->second;
+            
+            auto itn = mtlShininess.find(group.materialName);
+            if (itn != mtlShininess.end()) sub.Shininess = itn->second;
+            
+            auto itd = mtlAlpha.find(group.materialName);
+            if (itd != mtlAlpha.end()) sub.Alpha = itd->second;
+            
+            // Load diffuse texture
+            auto itm = mtlMaps.find(group.materialName);
+            if (itm != mtlMaps.end())
+            {
+                std::string texPath = itm->second;
+                std::string full = texPath;
+                if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) full = objDir + texPath;
+                
+                int width, height, channels;
+                unsigned char* data = stbi_load(full.c_str(), &width, &height, &channels, 4);
+                if (data)
+                {
+                    glGenTextures(1, &sub.DiffuseTexture);
+                    glBindTexture(GL_TEXTURE_2D, sub.DiffuseTexture);
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                    glGenerateMipmap(GL_TEXTURE_2D);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    stbi_image_free(data);
+                    
+                    sub.HasDiffuseTexture = true;
+                    sub.DiffuseTexturePath = full;
+                    std::cout << "  SubMesh '" << group.materialName << "' loaded diffuse: " << full << std::endl;
+                }
+                else
+                {
+                    std::cerr << "  SubMesh '" << group.materialName << "' failed to load diffuse: " << full << std::endl;
+                }
+            }
+            
+            // Load specular texture
+            auto itsm = mtlSpecularMaps.find(group.materialName);
+            if (itsm != mtlSpecularMaps.end())
+            {
+                std::string texPath = itsm->second;
+                std::string full = texPath;
+                if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) full = objDir + texPath;
+                
+                int width, height, channels;
+                unsigned char* data = stbi_load(full.c_str(), &width, &height, &channels, 4);
+                if (data)
+                {
+                    glGenTextures(1, &sub.SpecularTexture);
+                    glBindTexture(GL_TEXTURE_2D, sub.SpecularTexture);
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                    glGenerateMipmap(GL_TEXTURE_2D);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    stbi_image_free(data);
+                    
+                    sub.HasSpecularTexture = true;
+                    sub.SpecularTexturePath = full;
+                    std::cout << "  SubMesh '" << group.materialName << "' loaded specular: " << full << std::endl;
+                }
+            }
+            
+            // Load normal map
+            auto itnm = mtlNormalMaps.find(group.materialName);
+            if (itnm != mtlNormalMaps.end())
+            {
+                std::string texPath = itnm->second;
+                std::string full = texPath;
+                if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) full = objDir + texPath;
+                
+                int width, height, channels;
+                unsigned char* data = stbi_load(full.c_str(), &width, &height, &channels, 4);
+                if (data)
+                {
+                    glGenTextures(1, &sub.NormalTexture);
+                    glBindTexture(GL_TEXTURE_2D, sub.NormalTexture);
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                    glGenerateMipmap(GL_TEXTURE_2D);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    stbi_image_free(data);
+                    
+                    sub.HasNormalTexture = true;
+                    sub.NormalTexturePath = full;
+                    std::cout << "  SubMesh '" << group.materialName << "' loaded normal: " << full << std::endl;
+                }
+            }
+            
+            SubMeshes.push_back(std::move(sub));
+        }
+    }
+    // Fallback: single material for legacy models
+    else if (!materialToUse.empty())
+    {
+        auto itc = mtlColors.find(materialToUse);
         if (itc != mtlColors.end()) DiffuseColor = { itc->second.x, itc->second.y, itc->second.z };
 
-        auto its = mtlSpecular.find(currentMtl);
+        auto its = mtlSpecular.find(materialToUse);
         if (its != mtlSpecular.end()) SpecularColor = its->second;
 
-        auto itn = mtlShininess.find(currentMtl);
+        auto itn = mtlShininess.find(materialToUse);
         if (itn != mtlShininess.end()) Shininess = itn->second;
 
-        auto itd = mtlAlpha.find(currentMtl);
+        auto itd = mtlAlpha.find(materialToUse);
         if (itd != mtlAlpha.end()) Alpha = itd->second;
 
-        auto itm = mtlMaps.find(currentMtl);
+        // Load diffuse texture
+        auto itm = mtlMaps.find(materialToUse);
         if (itm != mtlMaps.end())
         {
             std::string texPath = itm->second;
-            std::string objDir;
-            size_t p = path.find_last_of("/\\");
-            if (p != std::string::npos) objDir = path.substr(0, p+1);
             std::string full = texPath;
             if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) full = objDir + texPath;
-            if (LoadTexture(full)) DiffuseTexturePath = full;
+            if (LoadTexture(full))
+            {
+                DiffuseTexturePath = full;
+                std::cout << "Loaded diffuse texture: " << full << std::endl;
+            }
+            else
+            {
+                std::cerr << "Failed to load diffuse texture: " << full << std::endl;
+            }
         }
-        auto itsm = mtlSpecularMaps.find(currentMtl);
+        
+        // Load specular texture
+        auto itsm = mtlSpecularMaps.find(materialToUse);
         if (itsm != mtlSpecularMaps.end())
         {
             std::string texPath = itsm->second;
-            std::string objDir;
-            size_t p = path.find_last_of("/\\");
-            if (p != std::string::npos) objDir = path.substr(0, p+1);
             std::string full = texPath;
             if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) full = objDir + texPath;
-            if (LoadSpecularTexture(full)) SpecularTexturePath = full;
+            if (LoadSpecularTexture(full))
+            {
+                SpecularTexturePath = full;
+                std::cout << "Loaded specular texture: " << full << std::endl;
+            }
+            else
+            {
+                std::cerr << "Failed to load specular texture: " << full << std::endl;
+            }
+        }
+        
+        // Load normal map
+        auto itnm = mtlNormalMaps.find(materialToUse);
+        if (itnm != mtlNormalMaps.end())
+        {
+            std::string texPath = itnm->second;
+            std::string full = texPath;
+            if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) full = objDir + texPath;
+            if (LoadNormalTexture(full))
+            {
+                NormalTexturePath = full;
+                std::cout << "Loaded normal map: " << full << std::endl;
+            }
+            else
+            {
+                std::cerr << "Failed to load normal map: " << full << std::endl;
+            }
         }
     }
 
@@ -340,7 +549,6 @@ void Mesh::Upload()
 
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
 
     glBindVertexArray(VAO);
 
@@ -352,13 +560,33 @@ void Mesh::Upload()
         GL_STATIC_DRAW
     );
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(
-        GL_ELEMENT_ARRAY_BUFFER,
-        Indices.size() * sizeof(uint32_t),
-        Indices.data(),
-        GL_STATIC_DRAW
-    );
+    // Upload SubMesh EBOs if we have multiple materials
+    if (!SubMeshes.empty())
+    {
+        for (auto& sub : SubMeshes)
+        {
+            glGenBuffers(1, &sub.EBO);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sub.EBO);
+            glBufferData(
+                GL_ELEMENT_ARRAY_BUFFER,
+                sub.Indices.size() * sizeof(uint32_t),
+                sub.Indices.data(),
+                GL_STATIC_DRAW
+            );
+        }
+    }
+    else
+    {
+        // Legacy single EBO
+        glGenBuffers(1, &EBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(
+            GL_ELEMENT_ARRAY_BUFFER,
+            Indices.size() * sizeof(uint32_t),
+            Indices.data(),
+            GL_STATIC_DRAW
+        );
+    }
 
     // Position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
@@ -384,8 +612,6 @@ void Mesh::Upload()
         (void*)offsetof(Vertex, Tangent)
     );
     glEnableVertexAttribArray(3);
-
-    // Specular not stored in vertex, it's a material property
 
     glBindVertexArray(0);
 }
@@ -453,5 +679,21 @@ void Mesh::UnloadNormalTexture()
 void Mesh::Draw() const
 {
     glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, (GLsizei)Indices.size(), GL_UNSIGNED_INT, 0);
+    
+    // Legacy single-material draw
+    if (SubMeshes.empty())
+    {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glDrawElements(GL_TRIANGLES, (GLsizei)Indices.size(), GL_UNSIGNED_INT, 0);
+    }
+    else
+    {
+        // Multi-material draw: render each submesh
+        // Note: Caller must set appropriate textures/materials between submesh draws
+        for (const auto& sub : SubMeshes)
+        {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sub.EBO);
+            glDrawElements(GL_TRIANGLES, (GLsizei)sub.Indices.size(), GL_UNSIGNED_INT, 0);
+        }
+    }
 }
