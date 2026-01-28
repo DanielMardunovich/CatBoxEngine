@@ -11,6 +11,16 @@ struct Vertex
 	Vec3 Tangent;
 };
 
+// Morph target (blend shape) data
+struct MorphTarget
+{
+	std::string Name;
+	std::vector<Vec3> PositionDeltas;  // Position offsets
+	std::vector<Vec3> NormalDeltas;    // Normal offsets
+	std::vector<Vec3> TangentDeltas;   // Tangent offsets (optional)
+	float Weight = 0.0f;               // Current weight (0-1)
+};
+
 // SubMesh represents geometry with a single material
 struct SubMesh
 {
@@ -47,15 +57,33 @@ public:
 	std::vector<Vertex> Vertices;
 	std::vector<uint32_t> Indices;  // Legacy: used when there's only 1 material
 	std::vector<SubMesh> SubMeshes;  // Multiple materials
+	
+	// Morph targets / Blend shapes
+	std::vector<MorphTarget> MorphTargets;
+	std::vector<Vertex> BaseVertices;  // Original vertices for morph target blending
 
 	uint32_t VAO = 0;
 	uint32_t VBO = 0;
 	uint32_t EBO = 0;  // Legacy: used when there's only 1 material
+	
+	// Bounding box for frustum culling
+	Vec3 BoundsMin{FLT_MAX, FLT_MAX, FLT_MAX};
+	Vec3 BoundsMax{-FLT_MAX, -FLT_MAX, -FLT_MAX};
 
 	void Upload();
 	void Draw() const;
     bool LoadFromOBJ(const std::string& path);
     bool LoadFromGLTF(const std::string& path);
+    
+    // Morph target control
+    void SetMorphTargetWeight(size_t index, float weight);
+    void SetMorphTargetWeight(const std::string& name, float weight);
+    void UpdateMorphTargets();  // Apply current weights
+    void CalculateBounds();     // Calculate bounding box
+    
+    // Validation and debugging
+    bool ValidateVertexData() const;
+    void PrintDebugInfo() const;
     
     // Memory tracking
     size_t GetCPUMemoryUsage() const;

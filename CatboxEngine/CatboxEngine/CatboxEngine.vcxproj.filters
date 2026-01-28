@@ -334,5 +334,9 @@
     <None Include="docs\SceneSystem.md" />
     <None Include="docs\SceneEntitySync.md" />
     <None Include="docs\ScenePersistenceFix.md" />
+    <None Include="docs\OBJ_UVs_Normals.md" />
+    <None Include="docs\PerEntityTextures.md" />
+    <None Include="docs\BlendShapes_MorphTargets.md" />
+    <None Include="docs\FrustumCulling.md" />
   </ItemGroup>
 </Project>

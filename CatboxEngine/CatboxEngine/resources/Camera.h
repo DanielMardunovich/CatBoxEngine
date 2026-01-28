@@ -3,6 +3,15 @@
 struct GLFWwindow;
 #include <glm/glm.hpp>
 
+// Frustum planes for culling
+struct Frustum
+{
+    glm::vec4 planes[6];  // Left, Right, Bottom, Top, Near, Far
+    
+    // Check if AABB (bounding box) intersects frustum
+    bool IsBoxVisible(const Vec3& min, const Vec3& max) const;
+};
+
 struct Camera
 {
     Vec3 Position{0,0,3};
@@ -48,6 +57,10 @@ struct Camera
 
     glm::mat4 GetViewMatrix() const;
     glm::mat4 GetProjectionMatrix() const;
+    
+    // Frustum culling
+    Frustum GetFrustum() const;
+    bool IsBoxInFrustum(const Vec3& min, const Vec3& max) const;
 
 private:
     // internal mouse state

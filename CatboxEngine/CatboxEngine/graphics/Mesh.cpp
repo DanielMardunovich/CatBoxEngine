@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <iostream>
 #include <cstring>
+#include <cmath>
 
 // GLTF support - tinygltf will handle stb_image internally
 #define TINYGLTF_IMPLEMENTATION
@@ -246,9 +247,18 @@ bool Mesh::LoadFromOBJ(const std::string& path)
 
     // compute per-vertex normals if model did not provide them
     bool haveNormals = false;
-    for (const auto &v : Vertices) if (!(v.Normal.x == 0.0f && v.Normal.y == 0.0f && v.Normal.z == 0.0f)) { haveNormals = true; break; }
+    for (const auto &v : Vertices) 
+    {
+        if (!(v.Normal.x == 0.0f && v.Normal.y == 0.0f && v.Normal.z == 0.0f)) 
+        { 
+            haveNormals = true; 
+            break; 
+        }
+    }
+    
     if (!haveNormals)
     {
+        std::cout << "OBJ: Computing smooth normals..." << std::endl;
         std::vector<glm::vec3> normAccum(Vertices.size(), glm::vec3(0.0f));
         for (size_t i = 0; i + 2 < Indices.size(); i += 3)
         {
@@ -274,6 +284,7 @@ bool Mesh::LoadFromOBJ(const std::string& path)
     }
 
     // compute tangents if we have UVs
+    std::cout << "OBJ: Computing tangents..." << std::endl;
     std::vector<glm::vec3> tanAccum(Vertices.size(), glm::vec3(0.0f));
     bool haveUV = false;
     for (const auto &v : Vertices) if (v.UV.x != 0.0f || v.UV.y != 0.0f) { haveUV = true; break; }
@@ -492,6 +503,25 @@ bool Mesh::LoadFromOBJ(const std::string& path)
 
     // Upload to GPU
     Upload();
+    
+    // Calculate bounding box for frustum culling
+    CalculateBounds();
+
+    // Summary
+    std::cout << "OBJ loaded successfully:" << std::endl;
+    std::cout << "  Vertices: " << Vertices.size() << std::endl;
+    std::cout << "  Indices: " << (!SubMeshes.empty() ? 0 : Indices.size()) << std::endl;
+    std::cout << "  SubMeshes: " << SubMeshes.size() << std::endl;
+    std::cout << "  Has Normals: " << (haveNormals ? "Yes" : "Computed") << std::endl;
+    std::cout << "  Has UVs: " << (haveUV ? "Yes" : "No") << std::endl;
+    std::cout << "  Has Tangents: " << (haveUV ? "Yes" : "No") << std::endl;
+
+    // Validate vertex data
+    if (!ValidateVertexData())
+    {
+        std::cerr << "OBJ validation failed!" << std::endl;
+        return false;
+    }
 
     return true;
 }
@@ -713,6 +743,95 @@ bool Mesh::LoadFromGLTF(const std::string& path)
                 }
             }
             
+            // Load morph targets (blend shapes)
+            if (!primitive.targets.empty())
+            {
+                std::cout << "  Found " << primitive.targets.size() << " morph targets" << std::endl;
+                
+                for (size_t targetIdx = 0; targetIdx < primitive.targets.size(); ++targetIdx)
+                {
+                    const auto& target = primitive.targets[targetIdx];
+                    
+                    MorphTarget morphTarget;
+                    
+                    // Get morph target name from mesh extras if available
+                    if (meshIdx < gltfMesh.extras.Keys().size())
+                    {
+                        auto targetWeights = gltfMesh.extras.Get("targetNames");
+                        if (targetWeights.IsArray() && targetIdx < targetWeights.ArrayLen())
+                        {
+                            morphTarget.Name = targetWeights.Get(targetIdx).Get<std::string>();
+                        }
+                    }
+                    
+                    // Fallback name
+                    if (morphTarget.Name.empty())
+                    {
+                        morphTarget.Name = "Target_" + std::to_string(targetIdx);
+                    }
+                    
+                    // Load position deltas
+                    if (target.count("POSITION"))
+                    {
+                        const tinygltf::Accessor& accessor = model.accessors[target.at("POSITION")];
+                        const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+                        const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+                        
+                        const float* data = reinterpret_cast<const float*>(
+                            &buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+                        
+                        morphTarget.PositionDeltas.resize(accessor.count);
+                        for (size_t i = 0; i < accessor.count; ++i)
+                        {
+                            morphTarget.PositionDeltas[i] = Vec3{
+                                data[i * 3], data[i * 3 + 1], data[i * 3 + 2]
+                            };
+                        }
+                    }
+                    
+                    // Load normal deltas
+                    if (target.count("NORMAL"))
+                    {
+                        const tinygltf::Accessor& accessor = model.accessors[target.at("NORMAL")];
+                        const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+                        const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+                        
+                        const float* data = reinterpret_cast<const float*>(
+                            &buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+                        
+                        morphTarget.NormalDeltas.resize(accessor.count);
+                        for (size_t i = 0; i < accessor.count; ++i)
+                        {
+                            morphTarget.NormalDeltas[i] = Vec3{
+                                data[i * 3], data[i * 3 + 1], data[i * 3 + 2]
+                            };
+                        }
+                    }
+                    
+                    // Load tangent deltas
+                    if (target.count("TANGENT"))
+                    {
+                        const tinygltf::Accessor& accessor = model.accessors[target.at("TANGENT")];
+                        const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+                        const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+                        
+                        const float* data = reinterpret_cast<const float*>(
+                            &buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+                        
+                        morphTarget.TangentDeltas.resize(accessor.count);
+                        for (size_t i = 0; i < accessor.count; ++i)
+                        {
+                            morphTarget.TangentDeltas[i] = Vec3{
+                                data[i * 3], data[i * 3 + 1], data[i * 3 + 2]
+                            };
+                        }
+                    }
+                    
+                    MorphTargets.push_back(morphTarget);
+                    std::cout << "    Loaded morph target: " << morphTarget.Name << std::endl;
+                }
+            }
+            
             // Load material
             if (primitive.material >= 0)
             {
@@ -840,10 +959,19 @@ bool Mesh::LoadFromGLTF(const std::string& path)
     Vertices = std::move(allVertices);
     SubMeshes = std::move(allSubMeshes);
     
+    // Store base vertices for morph targets
+    if (!MorphTargets.empty())
+    {
+        BaseVertices = Vertices;
+        std::cout << "  Stored " << MorphTargets.size() << " morph targets" << std::endl;
+    }
+    
     std::cout << "GLTF loaded: " << Vertices.size() << " vertices, " 
               << SubMeshes.size() << " submeshes" << std::endl;
     
     Upload();
+    CalculateBounds();  // Calculate bounding box for frustum culling
+    
     return true;
     
     #else
@@ -1028,6 +1156,242 @@ void Mesh::Draw() const
             glDrawElements(GL_TRIANGLES, (GLsizei)sub.Indices.size(), GL_UNSIGNED_INT, 0);
         }
     }
+}
+
+// Validate vertex data
+bool Mesh::ValidateVertexData() const
+{
+    if (Vertices.empty())
+    {
+        std::cerr << "Validation failed: No vertices!" << std::endl;
+        return false;
+    }
+    
+    if (SubMeshes.empty() && Indices.empty())
+    {
+        std::cerr << "Validation failed: No indices!" << std::endl;
+        return false;
+    }
+    
+    // Check for NaN/Inf in vertex data
+    for (size_t i = 0; i < Vertices.size(); ++i)
+    {
+        const auto& v = Vertices[i];
+        
+        // Check position
+        if (std::isnan(v.Position.x) || std::isnan(v.Position.y) || std::isnan(v.Position.z) ||
+            std::isinf(v.Position.x) || std::isinf(v.Position.y) || std::isinf(v.Position.z))
+        {
+            std::cerr << "Validation failed: Invalid position at vertex " << i << std::endl;
+            return false;
+        }
+        
+        // Check normal
+        if (std::isnan(v.Normal.x) || std::isnan(v.Normal.y) || std::isnan(v.Normal.z))
+        {
+            std::cerr << "Validation failed: Invalid normal at vertex " << i << std::endl;
+            return false;
+        }
+        
+        // Check UV
+        if (std::isnan(v.UV.x) || std::isnan(v.UV.y))
+        {
+            std::cerr << "Validation failed: Invalid UV at vertex " << i << std::endl;
+            return false;
+        }
+    }
+    
+    // Check index bounds
+    auto checkIndices = [&](const std::vector<uint32_t>& indices, const char* name) {
+        for (size_t i = 0; i < indices.size(); ++i)
+        {
+            if (indices[i] >= Vertices.size())
+            {
+                std::cerr << "Validation failed: " << name << " index " << i 
+                          << " (" << indices[i] << ") out of bounds (max: " 
+                          << Vertices.size() - 1 << ")" << std::endl;
+                return false;
+            }
+        }
+        return true;
+    };
+    
+    if (!SubMeshes.empty())
+    {
+        for (size_t i = 0; i < SubMeshes.size(); ++i)
+        {
+            std::string name = "SubMesh[" + std::to_string(i) + "]";
+            if (!checkIndices(SubMeshes[i].Indices, name.c_str()))
+                return false;
+        }
+    }
+    else
+    {
+        if (!checkIndices(Indices, "Mesh"))
+            return false;
+    }
+    
+    std::cout << "? Vertex data validation passed!" << std::endl;
+    return true;
+}
+
+// Print debug info
+void Mesh::PrintDebugInfo() const
+{
+    std::cout << "\n=== MESH DEBUG INFO ===" << std::endl;
+    std::cout << "Vertices: " << Vertices.size() << std::endl;
+    std::cout << "Indices: " << Indices.size() << std::endl;
+    std::cout << "SubMeshes: " << SubMeshes.size() << std::endl;
+    std::cout << "VAO: " << VAO << ", VBO: " << VBO << ", EBO: " << EBO << std::endl;
+    
+    if (!Vertices.empty())
+    {
+        std::cout << "\nFirst vertex:" << std::endl;
+        const auto& v = Vertices[0];
+        std::cout << "  Position: (" << v.Position.x << ", " << v.Position.y << ", " << v.Position.z << ")" << std::endl;
+        std::cout << "  Normal: (" << v.Normal.x << ", " << v.Normal.y << ", " << v.Normal.z << ")" << std::endl;
+        std::cout << "  UV: (" << v.UV.x << ", " << v.UV.y << ")" << std::endl;
+        std::cout << "  Tangent: (" << v.Tangent.x << ", " << v.Tangent.y << ", " << v.Tangent.z << ")" << std::endl;
+    }
+    
+    // Check if all vertices have valid normals
+    int validNormals = 0;
+    int validUVs = 0;
+    int validTangents = 0;
+    
+    for (const auto& v : Vertices)
+    {
+        if (v.Normal.x != 0.0f || v.Normal.y != 0.0f || v.Normal.z != 0.0f)
+            validNormals++;
+        if (v.UV.x != 0.0f || v.UV.y != 0.0f)
+            validUVs++;
+        if (v.Tangent.x != 0.0f || v.Tangent.y != 0.0f || v.Tangent.z != 0.0f)
+            validTangents++;
+    }
+    
+    std::cout << "\nVertex attributes:" << std::endl;
+    std::cout << "  Normals: " << validNormals << "/" << Vertices.size() 
+              << " (" << (validNormals * 100.0f / Vertices.size()) << "%)" << std::endl;
+    std::cout << "  UVs: " << validUVs << "/" << Vertices.size() 
+              << " (" << (validUVs * 100.0f / Vertices.size()) << "%)" << std::endl;
+    std::cout << "  Tangents: " << validTangents << "/" << Vertices.size() 
+              << " (" << (validTangents * 100.0f / Vertices.size()) << "%)" << std::endl;
+    
+    if (!SubMeshes.empty())
+    {
+        std::cout << "\nSubMesh details:" << std::endl;
+        for (size_t i = 0; i < SubMeshes.size(); ++i)
+        {
+            const auto& sub = SubMeshes[i];
+            std::cout << "  [" << i << "] " << sub.MaterialName 
+                      << ": " << sub.Indices.size() << " indices, "
+                      << "BaseVertex=" << sub.BaseVertex
+                      << ", Textures=" << (sub.HasDiffuseTexture ? "D" : "-")
+                      << (sub.HasSpecularTexture ? "S" : "-")
+                      << (sub.HasNormalTexture ? "N" : "-")
+                      << std::endl;
+        }
+    }
+    
+    std::cout << "=====================\n" << std::endl;
+}
+
+// Morph target (blend shape) methods
+void Mesh::SetMorphTargetWeight(size_t index, float weight)
+{
+    if (index < MorphTargets.size())
+    {
+        MorphTargets[index].Weight = glm::clamp(weight, 0.0f, 1.0f);
+        UpdateMorphTargets();
+    }
+}
+
+void Mesh::SetMorphTargetWeight(const std::string& name, float weight)
+{
+    for (size_t i = 0; i < MorphTargets.size(); ++i)
+    {
+        if (MorphTargets[i].Name == name)
+        {
+            SetMorphTargetWeight(i, weight);
+            return;
+        }
+    }
+    std::cerr << "Morph target not found: " << name << std::endl;
+}
+
+void Mesh::UpdateMorphTargets()
+{
+    if (MorphTargets.empty() || BaseVertices.empty())
+        return;
+    
+    // Start with base vertices
+    Vertices = BaseVertices;
+    
+    // Apply each morph target with its weight
+    for (const auto& target : MorphTargets)
+    {
+        if (target.Weight <= 0.0f)
+            continue;
+        
+        size_t count = std::min(Vertices.size(), target.PositionDeltas.size());
+        for (size_t i = 0; i < count; ++i)
+        {
+            // Apply position delta
+            Vertices[i].Position.x += target.PositionDeltas[i].x * target.Weight;
+            Vertices[i].Position.y += target.PositionDeltas[i].y * target.Weight;
+            Vertices[i].Position.z += target.PositionDeltas[i].z * target.Weight;
+            
+            // Apply normal delta if available
+            if (i < target.NormalDeltas.size())
+            {
+                Vertices[i].Normal.x += target.NormalDeltas[i].x * target.Weight;
+                Vertices[i].Normal.y += target.NormalDeltas[i].y * target.Weight;
+                Vertices[i].Normal.z += target.NormalDeltas[i].z * target.Weight;
+            }
+            
+            // Apply tangent delta if available
+            if (i < target.TangentDeltas.size())
+            {
+                Vertices[i].Tangent.x += target.TangentDeltas[i].x * target.Weight;
+                Vertices[i].Tangent.y += target.TangentDeltas[i].y * target.Weight;
+                Vertices[i].Tangent.z += target.TangentDeltas[i].z * target.Weight;
+            }
+        }
+    }
+    
+    // Re-upload to GPU
+    if (VAO != 0)
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, Vertices.size() * sizeof(Vertex), Vertices.data());
+    }
+}
+
+void Mesh::CalculateBounds()
+{
+    if (Vertices.empty())
+    {
+        BoundsMin = {0, 0, 0};
+        BoundsMax = {0, 0, 0};
+        return;
+    }
+    
+    BoundsMin = {FLT_MAX, FLT_MAX, FLT_MAX};
+    BoundsMax = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
+    
+    for (const auto& v : Vertices)
+    {
+        BoundsMin.x = std::min(BoundsMin.x, v.Position.x);
+        BoundsMin.y = std::min(BoundsMin.y, v.Position.y);
+        BoundsMin.z = std::min(BoundsMin.z, v.Position.z);
+        
+        BoundsMax.x = std::max(BoundsMax.x, v.Position.x);
+        BoundsMax.y = std::max(BoundsMax.y, v.Position.y);
+        BoundsMax.z = std::max(BoundsMax.z, v.Position.z);
+    }
+    
+    std::cout << "Mesh bounds: Min(" << BoundsMin.x << ", " << BoundsMin.y << ", " << BoundsMin.z << ") "
+              << "Max(" << BoundsMax.x << ", " << BoundsMax.y << ", " << BoundsMax.z << ")" << std::endl;
 }
 
 // Memory tracking methods

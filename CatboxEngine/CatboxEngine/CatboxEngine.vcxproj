@@ -241,6 +241,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Dependencies\stb_image.h.orig" />
+    <None Include="docs\BlendShapes_MorphTargets.md" />
+    <None Include="docs\FrustumCulling.md" />
     <None Include="docs\GLTF_Implementation_Guide.md" />
     <None Include="docs\GLTF_QuickStart.md" />
     <None Include="docs\GLTF_Setup.md" />
@@ -248,6 +250,8 @@
     <None Include="docs\MemoryTracking.md" />
     <None Include="docs\MessageSystem.md" />
     <None Include="docs\MultiMaterialSupport.md" />
+    <None Include="docs\OBJ_UVs_Normals.md" />
+    <None Include="docs\PerEntityTextures.md" />
     <None Include="docs\SceneEntitySync.md" />
     <None Include="docs\ScenePersistenceFix.md" />
     <None Include="docs\SceneSystem.md" />

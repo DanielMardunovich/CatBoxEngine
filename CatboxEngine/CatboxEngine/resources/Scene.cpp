@@ -169,7 +169,19 @@ bool Scene::SaveToFile(const std::string& path) const
         out << "Position=" << e.Transform.Position.x << "," << e.Transform.Position.y << "," << e.Transform.Position.z << std::endl;
         out << "Rotation=" << e.Transform.Rotation.x << "," << e.Transform.Rotation.y << "," << e.Transform.Rotation.z << std::endl;
         out << "Scale=" << e.Transform.Scale.x << "," << e.Transform.Scale.y << "," << e.Transform.Scale.z << std::endl;
-        out << "MeshPath=" << e.MeshPath << std::endl;  // Save path instead of handle
+        out << "MeshPath=" << e.MeshPath << std::endl;
+        
+        // Texture overrides
+        if (e.HasDiffuseTextureOverride)
+            out << "DiffuseTexturePath=" << e.DiffuseTexturePath << std::endl;
+        if (e.HasSpecularTextureOverride)
+            out << "SpecularTexturePath=" << e.SpecularTexturePath << std::endl;
+        if (e.HasNormalTextureOverride)
+            out << "NormalTexturePath=" << e.NormalTexturePath << std::endl;
+        
+        // Material properties
+        out << "Shininess=" << e.Shininess << std::endl;
+        out << "Alpha=" << e.Alpha << std::endl;
     }
     
     out.close();
@@ -270,6 +282,28 @@ bool Scene::LoadFromFile(const std::string& path)
                     currentEntity.MeshHandle = MeshManager::Instance().LoadMeshSync(value);
                 }
             }
+            // Texture overrides
+            else if (key == "DiffuseTexturePath")
+            {
+                currentEntity.DiffuseTexturePath = value;
+                currentEntity.HasDiffuseTextureOverride = true;
+                // TODO: Load texture
+            }
+            else if (key == "SpecularTexturePath")
+            {
+                currentEntity.SpecularTexturePath = value;
+                currentEntity.HasSpecularTextureOverride = true;
+                // TODO: Load texture
+            }
+            else if (key == "NormalTexturePath")
+            {
+                currentEntity.NormalTexturePath = value;
+                currentEntity.HasNormalTextureOverride = true;
+                // TODO: Load texture
+            }
+            // Material properties
+            else if (key == "Shininess") currentEntity.Shininess = std::stof(value);
+            else if (key == "Alpha") currentEntity.Alpha = std::stof(value);
             // Legacy support: load by handle (deprecated)
             else if (key == "MeshHandle" && currentEntity.MeshPath.empty())
             {

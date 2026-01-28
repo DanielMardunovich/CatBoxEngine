@@ -1,5 +1,40 @@
 #include "EntityInspector.h"
 #include "imgui.h"
+#include "../../graphics/MeshManager.h"
+#include "../../core/Platform.h"
+#include <glad/glad.h>
+#include <iostream>
+
+// stb_image for texture loading (already defined in Mesh.cpp, just declare)
+#include "../../Dependencies/stb_image.h"
+
+// Helper to load texture from file
+static unsigned int LoadTextureFromFile(const std::string& path)
+{
+    int width, height, channels;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 4);
+    if (!data)
+    {
+        std::cerr << "Failed to load texture: " << path << std::endl;
+        return 0;
+    }
+
+    unsigned int tex;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    stbi_image_free(data);
+    std::cout << "Loaded texture: " << path << " (ID: " << tex << ")" << std::endl;
+    return tex;
+}
 
 void EntityInspector::Draw(Entity& entity)
 {
@@ -19,104 +54,157 @@ void EntityInspector::Draw(Entity& entity)
     ImGui::InputFloat3("Rotation", &entity.Transform.Rotation.x);
     ImGui::InputFloat3("Scale", &entity.Transform.Scale.x);
 
-    // Material / Mesh properties
+    // Material Properties
     ImGui::Separator();
-    ImGui::Text("Material");
-    // show and edit diffuse color if mesh present
-    // diffuse color edit via mesh handle
-    float color[3] = {0.8f,0.8f,0.9f};
-    if (entity.MeshHandle != 0)
+    ImGui::Text("Material Properties");
+    ImGui::SliderFloat("Shininess", &entity.Shininess, 1.0f, 256.0f);
+    ImGui::SliderFloat("Alpha", &entity.Alpha, 0.0f, 1.0f);
+
+    // Textures Section
+    ImGui::Separator();
+    ImGui::Text("Textures");
+    
+    // Diffuse Texture
+    ImGui::PushID("Diffuse");
+    if (entity.HasDiffuseTextureOverride)
     {
-        Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
-        if (m) { color[0] = m->DiffuseColor.x; color[1] = m->DiffuseColor.y; color[2] = m->DiffuseColor.z; }
-    }
-    if (ImGui::ColorEdit3("Diffuse Color", color))
-    {
-        if (entity.MeshHandle != 0)
+        ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Diffuse: Override Active");
+        ImGui::Text("  %s", entity.DiffuseTexturePath.c_str());
+        if (ImGui::Button("Remove Override"))
         {
-            Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
-            if (m) { m->DiffuseColor.x = color[0]; m->DiffuseColor.y = color[1]; m->DiffuseColor.z = color[2]; }
+            if (entity.DiffuseTexture != 0)
+            {
+                glDeleteTextures(1, &entity.DiffuseTexture);
+                entity.DiffuseTexture = 0;
+            }
+            entity.HasDiffuseTextureOverride = false;
+            entity.DiffuseTexturePath = "";
         }
     }
-
-    // Texture preview and change
-    ImGui::Separator();
-    ImGui::Text("Diffuse Texture");
-    // show path from mesh handle
-    std::string diffPath = "(none)";
-    if (entity.MeshHandle != 0)
+    else
     {
-        Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
-        if (m) diffPath = m->DiffuseTexturePath.empty() ? "(none)" : m->DiffuseTexturePath;
-    }
-    ImGui::Text("%s", diffPath.c_str());
-    ImGui::SameLine();
-    if (ImGui::Button("Change Texture"))
-    {
-        // show popup to pick which map
-        ImGui::OpenPopup("ChangeTexturePopup");
-    }
-    if (ImGui::BeginPopup("ChangeTexturePopup"))
-    {
-        if (ImGui::MenuItem("Diffuse"))
+        ImGui::Text("Diffuse: (using mesh default)");
+        if (ImGui::Button("Set Override"))
         {
             char buf[1024] = {0};
-            if (Platform::OpenFileDialog(buf, (int)sizeof(buf), "Image Files\0*.png;*.jpg;*.jpeg;*.bmp\0All\0*.*\0"))
+            if (Platform::OpenFileDialog(buf, (int)sizeof(buf), 
+                "Image Files\0*.png;*.jpg;*.jpeg;*.bmp;*.tga\0All\0*.*\0"))
             {
-                std::string sel(buf);
-            if (entity.MeshHandle != 0)
-            {
-                Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
-                if (m) { m->LoadTexture(sel); m->DiffuseTexturePath = sel; }
-            }
+                std::string path(buf);
+                unsigned int texID = LoadTextureFromFile(path);
+                if (texID != 0)
+                {
+                    entity.DiffuseTexture = texID;
+                    entity.DiffuseTexturePath = path;
+                    entity.HasDiffuseTextureOverride = true;
+                }
             }
         }
-    if (ImGui::MenuItem("Specular"))
+    }
+    ImGui::PopID();
+    
+    ImGui::Spacing();
+    
+    // Specular Texture
+    ImGui::PushID("Specular");
+    if (entity.HasSpecularTextureOverride)
     {
-        char buf[1024] = {0};
-        if (Platform::OpenFileDialog(buf, (int)sizeof(buf), "Image Files\0*.png;*.jpg;*.jpeg;*.bmp\0All\0*.*\0"))
+        ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Specular: Override Active");
+        ImGui::Text("  %s", entity.SpecularTexturePath.c_str());
+        if (ImGui::Button("Remove Override"))
         {
-            std::string sel(buf);
-            if (entity.MeshHandle != 0)
+            if (entity.SpecularTexture != 0)
             {
-                Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
-                if (m) { m->LoadSpecularTexture(sel); m->SpecularTexturePath = sel; }
+                glDeleteTextures(1, &entity.SpecularTexture);
+                entity.SpecularTexture = 0;
             }
+            entity.HasSpecularTextureOverride = false;
+            entity.SpecularTexturePath = "";
         }
     }
-    if (ImGui::MenuItem("Normal"))
+    else
     {
-        char buf[1024] = {0};
-        if (Platform::OpenFileDialog(buf, (int)sizeof(buf), "Image Files\0*.png;*.jpg;*.jpeg;*.bmp\0All\0*.*\0"))
+        ImGui::Text("Specular: (using mesh default)");
+        if (ImGui::Button("Set Override"))
         {
-            std::string sel(buf);
-            if (entity.MeshHandle != 0)
+            char buf[1024] = {0};
+            if (Platform::OpenFileDialog(buf, (int)sizeof(buf), 
+                "Image Files\0*.png;*.jpg;*.jpeg;*.bmp;*.tga\0All\0*.*\0"))
             {
-                Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
-                if (m) { m->LoadNormalTexture(sel); m->NormalTexturePath = sel; }
+                std::string path(buf);
+                unsigned int texID = LoadTextureFromFile(path);
+                if (texID != 0)
+                {
+                    entity.SpecularTexture = texID;
+                    entity.SpecularTexturePath = path;
+                    entity.HasSpecularTextureOverride = true;
+                }
             }
         }
     }
-        ImGui::EndPopup();
+    ImGui::PopID();
+    
+    ImGui::Spacing();
+    
+    // Normal Texture
+    ImGui::PushID("Normal");
+    if (entity.HasNormalTextureOverride)
+    {
+        ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Normal: Override Active");
+        ImGui::Text("  %s", entity.NormalTexturePath.c_str());
+        if (ImGui::Button("Remove Override"))
+        {
+            if (entity.NormalTexture != 0)
+            {
+                glDeleteTextures(1, &entity.NormalTexture);
+                entity.NormalTexture = 0;
+            }
+            entity.HasNormalTextureOverride = false;
+            entity.NormalTexturePath = "";
+        }
     }
+    else
+    {
+        ImGui::Text("Normal: (using mesh default)");
+        if (ImGui::Button("Set Override"))
+        {
+            char buf[1024] = {0};
+            if (Platform::OpenFileDialog(buf, (int)sizeof(buf), 
+                "Image Files\0*.png;*.jpg;*.jpeg;*.bmp;*.tga\0All\0*.*\0"))
+            {
+                std::string path(buf);
+                unsigned int texID = LoadTextureFromFile(path);
+                if (texID != 0)
+                {
+                    entity.NormalTexture = texID;
+                    entity.NormalTexturePath = path;
+                    entity.HasNormalTextureOverride = true;
+                }
+            }
+        }
+    }
+    ImGui::PopID();
+
+    // Morph Targets / Blend Shapes
     if (entity.MeshHandle != 0)
     {
-        Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
-        if (m)
+        Mesh* mesh = MeshManager::Instance().GetMesh(entity.MeshHandle);
+        if (mesh && !mesh->MorphTargets.empty())
         {
-            if (m->HasDiffuseTexture) ImGui::Image((ImTextureID)(uintptr_t)m->DiffuseTexture, ImVec2(128,128));
-            ImGui::Text("Specular: %.2f,%.2f,%.2f", m->SpecularColor.x, m->SpecularColor.y, m->SpecularColor.z);
-            ImGui::Text("Shininess: %.2f", m->Shininess);
-            ImGui::Text("Alpha: %.2f", m->Alpha);
-            if (m->HasSpecularTexture)
+            ImGui::Separator();
+            ImGui::Text("Morph Targets (%zu)", mesh->MorphTargets.size());
+            
+            for (size_t i = 0; i < mesh->MorphTargets.size(); ++i)
             {
-                ImGui::Text("Specular Map: %s", m->SpecularTexturePath.c_str());
-                ImGui::Image((ImTextureID)(uintptr_t)m->SpecularTexture, ImVec2(64,64));
-            }
-            if (m->HasNormalTexture)
-            {
-                ImGui::Text("Normal Map: %s", m->NormalTexturePath.c_str());
-                ImGui::Image((ImTextureID)(uintptr_t)m->NormalTexture, ImVec2(64,64));
+                auto& target = mesh->MorphTargets[i];
+                ImGui::PushID((int)i);
+                
+                if (ImGui::SliderFloat(target.Name.c_str(), &target.Weight, 0.0f, 1.0f))
+                {
+                    mesh->UpdateMorphTargets();
+                }
+                
+                ImGui::PopID();
             }
         }
     }

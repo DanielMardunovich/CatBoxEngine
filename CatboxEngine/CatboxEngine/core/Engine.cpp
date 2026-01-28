@@ -203,10 +203,54 @@ void Engine::Render()
     glm::mat4 view = camera.GetViewMatrix();
     glm::mat4 proj = camera.GetProjectionMatrix();
     glm::mat4 vp = proj * view;
+    
+    // Set shader uniforms that are constant for all entities
+    myShader.setVec3("u_CameraPos", camera.Position.x, camera.Position.y, camera.Position.z);
+    myShader.setVec3("u_LightDir", 0.5f, -0.7f, 1.0f);  // Directional light
+    
+    // Frustum culling statistics
+    int totalEntities = 0;
+    int culledEntities = 0;
 
     // Draw all spawned entities using cubeMesh
     for (const auto& e : entityManager.GetAll())
     {
+        totalEntities++;
+        
+        // Get mesh for frustum culling
+        Mesh* mesh = nullptr;
+        if (e.MeshHandle != 0) 
+            mesh = MeshManager::Instance().GetMesh(e.MeshHandle);
+        
+        // Transform bounding box to world space
+        if (mesh)
+        {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(e.Transform.Position.x, e.Transform.Position.y, e.Transform.Position.z));
+            model = glm::rotate(model, glm::radians(e.Transform.Rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+            model = glm::rotate(model, glm::radians(e.Transform.Rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::rotate(model, glm::radians(e.Transform.Rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::scale(model, glm::vec3(e.Transform.Scale.x, e.Transform.Scale.y, e.Transform.Scale.z));
+            
+            // Transform bounding box corners
+            glm::vec4 min4(mesh->BoundsMin.x, mesh->BoundsMin.y, mesh->BoundsMin.z, 1.0f);
+            glm::vec4 max4(mesh->BoundsMax.x, mesh->BoundsMax.y, mesh->BoundsMax.z, 1.0f);
+            
+            glm::vec4 worldMin = model * min4;
+            glm::vec4 worldMax = model * max4;
+            
+            Vec3 worldBoundsMin{worldMin.x, worldMin.y, worldMin.z};
+            Vec3 worldBoundsMax{worldMax.x, worldMax.y, worldMax.z};
+            
+            // Frustum culling check
+            if (!camera.IsBoxInFrustum(worldBoundsMin, worldBoundsMax))
+            {
+                culledEntities++;
+                continue;  // Skip rendering this entity
+            }
+        }
+        
+        // Entity is visible, render it
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(e.Transform.Position.x, e.Transform.Position.y, e.Transform.Position.z));
 
@@ -220,10 +264,7 @@ void Engine::Render()
         myShader.SetMat4("u_MVP", vp);
         myShader.SetMat4("transform", model);
 
-        // get mesh by handle
-        Mesh* mesh = nullptr;
-        if (e.MeshHandle != 0) mesh = MeshManager::Instance().GetMesh(e.MeshHandle);
-
+        // mesh was already loaded during frustum culling check above
         if (mesh)
         {
             // Check if this is a multi-material mesh
@@ -236,35 +277,46 @@ void Engine::Render()
                 {
                     // Set material properties for this submesh
                     myShader.setVec3("u_DiffuseColor", sub.DiffuseColor.x, sub.DiffuseColor.y, sub.DiffuseColor.z);
-                    myShader.SetBool("u_HasDiffuseMap", sub.HasDiffuseTexture);
-                    if (sub.HasDiffuseTexture)
+                    
+                    // Check for entity texture overrides, otherwise use submesh textures
+                    bool hasDiffuse = e.HasDiffuseTextureOverride ? true : sub.HasDiffuseTexture;
+                    unsigned int diffuseTex = e.HasDiffuseTextureOverride ? e.DiffuseTexture : sub.DiffuseTexture;
+                    
+                    myShader.SetBool("u_HasDiffuseMap", hasDiffuse);
+                    if (hasDiffuse)
                     {
                         glActiveTexture(GL_TEXTURE0);
-                        glBindTexture(GL_TEXTURE_2D, sub.DiffuseTexture);
+                        glBindTexture(GL_TEXTURE_2D, diffuseTex);
                         myShader.SetTexture("u_DiffuseMap", 0);
                     }
                     
-                    if (sub.HasNormalTexture)
+                    // Normal map (entity override or submesh)
+                    bool hasNormal = e.HasNormalTextureOverride ? true : sub.HasNormalTexture;
+                    unsigned int normalTex = e.HasNormalTextureOverride ? e.NormalTexture : sub.NormalTexture;
+                    
+                    myShader.SetBool("u_HasNormalMap", hasNormal);
+                    if (hasNormal)
                     {
                         glActiveTexture(GL_TEXTURE2);
-                        glBindTexture(GL_TEXTURE_2D, sub.NormalTexture);
+                        glBindTexture(GL_TEXTURE_2D, normalTex);
                         myShader.SetTexture("u_NormalMap", 2);
-                        myShader.SetBool("u_HasNormalMap", true);
                     }
-                    else myShader.SetBool("u_HasNormalMap", false);
 
-                    myShader.setVec3("u_SpecularColor", sub.SpecularColor.x, sub.SpecularColor.y, sub.SpecularColor.z);
-                    myShader.setFloat("u_Shininess", sub.Shininess);
-                    myShader.setFloat("u_Alpha", sub.Alpha);
+                    // Specular map (entity override or submesh)
+                    bool hasSpecular = e.HasSpecularTextureOverride ? true : sub.HasSpecularTexture;
+                    unsigned int specularTex = e.HasSpecularTextureOverride ? e.SpecularTexture : sub.SpecularTexture;
                     
-                    if (sub.HasSpecularTexture)
+                    myShader.setVec3("u_SpecularColor", sub.SpecularColor.x, sub.SpecularColor.y, sub.SpecularColor.z);
+                    myShader.setFloat("u_Shininess", e.Shininess);  // Use entity shininess
+                    myShader.setFloat("u_Alpha", e.Alpha);  // Use entity alpha
+                    
+                    myShader.SetBool("u_HasSpecularMap", hasSpecular);
+                    if (hasSpecular)
                     {
                         glActiveTexture(GL_TEXTURE1);
-                        glBindTexture(GL_TEXTURE_2D, sub.SpecularTexture);
+                        glBindTexture(GL_TEXTURE_2D, specularTex);
                         myShader.SetTexture("u_SpecularMap", 1);
-                        myShader.SetBool("u_HasSpecularMap", true);
                     }
-                    else myShader.SetBool("u_HasSpecularMap", false);
                     
                     // Draw this submesh
                     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sub.EBO);
@@ -273,41 +325,58 @@ void Engine::Render()
             }
             else
             {
-                // Legacy single-material rendering
+                // Legacy single-material rendering with entity texture overrides
                 myShader.setVec3("u_DiffuseColor", mesh->DiffuseColor.x, mesh->DiffuseColor.y, mesh->DiffuseColor.z);
-                myShader.SetBool("u_HasDiffuseMap", mesh->HasDiffuseTexture);
-                if (mesh->HasDiffuseTexture)
+                
+                // Check for entity diffuse texture override
+                bool hasDiffuse = e.HasDiffuseTextureOverride ? true : mesh->HasDiffuseTexture;
+                unsigned int diffuseTex = e.HasDiffuseTextureOverride ? e.DiffuseTexture : mesh->DiffuseTexture;
+                
+                myShader.SetBool("u_HasDiffuseMap", hasDiffuse);
+                if (hasDiffuse)
                 {
                     glActiveTexture(GL_TEXTURE0);
-                    glBindTexture(GL_TEXTURE_2D, mesh->DiffuseTexture);
+                    glBindTexture(GL_TEXTURE_2D, diffuseTex);
                     myShader.SetTexture("u_DiffuseMap", 0);
                 }
-                if (mesh->HasNormalTexture)
+                
+                // Check for entity normal texture override
+                bool hasNormal = e.HasNormalTextureOverride ? true : mesh->HasNormalTexture;
+                unsigned int normalTex = e.HasNormalTextureOverride ? e.NormalTexture : mesh->NormalTexture;
+                
+                myShader.SetBool("u_HasNormalMap", hasNormal);
+                if (hasNormal)
                 {
                     glActiveTexture(GL_TEXTURE2);
-                    glBindTexture(GL_TEXTURE_2D, mesh->NormalTexture);
+                    glBindTexture(GL_TEXTURE_2D, normalTex);
                     myShader.SetTexture("u_NormalMap", 2);
-                    myShader.SetBool("u_HasNormalMap", true);
                 }
-                else myShader.SetBool("u_HasNormalMap", false);
 
+                // Check for entity specular texture override
+                bool hasSpecular = e.HasSpecularTextureOverride ? true : mesh->HasSpecularTexture;
+                unsigned int specularTex = e.HasSpecularTextureOverride ? e.SpecularTexture : mesh->SpecularTexture;
+                
                 myShader.setVec3("u_SpecularColor", mesh->SpecularColor.x, mesh->SpecularColor.y, mesh->SpecularColor.z);
-                myShader.setFloat("u_Shininess", mesh->Shininess);
-                myShader.setFloat("u_Alpha", mesh->Alpha);
-                if (mesh->HasSpecularTexture)
+                myShader.setFloat("u_Shininess", e.Shininess);  // Use entity shininess
+                myShader.setFloat("u_Alpha", e.Alpha);  // Use entity alpha
+                
+                myShader.SetBool("u_HasSpecularMap", hasSpecular);
+                if (hasSpecular)
                 {
                     glActiveTexture(GL_TEXTURE1);
-                    glBindTexture(GL_TEXTURE_2D, mesh->SpecularTexture);
+                    glBindTexture(GL_TEXTURE_2D, specularTex);
                     myShader.SetTexture("u_SpecularMap", 1);
-                    myShader.SetBool("u_HasSpecularMap", true);
                 }
-                else myShader.SetBool("u_HasSpecularMap", false);
 
                 if (mesh->VAO != 0)
                     mesh->Draw();
             }
         }
     }
+    
+    // Optional: Print frustum culling statistics (debug only)
+    // std::cout << "Frustum Culling: " << culledEntities << "/" << totalEntities 
+    //           << " entities culled" << std::endl;
 
     
     
