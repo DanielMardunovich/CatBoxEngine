@@ -32,6 +32,7 @@ bool Mesh::LoadFromOBJ(const std::string& path)
     std::string line;
     std::string currentMtl;
     std::unordered_map<std::string, Vec3> mtlColors;
+    std::unordered_map<std::string, std::string> mtlMaps;
     while (std::getline(in, line))
     {
         if (line.size() < 2) continue;
@@ -55,6 +56,7 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                     ms >> mprefix;
                     if (mprefix == "newmtl") { ms >> cur; }
                     else if (mprefix == "Kd") { float r,g,b; ms >> r >> g >> b; mtlColors[cur] = {r,g,b}; }
+                    else if (mprefix == "map_Kd") { std::string tex; ms >> tex; if (!tex.empty()) mtlMaps[cur] = tex; }
                 }
 
 // (Mesh::LoadTexture and UnloadTexture are implemented after LoadTextureFromFile)
@@ -149,6 +151,24 @@ bool Mesh::LoadFromOBJ(const std::string& path)
         if (itc != mtlColors.end())
         {
             DiffuseColor = { itc->second.x, itc->second.y, itc->second.z };
+        }
+        auto itm = mtlMaps.find(currentMtl);
+        if (itm != mtlMaps.end())
+        {
+            // try load texture referenced by MTL (relative path)
+            std::string texPath = itm->second;
+            // if path is relative, try same directory as OBJ
+            std::string objDir;
+            size_t p = path.find_last_of("/\\");
+            if (p != std::string::npos) objDir = path.substr(0, p+1);
+            std::string full = texPath;
+            if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos)
+                full = objDir + texPath;
+
+            if (LoadTexture(full))
+            {
+                DiffuseTexturePath = full;
+            }
         }
     }
 

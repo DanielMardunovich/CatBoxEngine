@@ -46,23 +46,24 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
         ofn.lpstrFilter = "OBJ Files\0*.obj\0All\0*.*\0";
         ofn.nFilterIndex = 1;
         ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-        if (GetOpenFileNameA(&ofn))
-        {
-            strncpy_s(modelPath, ofn.lpstrFile, sizeof(modelPath));
-                // if selected file is an image, preview and assign to selected entity texture
-                std::string sel(modelPath);
-                std::string ext;
-                auto p = sel.find_last_of('.');
-                if (p != std::string::npos) ext = sel.substr(p+1);
-                for (auto &c : ext) c = (char)tolower(c);
-                if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
+                if (GetOpenFileNameA(&ofn))
                 {
-                    if (selectedIndex >= 0)
+                    strncpy_s(modelPath, ofn.lpstrFile, sizeof(modelPath));
+                    // if selected file is an image, preview and assign to selected entity texture
+                    std::string sel(modelPath);
+                    std::string ext;
+                    auto p = sel.find_last_of('.');
+                    if (p != std::string::npos) ext = sel.substr(p+1);
+                    for (auto &c : ext) c = (char)tolower(c);
+                    if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "bmp")
                     {
-                        entityManager.GetAll()[selectedIndex].Mesh.LoadTexture(sel);
+                        if (selectedIndex >= 0)
+                        {
+                            entityManager.GetAll()[selectedIndex].Mesh.LoadTexture(sel);
+                            entityManager.GetAll()[selectedIndex].Mesh.DiffuseTexturePath = sel;
+                        }
                     }
                 }
-        }
 #endif
     }
     static bool showModelError = false;

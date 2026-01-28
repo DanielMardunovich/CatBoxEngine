@@ -31,5 +31,20 @@ void EntityInspector::Draw(Entity& entity)
         entity.Mesh.DiffuseColor.z = color[2];
     }
 
+    // Texture preview and change
+    ImGui::Separator();
+    ImGui::Text("Diffuse Texture");
+    ImGui::Text("%s", entity.Mesh.DiffuseTexturePath.c_str());
+    ImGui::SameLine();
+    if (ImGui::Button("Change Texture"))
+    {
+        // open file dialog is handled by UIManager; placeholder
+    }
+    if (entity.Mesh.HasDiffuseTexture)
+    {
+        // show small preview (ImGui::Image requires a texture ID cast)
+        ImGui::Image((ImTextureID)(uintptr_t)entity.Mesh.DiffuseTexture, ImVec2(128,128));
+    }
+
     ImGui::End();
 }

@@ -29,6 +29,8 @@ public:
     // texture handle
     unsigned int DiffuseTexture = 0;
     bool HasDiffuseTexture = false;
+    // path for texture (for UI/info)
+    std::string DiffuseTexturePath;
     // Load a texture from file and assign as diffuse
     bool LoadTexture(const std::string& path);
     void UnloadTexture();
