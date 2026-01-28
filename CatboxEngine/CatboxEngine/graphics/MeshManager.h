@@ -36,6 +36,12 @@ public:
     void RegisterLoadCallback(MeshHandle h, std::function<void(MeshHandle)> cb);
     // poll completed loads and invoke callbacks (call from main thread)
     void PollCompleted();
+    
+    // Memory statistics
+    size_t GetTotalCPUMemory() const;
+    size_t GetTotalGPUMemory() const;
+    size_t GetTotalMemory() const { return GetTotalCPUMemory() + GetTotalGPUMemory(); }
+    size_t GetMeshCount() const;
 
 private:
     struct Entry
@@ -46,7 +52,7 @@ private:
         std::atomic<bool> loaded{false};
     };
 
-    std::mutex m_mutex;
+    mutable std::mutex m_mutex;
     std::unordered_map<std::string, MeshHandle> m_pathToHandle;
     std::unordered_map<MeshHandle, std::shared_ptr<Entry>> m_entries;
     std::atomic<MeshHandle> m_nextHandle{1};

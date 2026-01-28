@@ -1,6 +1,7 @@
 #include "Engine.h"
 #include "Platform.h"
 #include "MessageQueue.h"
+#include "MemoryTracker.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -82,6 +83,10 @@ void Engine::OnMouseButton(GLFWwindow* window, int button, int action, int mods)
 Engine::~Engine()
 {
     Cleanup();
+    
+    // Check for memory leaks at shutdown
+    std::cout << "\n=== Engine Shutdown ===" << std::endl;
+    MemoryTracker::Instance().CheckForLeaks();
 }
 
 // Forward declare a static callback that will be set on the GLFW window
@@ -113,7 +118,12 @@ static void MouseButtonCallback(GLFWwindow* window, int button, int action, int 
 
 void Engine::app()
 {
+    MEMORY_SCOPE("Engine::app");
+    
     Initialize();
+    
+    std::cout << "Initial memory state:" << std::endl;
+    MemoryTracker::Instance().PrintMemoryReport();
     
     while (!glfwWindowShouldClose(window))
     {
@@ -122,6 +132,9 @@ void Engine::app()
         Update(Time::DeltaTime());
         Render();
     }
+    
+    std::cout << "Final memory state:" << std::endl;
+    MemoryTracker::Instance().PrintMemoryReport();
 }
 
 // mouse movement handled in Camera
@@ -210,18 +223,6 @@ void Engine::Render()
                 
                 for (const auto& sub : mesh->SubMeshes)
                 {
-                    // DEBUG: Print texture info
-                    static bool debugPrinted = false;
-                    if (!debugPrinted)
-                    {
-                        std::cout << "=== RENDERING SUBMESH ===" << std::endl;
-                        std::cout << "Material: " << sub.MaterialName << std::endl;
-                        std::cout << "HasDiffuseTexture: " << sub.HasDiffuseTexture << std::endl;
-                        std::cout << "DiffuseTexture ID: " << sub.DiffuseTexture << std::endl;
-                        std::cout << "DiffuseColor: " << sub.DiffuseColor.x << ", " << sub.DiffuseColor.y << ", " << sub.DiffuseColor.z << std::endl;
-                        debugPrinted = true;
-                    }
-                    
                     // Set material properties for this submesh
                     myShader.setVec3("u_DiffuseColor", sub.DiffuseColor.x, sub.DiffuseColor.y, sub.DiffuseColor.z);
                     myShader.SetBool("u_HasDiffuseMap", sub.HasDiffuseTexture);

@@ -251,3 +251,38 @@ Mesh MeshManager::CreateCubeMesh()
     };
     return mesh;
 }
+
+// Memory statistics
+size_t MeshManager::GetTotalCPUMemory() const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    size_t total = 0;
+    for (const auto& pair : m_entries)
+    {
+        if (pair.second && pair.second->loaded)
+        {
+            total += pair.second->mesh.GetCPUMemoryUsage();
+        }
+    }
+    return total;
+}
+
+size_t MeshManager::GetTotalGPUMemory() const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    size_t total = 0;
+    for (const auto& pair : m_entries)
+    {
+        if (pair.second && pair.second->loaded)
+        {
+            total += pair.second->mesh.GetGPUMemoryUsage();
+        }
+    }
+    return total;
+}
+
+size_t MeshManager::GetMeshCount() const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_entries.size();
+}

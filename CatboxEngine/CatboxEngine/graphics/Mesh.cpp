@@ -109,13 +109,12 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                         if (!tex.empty()) mtlNormalMaps[cur] = tex;
                     }
                 }
-                std::cout << "MTL parsing complete. Found " << mtlMaps.size() << " diffuse maps, " 
-                          << mtlSpecularMaps.size() << " specular maps, " 
-                          << mtlNormalMaps.size() << " normal maps" << std::endl;
-            }
-            else
-            {
-                std::cerr << "Failed to open MTL file: " << mtlFile << std::endl;
+                
+                if (!mtlMaps.empty() || !mtlNormalMaps.empty())
+                {
+                    std::cout << "MTL loaded: " << mtlMaps.size() << " diffuse, " 
+                              << mtlNormalMaps.size() << " normal maps" << std::endl;
+                }
             }
             continue;
         }
@@ -327,7 +326,7 @@ bool Mesh::LoadFromOBJ(const std::string& path)
     // Create SubMeshes for multi-material models
     if (!materialGroups.empty())
     {
-        std::cout << "Creating " << materialGroups.size() << " submeshes for multi-material model" << std::endl;
+        std::cout << "OBJ: Creating " << materialGroups.size() << " submeshes" << std::endl;
         
         for (auto& group : materialGroups)
         {
@@ -373,13 +372,9 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                     stbi_image_free(data);
                     
+                    
                     sub.HasDiffuseTexture = true;
                     sub.DiffuseTexturePath = full;
-                    std::cout << "  SubMesh '" << group.materialName << "' loaded diffuse: " << full << std::endl;
-                }
-                else
-                {
-                    std::cerr << "  SubMesh '" << group.materialName << "' failed to load diffuse: " << full << std::endl;
                 }
             }
             
@@ -407,7 +402,6 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                     
                     sub.HasSpecularTexture = true;
                     sub.SpecularTexturePath = full;
-                    std::cout << "  SubMesh '" << group.materialName << "' loaded specular: " << full << std::endl;
                 }
             }
             
@@ -435,7 +429,6 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                     
                     sub.HasNormalTexture = true;
                     sub.NormalTexturePath = full;
-                    std::cout << "  SubMesh '" << group.materialName << "' loaded normal: " << full << std::endl;
                 }
             }
             
@@ -467,11 +460,6 @@ bool Mesh::LoadFromOBJ(const std::string& path)
             if (LoadTexture(full))
             {
                 DiffuseTexturePath = full;
-                std::cout << "Loaded diffuse texture: " << full << std::endl;
-            }
-            else
-            {
-                std::cerr << "Failed to load diffuse texture: " << full << std::endl;
             }
         }
         
@@ -485,11 +473,6 @@ bool Mesh::LoadFromOBJ(const std::string& path)
             if (LoadSpecularTexture(full))
             {
                 SpecularTexturePath = full;
-                std::cout << "Loaded specular texture: " << full << std::endl;
-            }
-            else
-            {
-                std::cerr << "Failed to load specular texture: " << full << std::endl;
             }
         }
         
@@ -503,11 +486,6 @@ bool Mesh::LoadFromOBJ(const std::string& path)
             if (LoadNormalTexture(full))
             {
                 NormalTexturePath = full;
-                std::cout << "Loaded normal map: " << full << std::endl;
-            }
-            else
-            {
-                std::cerr << "Failed to load normal map: " << full << std::endl;
             }
         }
     }
@@ -526,69 +504,45 @@ bool Mesh::LoadFromGLTF(const std::string& path)
     
     // Helper function to load texture from GLTF image (handles both embedded and external)
     auto LoadGLTFTexture = [&](const tinygltf::Model& model, int texIndex, const std::string& dir) -> unsigned int {
-        if (texIndex < 0 || texIndex >= (int)model.textures.size())
-        {
-            std::cerr << "    ? Invalid texture index: " << texIndex << std::endl;
-            return 0;
-        }
+        if (texIndex < 0 || texIndex >= (int)model.textures.size()) return 0;
         
         const tinygltf::Texture& tex = model.textures[texIndex];
-        if (tex.source < 0 || tex.source >= (int)model.images.size())
-        {
-            std::cerr << "    ? Invalid image source: " << tex.source << std::endl;
-            return 0;
-        }
+        if (tex.source < 0 || tex.source >= (int)model.images.size()) return 0;
         
         const tinygltf::Image& img = model.images[tex.source];
         unsigned char* data = nullptr;
         int width = 0, height = 0, channels = 0;
         
-        std::cout << "    Image info: uri='" << img.uri << "', embedded_size=" << img.image.size() 
-                  << ", component=" << img.component << ", pixel_type=" << img.pixel_type << std::endl;
-        
         // Check if embedded (GLB) or external file
         if (img.image.size() > 0)
         {
             // Embedded image data
-            std::cout << "    Loading embedded texture (size=" << img.image.size() << " bytes)..." << std::endl;
             data = stbi_load_from_memory(img.image.data(), (int)img.image.size(), &width, &height, &channels, 4);
             
             // If embedded load failed but we have a URI, try external as fallback
             if (!data && !img.uri.empty())
             {
-                std::cerr << "    ? Embedded decode failed, trying external file as fallback..." << std::endl;
                 std::string texPath = dir + img.uri;
-                std::cout << "      Trying: " << texPath << std::endl;
                 data = stbi_load(texPath.c_str(), &width, &height, &channels, 4);
+                if (data)
+                {
+                    std::cout << "  Loaded texture (external fallback): " << img.uri << std::endl;
+                }
             }
         }
         else if (!img.uri.empty())
         {
             // External file
             std::string texPath = dir + img.uri;
-            std::cout << "    Loading external texture:" << std::endl;
-            std::cout << "      URI: " << img.uri << std::endl;
-            std::cout << "      Dir: " << dir << std::endl;
-            std::cout << "      Full path: " << texPath << std::endl;
             data = stbi_load(texPath.c_str(), &width, &height, &channels, 4);
             
             if (!data)
             {
-                std::cerr << "    ? Failed to load from: " << texPath << std::endl;
-                std::cerr << "      stbi_failure_reason: " << stbi_failure_reason() << std::endl;
+                std::cerr << "  Failed to load texture: " << img.uri << std::endl;
             }
         }
-        else
-        {
-            std::cerr << "    ? Image has no data and no URI!" << std::endl;
-            return 0;
-        }
         
-        if (!data)
-        {
-            std::cerr << "    ? Failed to decode image data" << std::endl;
-            return 0;
-        }
+        if (!data) return 0;
         
         // Create OpenGL texture
         unsigned int texID;
@@ -602,7 +556,6 @@ bool Mesh::LoadFromGLTF(const std::string& path)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         stbi_image_free(data);
         
-        std::cout << "    ? Texture loaded successfully (ID=" << texID << ", " << width << "x" << height << ")" << std::endl;
         return texID;
     };
     
@@ -621,10 +574,9 @@ bool Mesh::LoadFromGLTF(const std::string& path)
     if (!ret) return false;
     
     std::cout << "Loading GLTF: " << path << std::endl;
-    std::cout << "  Meshes: " << model.meshes.size() << std::endl;
-    std::cout << "  Materials: " << model.materials.size() << std::endl;
-    std::cout << "  Textures: " << model.textures.size() << std::endl;
-    std::cout << "  Images: " << model.images.size() << std::endl;
+    std::cout << "  Meshes: " << model.meshes.size() 
+              << ", Materials: " << model.materials.size() 
+              << ", Textures: " << model.textures.size() << std::endl;
     
     // Get directory for texture loading
     std::string dir;
@@ -638,7 +590,6 @@ bool Mesh::LoadFromGLTF(const std::string& path)
     for (size_t meshIdx = 0; meshIdx < model.meshes.size(); ++meshIdx)
     {
         const tinygltf::Mesh& gltfMesh = model.meshes[meshIdx];
-        std::cout << "  Processing mesh '" << gltfMesh.name << "' with " << gltfMesh.primitives.size() << " primitives" << std::endl;
         
         // Each primitive in GLTF is like a submesh
         for (size_t primIdx = 0; primIdx < gltfMesh.primitives.size(); ++primIdx)
@@ -649,8 +600,6 @@ bool Mesh::LoadFromGLTF(const std::string& path)
             sub.BaseVertex = (uint32_t)allVertices.size();
             sub.MaterialName = (primitive.material >= 0) ? 
                 model.materials[primitive.material].name : "default";
-            
-            std::cout << "    Primitive " << primIdx << " - Material: " << sub.MaterialName << std::endl;
             
             // Load vertex positions
             std::vector<glm::vec3> positions;
@@ -769,15 +718,7 @@ bool Mesh::LoadFromGLTF(const std::string& path)
             {
                 const tinygltf::Material& mat = model.materials[primitive.material];
                 
-                std::cout << "    Material '" << mat.name << "' properties:" << std::endl;
-                std::cout << "      values keys: ";
-                for (auto& kv : mat.values) std::cout << kv.first << " ";
-                std::cout << std::endl;
-                std::cout << "      additionalValues keys: ";
-                for (auto& kv : mat.additionalValues) std::cout << kv.first << " ";
-                std::cout << std::endl;
-                
-                // PBR metallic-roughness
+                // PBR metallic-roughness base color
                 if (mat.values.count("baseColorFactor"))
                 {
                     auto& factor = mat.values.at("baseColorFactor");
@@ -788,8 +729,6 @@ bool Mesh::LoadFromGLTF(const std::string& path)
                             (float)factor.number_array[1],
                             (float)factor.number_array[2]
                         };
-                        std::cout << "      baseColorFactor: " << sub.DiffuseColor.x << ", " 
-                                  << sub.DiffuseColor.y << ", " << sub.DiffuseColor.z << std::endl;
                     }
                 }
                 
@@ -797,26 +736,20 @@ bool Mesh::LoadFromGLTF(const std::string& path)
                 int baseColorTexIndex = -1;
                 if (mat.values.count("baseColorTexture"))
                 {
-                    // baseColorTexture is a JSON object with "index" property
                     auto& baseColorTex = mat.values.at("baseColorTexture");
                     if (baseColorTex.has_number_value)
                     {
                         baseColorTexIndex = (int)baseColorTex.number_value;
                     }
-                    else if (!baseColorTex.json_double_value.empty())
+                    else if (!baseColorTex.json_double_value.empty() && 
+                             baseColorTex.json_double_value.count("index"))
                     {
-                        // Try to get "index" from json_double_value map
-                        if (baseColorTex.json_double_value.count("index"))
-                        {
-                            baseColorTexIndex = (int)baseColorTex.json_double_value.at("index");
-                        }
+                        baseColorTexIndex = (int)baseColorTex.json_double_value.at("index");
                     }
                 }
                 
                 if (baseColorTexIndex >= 0)
                 {
-                    std::cout << "    Loading baseColor texture (index=" << baseColorTexIndex << ")..." << std::endl;
-                    
                     sub.DiffuseTexture = LoadGLTFTexture(model, baseColorTexIndex, dir);
                     if (sub.DiffuseTexture != 0)
                     {
@@ -828,9 +761,7 @@ bool Mesh::LoadFromGLTF(const std::string& path)
                 }
                 else
                 {
-                    std::cout << "    No baseColorTexture found in material" << std::endl;
-                    
-                    // FALLBACK: Try emissive texture if baseColor is missing
+                    // FALLBACK: Try emissive texture if baseColor is missing (for incorrectly exported models)
                     int emissiveTexIndex = -1;
                     if (mat.additionalValues.count("emissiveTexture"))
                     {
@@ -839,18 +770,17 @@ bool Mesh::LoadFromGLTF(const std::string& path)
                         {
                             emissiveTexIndex = (int)emissiveTex.number_value;
                         }
-                        else if (!emissiveTex.json_double_value.empty())
+                        else if (!emissiveTex.json_double_value.empty() && 
+                                 emissiveTex.json_double_value.count("index"))
                         {
-                            if (emissiveTex.json_double_value.count("index"))
-                            {
-                                emissiveTexIndex = (int)emissiveTex.json_double_value.at("index");
-                            }
+                            emissiveTexIndex = (int)emissiveTex.json_double_value.at("index");
                         }
                     }
                     
                     if (emissiveTexIndex >= 0)
                     {
-                        std::cout << "    ? Using emissiveTexture as diffuse fallback (index=" << emissiveTexIndex << ")..." << std::endl;
+                        std::cout << "  Warning: Using emissive texture as diffuse for material '" 
+                                  << mat.name << "'" << std::endl;
                         sub.DiffuseTexture = LoadGLTFTexture(model, emissiveTexIndex, dir);
                         if (sub.DiffuseTexture != 0)
                         {
@@ -858,14 +788,12 @@ bool Mesh::LoadFromGLTF(const std::string& path)
                             sub.DiffuseTexturePath = (emissiveTexIndex < (int)model.textures.size() && 
                                                       model.textures[emissiveTexIndex].source < (int)model.images.size()) ?
                                 model.images[model.textures[emissiveTexIndex].source].uri : "[embedded]";
-                            // Set a white color so texture shows properly
                             sub.DiffuseColor = Vec3{1.0f, 1.0f, 1.0f};
                         }
                     }
                     else if (sub.DiffuseColor.x == 0 && sub.DiffuseColor.y == 0 && sub.DiffuseColor.z == 0)
                     {
-                        // No texture and black color - set default gray
-                        std::cout << "    ? No texture and black baseColor - using default gray" << std::endl;
+                        // No texture and black color - use default
                         sub.DiffuseColor = Vec3{0.8f, 0.8f, 0.8f};
                     }
                 }
@@ -879,19 +807,15 @@ bool Mesh::LoadFromGLTF(const std::string& path)
                     {
                         normalTexIndex = (int)normalTex.number_value;
                     }
-                    else if (!normalTex.json_double_value.empty())
+                    else if (!normalTex.json_double_value.empty() && 
+                             normalTex.json_double_value.count("index"))
                     {
-                        if (normalTex.json_double_value.count("index"))
-                        {
-                            normalTexIndex = (int)normalTex.json_double_value.at("index");
-                        }
+                        normalTexIndex = (int)normalTex.json_double_value.at("index");
                     }
                 }
                 
                 if (normalTexIndex >= 0)
                 {
-                    std::cout << "    Loading normal texture (index=" << normalTexIndex << ")..." << std::endl;
-                    
                     sub.NormalTexture = LoadGLTFTexture(model, normalTexIndex, dir);
                     if (sub.NormalTexture != 0)
                     {
@@ -1104,4 +1028,84 @@ void Mesh::Draw() const
             glDrawElements(GL_TRIANGLES, (GLsizei)sub.Indices.size(), GL_UNSIGNED_INT, 0);
         }
     }
+}
+
+// Memory tracking methods
+size_t Mesh::GetCPUMemoryUsage() const
+{
+    size_t total = 0;
+    
+    // Vertex data
+    total += Vertices.size() * sizeof(Vertex);
+    
+    // Index data (legacy)
+    total += Indices.size() * sizeof(uint32_t);
+    
+    // SubMesh data
+    for (const auto& sub : SubMeshes)
+    {
+        total += sub.Indices.size() * sizeof(uint32_t);
+        total += sub.MaterialName.capacity();
+        total += sub.DiffuseTexturePath.capacity();
+        total += sub.SpecularTexturePath.capacity();
+        total += sub.NormalTexturePath.capacity();
+    }
+    
+    return total;
+}
+
+size_t Mesh::GetGPUMemoryUsage() const
+{
+    size_t total = 0;
+    
+    // VBO (vertex buffer)
+    if (VAO != 0)
+    {
+        total += Vertices.size() * sizeof(Vertex);
+    }
+    
+    // EBO (index buffer) - legacy
+    if (EBO != 0)
+    {
+        total += Indices.size() * sizeof(uint32_t);
+    }
+    
+    // SubMesh EBOs
+    for (const auto& sub : SubMeshes)
+    {
+        if (sub.EBO != 0)
+        {
+            total += sub.Indices.size() * sizeof(uint32_t);
+        }
+    }
+    
+    // Textures (approximate - assumes RGBA 8-bit with mipmaps)
+    auto estimateTextureSize = [](unsigned int texID) -> size_t {
+        if (texID == 0) return 0;
+        
+        // Query texture size from OpenGL
+        glBindTexture(GL_TEXTURE_2D, texID);
+        int width = 0, height = 0;
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+        
+        // RGBA 8-bit + mipmaps (approximately 1.33x base size)
+        size_t baseSize = width * height * 4;
+        return (size_t)(baseSize * 1.33f);
+    };
+    
+    // Legacy textures
+    total += estimateTextureSize(DiffuseTexture);
+    total += estimateTextureSize(SpecularTexture);
+    total += estimateTextureSize(NormalTexture);
+    
+    // SubMesh textures
+    for (const auto& sub : SubMeshes)
+    {
+        total += estimateTextureSize(sub.DiffuseTexture);
+        total += estimateTextureSize(sub.SpecularTexture);
+        total += estimateTextureSize(sub.NormalTexture);
+    }
+    
+    return total;
 }

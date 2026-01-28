@@ -162,6 +162,9 @@
     <ClCompile Include="graphics\MeshManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="core\MemoryTracker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Dependencies\imgui\imgui.h">
@@ -320,6 +323,9 @@
     <ClInclude Include="Dependencies\stb_image_write.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="core\MemoryTracker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Dependencies\stb_image.h.orig" />
@@ -329,5 +335,7 @@
     <None Include="docs\GLTF_Implementation_Guide.md" />
     <None Include="docs\GLTF_QuickStart.md" />
     <None Include="docs\GLTF_Texture_Troubleshooting.md" />
+    <None Include="README.md" />
+    <None Include="docs\MemoryTracking.md" />
   </ItemGroup>
 </Project>

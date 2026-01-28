@@ -57,6 +57,11 @@ public:
     bool LoadFromOBJ(const std::string& path);
     bool LoadFromGLTF(const std::string& path);
     
+    // Memory tracking
+    size_t GetCPUMemoryUsage() const;
+    size_t GetGPUMemoryUsage() const;
+    size_t GetTotalMemoryUsage() const { return GetCPUMemoryUsage() + GetGPUMemoryUsage(); }
+    
     // Legacy single-material properties (used when SubMeshes.empty())
     Vec3 DiffuseColor{0.8f, 0.8f, 0.9f};
     unsigned int DiffuseTexture = 0;

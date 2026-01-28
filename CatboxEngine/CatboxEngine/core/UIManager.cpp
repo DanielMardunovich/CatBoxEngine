@@ -1,5 +1,6 @@
 #include "UIManager.h"
 #include "Platform.h"
+#include "MemoryTracker.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -184,6 +185,34 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     ImGui::Separator();
     ImGui::Text("Delta: %.4f", deltaTime);
     ImGui::Text("FPS: %.1f", 1.0f / deltaTime);
+
+    // Memory statistics
+    ImGui::Separator();
+    ImGui::Text("Memory Stats");
+    #if TRACK_MEMORY
+    auto& memTracker = MemoryTracker::Instance();
+    ImGui::Text("Tracked: %.2f MB", memTracker.GetCurrentUsage() / (1024.0f * 1024.0f));
+    ImGui::Text("Allocations: %zu", memTracker.GetActiveAllocations());
+    #endif
+    
+    // Mesh memory (always available)
+    auto& meshMgr = MeshManager::Instance();
+    float meshCPU = meshMgr.GetTotalCPUMemory() / (1024.0f * 1024.0f);
+    float meshGPU = meshMgr.GetTotalGPUMemory() / (1024.0f * 1024.0f);
+    ImGui::Text("Meshes: %zu (%.2f MB CPU, %.2f MB GPU)", 
+        meshMgr.GetMeshCount(), meshCPU, meshGPU);
+    
+    #if TRACK_MEMORY
+    if (ImGui::Button("Print Report"))
+    {
+        memTracker.PrintMemoryReport();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Check Leaks"))
+    {
+        memTracker.CheckForLeaks();
+    }
+    #endif
 
     // Options moved into main window
     ImGui::Checkbox("Use shared cube mesh", &useSharedCube);
