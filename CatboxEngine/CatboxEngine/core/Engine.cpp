@@ -15,6 +15,7 @@
 #include "Time.h"
 #include "../graphics/Mesh.h"
 #include "../graphics/MeshManager.h"
+#include "../graphics/LightManager.h"
 #include "../resources/EntityManager.h"
 #include "../resources/SceneManager.h"
 
@@ -206,7 +207,38 @@ void Engine::Render()
     
     // Set shader uniforms that are constant for all entities
     myShader.setVec3("u_CameraPos", camera.Position.x, camera.Position.y, camera.Position.z);
-    myShader.setVec3("u_LightDir", 0.5f, -0.7f, 1.0f);  // Directional light
+    
+    // Pass lights to shader
+    auto& lightMgr = LightManager::Instance();
+    auto& lights = lightMgr.GetAllLights();
+    int numLights = std::min((int)lights.size(), 8);  // MAX_LIGHTS in shader
+    myShader.SetInt("u_NumLights", numLights);
+    
+    for (int i = 0; i < numLights; ++i)
+    {
+        const auto& light = lights[i];
+        std::string base = "u_Lights[" + std::to_string(i) + "].";
+        
+        myShader.SetInt((base + "type").c_str(), (int)light.Type);
+        myShader.setVec3((base + "position").c_str(), light.Position.x, light.Position.y, light.Position.z);
+        myShader.setVec3((base + "direction").c_str(), light.Direction.x, light.Direction.y, light.Direction.z);
+        myShader.setVec3((base + "color").c_str(), light.Color.x, light.Color.y, light.Color.z);
+        myShader.setFloat((base + "intensity").c_str(), light.Intensity);
+        
+        // Attenuation
+        myShader.setFloat((base + "constant").c_str(), light.Constant);
+        myShader.setFloat((base + "linear").c_str(), light.Linear);
+        myShader.setFloat((base + "quadratic").c_str(), light.Quadratic);
+        
+        // Spot light (convert degrees to cosine for shader)
+        myShader.setFloat((base + "innerCutoff").c_str(), std::cos(glm::radians(light.InnerCutoff)));
+        myShader.setFloat((base + "outerCutoff").c_str(), std::cos(glm::radians(light.OuterCutoff)));
+        
+        // Shadows (placeholder for now)
+        myShader.SetBool((base + "castsShadows").c_str(), false);  // TODO: Implement shadow mapping
+        myShader.setFloat((base + "shadowBias").c_str(), light.ShadowBias);
+        myShader.SetBool((base + "enabled").c_str(), light.Enabled);
+    }
     
     // Frustum culling statistics
     int totalEntities = 0;
@@ -420,6 +452,14 @@ int Engine::Initialize()
 
     // Subscribe to messages
     SetupMessageSubscriptions();
+    
+    // Initialize lighting system with default lights
+    auto& lightMgr = LightManager::Instance();
+    if (lightMgr.GetLightCount() == 0)
+    {
+        lightMgr.CreateDefaultLights();
+        std::cout << "Default lights initialized" << std::endl;
+    }
     
     // Try to load autosave scene
     auto& sceneMgr = SceneManager::Instance();

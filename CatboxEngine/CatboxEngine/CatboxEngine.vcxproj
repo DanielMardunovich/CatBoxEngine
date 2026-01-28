@@ -253,6 +253,7 @@
     <None Include="docs\GLTF_QuickStart.md" />
     <None Include="docs\GLTF_Setup.md" />
     <None Include="docs\GLTF_Texture_Troubleshooting.md" />
+    <None Include="docs\LightingSystemTest.md" />
     <None Include="docs\LightSpawningUI.md" />
     <None Include="docs\MemoryTracking.md" />
     <None Include="docs\MessageSystem.md" />
