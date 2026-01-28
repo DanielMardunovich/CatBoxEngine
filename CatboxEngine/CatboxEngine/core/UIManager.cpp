@@ -16,7 +16,7 @@ void UIManager::NewFrame()
     ImGui::NewFrame();
 }
 
-void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, float deltaTime, int& selectedIndex, Camera& camera)
+void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, float deltaTime, int& selectedIndex, Camera& camera, bool& useSharedCube)
 {
     ImGui::Begin("Hello, Catbox!");
     ImGui::Text("This is a simple window.");
@@ -25,13 +25,40 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     ImGui::Text("Spawn Cube");
     ImGui::InputFloat3("Position", &spawnPosition.x);
     ImGui::InputFloat3("Scale", &spawnScale.x);
+    static char modelPath[260] = "";
+    ImGui::InputText("Model Path", modelPath, IM_ARRAYSIZE(modelPath));
     if (ImGui::Button("Spawn"))
     {
         Entity e;
         e.name = "Cube";
         e.Transform.Position = spawnPosition;
         e.Transform.Scale = spawnScale;
+        if (modelPath[0] != '\0')
+        {
+            // try load model
+            Mesh m;
+            if (m.LoadFromOBJ(modelPath))
+            {
+                m.Upload();
+                e.Mesh = m;
+                e.name = std::string("Model: ") + modelPath;
+            }
+        }
         entityManager.Add(e);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Apply Model to Selected") && selectedIndex >= 0)
+    {
+        if (modelPath[0] != '\0')
+        {
+            Mesh m;
+            if (m.LoadFromOBJ(modelPath))
+            {
+                m.Upload();
+                entityManager.GetAll()[selectedIndex].Mesh = m;
+                entityManager.GetAll()[selectedIndex].name = std::string("Model: ") + modelPath;
+            }
+        }
     }
 
     ImGui::Separator();
@@ -88,6 +115,11 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     // Camera inspector window
     CameraInspector camInspector;
     camInspector.Draw(camera);
+
+    // Shared mesh option
+    ImGui::Begin("Options");
+    ImGui::Checkbox("Use shared cube mesh", &useSharedCube);
+    ImGui::End();
 }
 
 void UIManager::Render()

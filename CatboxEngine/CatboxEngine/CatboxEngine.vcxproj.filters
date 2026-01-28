@@ -34,6 +34,9 @@
     <Filter Include="Header Files\Entety">
       <UniqueIdentifier>{07cc13aa-ee5d-4b4c-85af-037a9a7ac078}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\UI">
+      <UniqueIdentifier>{484aeacc-c032-4607-bd1f-fbd5e7cf7bca}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -257,9 +260,6 @@
     <ClInclude Include="ui\ImGuiLayer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ui\Inspectors\CameraInspector.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ui\Inspectors\EntityInspector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -286,6 +286,9 @@
     </ClInclude>
     <ClInclude Include="graphics\Renderer.h">
       <Filter>Header Files\Entety</Filter>
+    </ClInclude>
+    <ClInclude Include="ui\Inspectors\CameraInspector.h">
+      <Filter>Header Files\UI</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

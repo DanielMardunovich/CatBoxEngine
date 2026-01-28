@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <string>
 #include "../resources/Math/Vec3.h"
 
 struct Vertex 
@@ -21,4 +22,5 @@ public:
 
 	void Upload();
 	void Draw() const;
+    bool LoadFromOBJ(const std::string& path);
 };

@@ -55,10 +55,10 @@ private:
     
     Shader myShader;
     
-    // Prototype cube mesh and spawned entities
-    Mesh cubeMesh;
-    EntityManager entityManager;
+    // spawned entities
+    EntityManager entityManager; // Updated to handle mesh assignment directly
     UIManager uiManager;
+    bool useSharedCube = true;
 
     Camera camera;
     // UI spawn parameters

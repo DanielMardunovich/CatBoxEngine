@@ -133,14 +133,34 @@ void Engine::Update(float deltaTime)
 
     // UI frame and draw
     uiManager.NewFrame();
-    uiManager.Draw(entityManager, spawnPosition, spawnScale, deltaTime, selectedEntityIndex, camera);
-    // ensure newly spawned entities get the cube mesh
+    uiManager.Draw(entityManager, spawnPosition, spawnScale, deltaTime, selectedEntityIndex, camera, useSharedCube);
+    // ensure newly spawned entities get a cube mesh if they don't have one
     if (entityManager.Size() > 0)
     {
         auto& list = entityManager.GetAll();
         Entity& last = list.back();
         if (last.Mesh.VAO == 0)
-            last.Mesh = cubeMesh;
+        {
+            if (useSharedCube)
+            {
+                // use a shared cube stored in engine (create on demand)
+                static Mesh sharedCube;
+                static bool sharedInitialized = false;
+                if (!sharedInitialized)
+                {
+                    sharedCube = CreateCubeMesh();
+                    sharedCube.Upload();
+                    sharedInitialized = true;
+                }
+                last.Mesh = sharedCube;
+            }
+            else
+            {
+                Mesh m = CreateCubeMesh();
+                m.Upload();
+                last.Mesh = m;
+            }
+        }
     }
 
 }
@@ -171,17 +191,14 @@ void Engine::Render()
     {
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(e.Transform.Position.x, e.Transform.Position.y, e.Transform.Position.z));
-        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(1.0f, 0.0f, 1.0f));
         model = glm::scale(model, glm::vec3(e.Transform.Scale.x, e.Transform.Scale.y, e.Transform.Scale.z));
 
         myShader.SetMat4("u_MVP", vp);
         myShader.SetMat4("transform", model);
 
-        // draw cube mesh
+        // draw entity mesh (assume mesh uploaded)
         if (e.Mesh.VAO != 0)
             e.Mesh.Draw();
-        else
-            cubeMesh.Draw();
     }
 
     
@@ -207,9 +224,7 @@ int Engine::Initialize()
     "./shaders/FragmentShader.frag"
     );
 
-    // prepare prototype cube mesh
-    cubeMesh = CreateCubeMesh();
-    cubeMesh.Upload();
+    // no prototype cube; entities create their own meshes on spawn
 
     // Initialize camera
     camera.Initialize({0,0,3}, {0,0,0}, {0,1,0}, 60.0f, width / height, 0.1f, 100.0f);
