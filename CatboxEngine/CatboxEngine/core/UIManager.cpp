@@ -12,6 +12,8 @@
 #include "../ui/Inspectors/CameraInspector.h"
 #include "../graphics/MeshManager.h"
 #include <string>
+#include <iostream>
+#include <iomanip>
 
 void UIManager::NewFrame()
 {
@@ -192,11 +194,6 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     // Memory statistics
     ImGui::Separator();
     ImGui::Text("Memory Stats");
-    #if TRACK_MEMORY
-    auto& memTracker = MemoryTracker::Instance();
-    ImGui::Text("Tracked: %.2f MB", memTracker.GetCurrentUsage() / (1024.0f * 1024.0f));
-    ImGui::Text("Allocations: %zu", memTracker.GetActiveAllocations());
-    #endif
     
     // Mesh memory (always available)
     auto& meshMgr = MeshManager::Instance();
@@ -206,14 +203,81 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
         meshMgr.GetMeshCount(), meshCPU, meshGPU);
     
     #if TRACK_MEMORY
+    auto& memTracker = MemoryTracker::Instance();
+    ImGui::Text("Tracked: %.2f MB", memTracker.GetCurrentUsage() / (1024.0f * 1024.0f));
+    ImGui::Text("Allocations: %zu", memTracker.GetActiveAllocations());
+    
     if (ImGui::Button("Print Report"))
     {
+        // Print comprehensive memory report
+        std::cout << "\n========================================" << std::endl;
+        std::cout << "    COMPREHENSIVE MEMORY REPORT" << std::endl;
+        std::cout << "========================================" << std::endl;
+        
+        // Tracked allocations (debug only)
         memTracker.PrintMemoryReport();
+        
+        // Mesh memory
+        std::cout << "\n=== MESH MEMORY ===" << std::endl;
+        std::cout << "Mesh Count:     " << meshMgr.GetMeshCount() << std::endl;
+        std::cout << "CPU Memory:     " << std::fixed << std::setprecision(2) 
+                  << meshCPU << " MB" << std::endl;
+        std::cout << "GPU Memory:     " << std::fixed << std::setprecision(2) 
+                  << meshGPU << " MB" << std::endl;
+        std::cout << "Total Memory:   " << std::fixed << std::setprecision(2) 
+                  << (meshCPU + meshGPU) << " MB" << std::endl;
+        std::cout << "===================\n" << std::endl;
+        
+        // Scene memory
+        auto& sceneMgr = SceneManager::Instance();
+        std::cout << "=== SCENE MEMORY ===" << std::endl;
+        std::cout << "Scene Count:    " << sceneMgr.GetSceneCount() << std::endl;
+        auto* activeScene = sceneMgr.GetActiveScene();
+        if (activeScene)
+        {
+            std::cout << "Active Scene:   " << activeScene->GetName() << std::endl;
+            std::cout << "Entities:       " << activeScene->GetEntityCount() << std::endl;
+        }
+        std::cout << "====================\n" << std::endl;
+        
+        std::cout << "========================================\n" << std::endl;
     }
     ImGui::SameLine();
     if (ImGui::Button("Check Leaks"))
     {
         memTracker.CheckForLeaks();
+    }
+    #else
+    // In release mode, still show print button but only mesh stats
+    if (ImGui::Button("Print Report"))
+    {
+        std::cout << "\n========================================" << std::endl;
+        std::cout << "       MEMORY REPORT (RELEASE)" << std::endl;
+        std::cout << "========================================" << std::endl;
+        
+        std::cout << "\n=== MESH MEMORY ===" << std::endl;
+        std::cout << "Mesh Count:     " << meshMgr.GetMeshCount() << std::endl;
+        std::cout << "CPU Memory:     " << std::fixed << std::setprecision(2) 
+                  << meshCPU << " MB" << std::endl;
+        std::cout << "GPU Memory:     " << std::fixed << std::setprecision(2) 
+                  << meshGPU << " MB" << std::endl;
+        std::cout << "Total Memory:   " << std::fixed << std::setprecision(2) 
+                  << (meshCPU + meshGPU) << " MB" << std::endl;
+        std::cout << "===================\n" << std::endl;
+        
+        auto& sceneMgr = SceneManager::Instance();
+        std::cout << "=== SCENE MEMORY ===" << std::endl;
+        std::cout << "Scene Count:    " << sceneMgr.GetSceneCount() << std::endl;
+        auto* activeScene = sceneMgr.GetActiveScene();
+        if (activeScene)
+        {
+            std::cout << "Active Scene:   " << activeScene->GetName() << std::endl;
+            std::cout << "Entities:       " << activeScene->GetEntityCount() << std::endl;
+        }
+        std::cout << "====================\n" << std::endl;
+        
+        std::cout << "Note: Build in DEBUG mode for detailed allocation tracking" << std::endl;
+        std::cout << "========================================\n" << std::endl;
     }
     #endif
 
