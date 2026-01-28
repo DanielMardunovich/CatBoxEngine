@@ -1,18 +1,15 @@
 #include "UIManager.h"
+#include "Platform.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "../resources/EntityManager.h"
 #include "../resources/Entity.h"
 #include "../ui/Inspectors/EntityInspector.h"
-#include <string>
 #include "../resources/Camera.h"
 #include "../ui/Inspectors/CameraInspector.h"
-#if defined(_WIN32)
-#include <windows.h>
-#include <commdlg.h>
-#endif
-#include <filesystem>
+#include "../graphics/MeshManager.h"
+#include <string>
 
 void UIManager::NewFrame()
 {
@@ -35,70 +32,59 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     ImGui::SameLine();
     if (ImGui::Button("Browse..."))
     {
-#if defined(_WIN32)
-        OPENFILENAMEA ofn;
-        CHAR szFile[260] = {0};
-        ZeroMemory(&ofn, sizeof(ofn));
-        ofn.lStructSize = sizeof(ofn);
-        ofn.hwndOwner = NULL;
-        ofn.lpstrFile = szFile;
-        ofn.nMaxFile = sizeof(szFile);
-        ofn.lpstrFilter = "OBJ Files\0*.obj\0All\0*.*\0";
-        ofn.nFilterIndex = 1;
-        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-                if (GetOpenFileNameA(&ofn))
+        char szFile[260] = {0};
+        if (Platform::OpenFileDialog(szFile, sizeof(szFile), "OBJ Files\0*.obj\0All\0*.*\0"))
+        {
+            strncpy_s(modelPath, szFile, sizeof(modelPath));
+            // if selected file is an image, preview and assign to selected entity texture
+            std::string sel(modelPath);
+            std::string ext;
+            auto p = sel.find_last_of('.');
+            if (p != std::string::npos) ext = sel.substr(p+1);
+            for (auto &c : ext) c = (char)tolower(c);
+            if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
+            {
+                if (selectedIndex >= 0)
                 {
-                    strncpy_s(modelPath, ofn.lpstrFile, sizeof(modelPath));
-                    // if selected file is an image, preview and assign to selected entity texture
-                    std::string sel(modelPath);
-                    std::string ext;
-                    auto p = sel.find_last_of('.');
-                    if (p != std::string::npos) ext = sel.substr(p+1);
-                    for (auto &c : ext) c = (char)tolower(c);
-                    if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
+                    // Show a small popup to let the user choose which map to assign
+                    ImGui::OpenPopup("AssignTexturePopup");
+                    // store selected path into a temp char buffer in UIManager scope
+                    static std::string pendingTexPath;
+                    pendingTexPath = sel;
+                    if (ImGui::BeginPopup("AssignTexturePopup"))
                     {
-                        if (selectedIndex >= 0)
+                        if (ImGui::MenuItem("Diffuse"))
                         {
-                            // Show a small popup to let the user choose which map to assign
-                            ImGui::OpenPopup("AssignTexturePopup");
-                            // store selected path into a temp char buffer in UIManager scope
-                            static std::string pendingTexPath;
-                            pendingTexPath = sel;
-                            if (ImGui::BeginPopup("AssignTexturePopup"))
+                            if (entityManager.GetAll()[selectedIndex].MeshHandle != 0)
                             {
-                                if (ImGui::MenuItem("Diffuse"))
-                                {
-                                    if (entityManager.GetAll()[selectedIndex].MeshHandle != 0)
-                                        {
-                                            Mesh* mm = MeshManager::Instance().GetMesh(entityManager.GetAll()[selectedIndex].MeshHandle);
-                                            if (mm) { mm->LoadTexture(pendingTexPath); mm->DiffuseTexturePath = pendingTexPath; }
-                                        }
-                                    ImGui::CloseCurrentPopup();
-                                }
-                                if (ImGui::MenuItem("Specular"))
-                                {
-                                    if (entityManager.GetAll()[selectedIndex].MeshHandle != 0)
-                                        {
-                                            Mesh* mm = MeshManager::Instance().GetMesh(entityManager.GetAll()[selectedIndex].MeshHandle);
-                                            if (mm) { mm->LoadSpecularTexture(pendingTexPath); mm->SpecularTexturePath = pendingTexPath; }
-                                        }
-                                    ImGui::CloseCurrentPopup();
-                                }
-                                if (ImGui::MenuItem("Normal"))
-                                {
-                                    if (entityManager.GetAll()[selectedIndex].MeshHandle != 0)
-                                        {
-                                            Mesh* mm = MeshManager::Instance().GetMesh(entityManager.GetAll()[selectedIndex].MeshHandle);
-                                            if (mm) { mm->LoadNormalTexture(pendingTexPath); mm->NormalTexturePath = pendingTexPath; }
-                                        }
-                                    ImGui::CloseCurrentPopup();
-                                }
-                                ImGui::EndPopup();
+                                Mesh* mm = MeshManager::Instance().GetMesh(entityManager.GetAll()[selectedIndex].MeshHandle);
+                                if (mm) { mm->LoadTexture(pendingTexPath); mm->DiffuseTexturePath = pendingTexPath; }
                             }
+                            ImGui::CloseCurrentPopup();
                         }
+                        if (ImGui::MenuItem("Specular"))
+                        {
+                            if (entityManager.GetAll()[selectedIndex].MeshHandle != 0)
+                            {
+                                Mesh* mm = MeshManager::Instance().GetMesh(entityManager.GetAll()[selectedIndex].MeshHandle);
+                                if (mm) { mm->LoadSpecularTexture(pendingTexPath); mm->SpecularTexturePath = pendingTexPath; }
+                            }
+                            ImGui::CloseCurrentPopup();
+                        }
+                        if (ImGui::MenuItem("Normal"))
+                        {
+                            if (entityManager.GetAll()[selectedIndex].MeshHandle != 0)
+                            {
+                                Mesh* mm = MeshManager::Instance().GetMesh(entityManager.GetAll()[selectedIndex].MeshHandle);
+                                if (mm) { mm->LoadNormalTexture(pendingTexPath); mm->NormalTexturePath = pendingTexPath; }
+                            }
+                            ImGui::CloseCurrentPopup();
+                        }
+                        ImGui::EndPopup();
                     }
                 }
-#endif
+            }
+        }
     }
     static bool showModelError = false;
     static char modelErrorMsg[512] = "";
@@ -137,17 +123,16 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     {
         if (modelPath[0] != '\0')
         {
-            Mesh m;
-            if (m.LoadFromOBJ(modelPath))
+            // Release old handle first
+            if (entityManager.GetAll()[selectedIndex].MeshHandle != 0)
             {
-                m.Upload();
-                // store in manager and update entity handle
-                MeshHandle h = MeshManager::Instance().LoadMeshSync(modelPath);
-                if (h == 0)
-                {
-                    // not present, create entry
-                    h = MeshManager::Instance().LoadMeshSync(modelPath);
-                }
+                MeshManager::Instance().Release(entityManager.GetAll()[selectedIndex].MeshHandle);
+            }
+            
+            // Load and assign new mesh
+            MeshHandle h = MeshManager::Instance().LoadMeshSync(modelPath);
+            if (h != 0)
+            {
                 entityManager.GetAll()[selectedIndex].MeshHandle = h;
                 entityManager.GetAll()[selectedIndex].name = std::string("Model: ") + modelPath;
             }

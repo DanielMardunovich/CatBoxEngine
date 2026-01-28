@@ -2,7 +2,6 @@
 #include "Entity.h"
 #include "../graphics/MeshManager.h"
 #include <vector>
-#include "../graphics/Mesh.h"
 
 class EntityManager
 {
@@ -17,72 +16,6 @@ public:
     size_t Size() const { return m_entities.size(); }
 
 private:
-    std::vector<Entity> m_entities; // This line is unchanged but included for context
-    // mesh manager
-    Mesh sharedCube; // kept for compatibility
-    bool sharedInitialized = false;
-    // mesh manager is accessed via MeshManager::Instance()
-    
-    // create a cube mesh
-    static Mesh CreateCubeMesh()
-    {
-        Mesh mesh;
-
-        mesh.Vertices = {
-            // Front (+Z)
-            {{-0.5f, -0.5f,  0.5f}, {0, 0, 1}, {0, 0, 0}},
-            {{ 0.5f, -0.5f,  0.5f}, {0, 0, 1}, {1, 0, 0}},
-            {{ 0.5f,  0.5f,  0.5f}, {0, 0, 1}, {1, 1, 0}},
-            {{-0.5f,  0.5f,  0.5f}, {0, 0, 1}, {0, 1, 0}},
-
-            // Back (-Z)
-            {{ 0.5f, -0.5f, -0.5f}, {0, 0, -1}, {0, 0, 0}},
-            {{-0.5f, -0.5f, -0.5f}, {0, 0, -1}, {1, 0, 0}},
-            {{-0.5f,  0.5f, -0.5f}, {0, 0, -1}, {1, 1, 0}},
-            {{ 0.5f,  0.5f, -0.5f}, {0, 0, -1}, {0, 1, 0}},
-
-            // Left (-X)
-            {{-0.5f, -0.5f, -0.5f}, {-1, 0, 0}, {0, 0, 0}},
-            {{-0.5f, -0.5f,  0.5f}, {-1, 0, 0}, {1, 0, 0}},
-            {{-0.5f,  0.5f,  0.5f}, {-1, 0, 0}, {1, 1, 0}},
-            {{-0.5f,  0.5f, -0.5f}, {-1, 0, 0}, {0, 1, 0}},
-
-            // Right (+X)
-            {{ 0.5f, -0.5f,  0.5f}, {1, 0, 0}, {0, 0, 0}},
-            {{ 0.5f, -0.5f, -0.5f}, {1, 0, 0}, {1, 0, 0}},
-            {{ 0.5f,  0.5f, -0.5f}, {1, 0, 0}, {1, 1, 0}},
-            {{ 0.5f,  0.5f,  0.5f}, {1, 0, 0}, {0, 1, 0}},
-
-            // Top (+Y)
-            {{-0.5f,  0.5f,  0.5f}, {0, 1, 0}, {0, 0, 0}},
-            {{ 0.5f,  0.5f,  0.5f}, {0, 1, 0}, {1, 0, 0}},
-            {{ 0.5f,  0.5f, -0.5f}, {0, 1, 0}, {1, 1, 0}},
-            {{-0.5f,  0.5f, -0.5f}, {0, 1, 0}, {0, 1, 0}},
-
-            // Bottom (-Y)
-            {{-0.5f, -0.5f, -0.5f}, {0, -1, 0}, {0, 0, 0}},
-            {{ 0.5f, -0.5f, -0.5f}, {0, -1, 0}, {1, 0, 0}},
-            {{ 0.5f, -0.5f,  0.5f}, {0, -1, 0}, {1, 1, 0}},
-            {{-0.5f, -0.5f,  0.5f}, {0, -1, 0}, {0, 1, 0}},
-        };
-
-
-        mesh.Indices = {
-            // Front face
-            0,1,2, 2,3,0,
-            // Back face
-            4,5,6, 6,7,4,
-            // Left face
-            8,9,10, 10,11,8,
-            // Right face
-            12,13,14, 14,15,12,
-            // Top face
-            16,17,18, 18,19,16,
-            // Bottom face
-            20,21,22, 22,23,20
-        };
-
-        return mesh;
-    }
+    std::vector<Entity> m_entities;
 };
 

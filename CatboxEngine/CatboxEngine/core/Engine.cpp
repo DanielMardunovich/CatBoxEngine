@@ -1,23 +1,18 @@
 #include "Engine.h"
 #include "Platform.h"
-
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-
-#include <algorithm>
 #include <iostream>
 #include <glad/glad.h>
 #include <glfw3.h>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
-
 #include "Time.h"
 #include "../graphics/Mesh.h"
+#include "../graphics/MeshManager.h"
 #include "../resources/EntityManager.h"
-
-// CreateCubeMesh moved to EntityManager
 
 
 void Engine::OnMouseMove(double xpos, double ypos)
@@ -242,8 +237,8 @@ int Engine::Initialize()
     // install input callbacks
     glfwSetCursorPosCallback(window, MouseCallback);
     glfwSetMouseButtonCallback(window, MouseButtonCallback);
-    // install drop callback
-    // Platform::InstallDropCallback(window);
+    // install drop callback for drag-and-drop support
+    Platform::InstallDropCallback(window);
 
     // glad
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
