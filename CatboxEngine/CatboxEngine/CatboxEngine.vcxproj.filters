@@ -356,5 +356,6 @@
     <None Include="shaders\ShadowMap.vert" />
     <None Include="shaders\ShadowMap.frag" />
     <None Include="docs\AdvancedRendering.md" />
+    <None Include="docs\LightSpawningUI.md" />
   </ItemGroup>
 </Project>

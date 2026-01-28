@@ -19,7 +19,14 @@ public:
     
     // Draw scene manager window
     void DrawSceneManager(EntityManager& entityManager);
+    
+    // Draw lights window
+    void DrawLightsWindow();
 
     // Render ImGui draw data
     void Render();
+
+private:
+    // Selected light index (-1 = none selected)
+    int selectedLightIndex = -1;
 };
