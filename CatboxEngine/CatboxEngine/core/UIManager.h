@@ -3,6 +3,7 @@
 
 class EntityManager;
 class Camera;
+class SceneManager;
 
 class UIManager
 {
@@ -15,6 +16,9 @@ public:
     // Build UI (spawning, listing entities, stats)
     // selectedIndex is an in/out parameter: UI may change selection
     void Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, float deltaTime, int& selectedIndex, Camera& camera, bool& useSharedCube);
+    
+    // Draw scene manager window
+    void DrawSceneManager(EntityManager& entityManager);
 
     // Render ImGui draw data
     void Render();

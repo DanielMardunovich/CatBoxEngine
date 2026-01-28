@@ -168,6 +168,7 @@
     <ClCompile Include="resources\Entity.cpp" />
     <ClCompile Include="resources\EntityManager.cpp" />
     <ClCompile Include="resources\Scene.cpp" />
+    <ClCompile Include="resources\SceneManager.cpp" />
     <ClCompile Include="ui\ImGuiLayer.cpp" />
     <ClCompile Include="ui\Inspectors\CameraInspector.cpp" />
     <ClCompile Include="ui\Inspectors\EntityInspector.cpp" />
@@ -220,6 +221,7 @@
     <ClInclude Include="resources\Math\Vec3.h" />
     <ClInclude Include="resources\Math\Vec4.h" />
     <ClInclude Include="resources\Scene.h" />
+    <ClInclude Include="resources\SceneManager.h" />
     <ClInclude Include="resources\Transform.h" />
     <ClInclude Include="ui\ImGuiLayer.h" />
     <ClInclude Include="ui\Inspectors\CameraInspector.h" />
@@ -246,6 +248,8 @@
     <None Include="docs\MemoryTracking.md" />
     <None Include="docs\MessageSystem.md" />
     <None Include="docs\MultiMaterialSupport.md" />
+    <None Include="docs\SceneEntitySync.md" />
+    <None Include="docs\SceneSystem.md" />
     <None Include="README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

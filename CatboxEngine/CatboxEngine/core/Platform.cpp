@@ -87,3 +87,34 @@ bool Platform::OpenFileDialog(char* outPath, int maxLen, const char* filter)
     (void)outPath; (void)maxLen; (void)filter; return false;
 #endif
 }
+
+bool Platform::SaveFileDialog(char* outPath, int maxLen, const char* filter)
+{
+#if defined(_WIN32)
+    OPENFILENAMEA ofn;
+    CHAR szFile[1024];
+    memset(&ofn, 0, sizeof(ofn));
+    memset(szFile, 0, sizeof(szFile));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = (DWORD)sizeof(szFile);
+    ofn.lpstrFilter = filter;
+    ofn.nFilterIndex = 1;
+    ofn.lpstrDefExt = "scene";
+    ofn.Flags = OFN_OVERWRITEPROMPT;
+    if (GetSaveFileNameA(&ofn))
+    {
+        #if defined(_MSC_VER)
+            strncpy_s(outPath, maxLen, ofn.lpstrFile, _TRUNCATE);
+        #else
+            strncpy(outPath, ofn.lpstrFile, maxLen-1);
+            outPath[maxLen-1] = '\0';
+        #endif
+        return true;
+    }
+    return false;
+#else
+    (void)outPath; (void)maxLen; (void)filter; return false;
+#endif
+}

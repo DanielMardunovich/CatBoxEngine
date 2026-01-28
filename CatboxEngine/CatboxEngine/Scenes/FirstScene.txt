@@ -1,0 +1,25 @@
+[Scene]
+Name=First Scene
+Version=1.0
+Author=
+Description=
+
+[Camera]
+Position=0,0,3
+Yaw=-90
+Pitch=0
+FOV=60
+Near=0.1
+Far=100
+
+[Light]
+Direction=0.5,-0.7,1
+Color=1,1,1
+Intensity=1
+
+[Environment]
+Ambient=0.1,0.1,0.1
+Background=0.4,0.3,0.2
+
+[Entities]
+Count=0

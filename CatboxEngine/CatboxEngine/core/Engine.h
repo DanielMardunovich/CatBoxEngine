@@ -3,6 +3,7 @@
 #include "../resources/Entity.h"
 #include "../resources/Camera.h"
 #include "../resources/EntityManager.h"
+#include "../resources/SceneManager.h"
 #include "UIManager.h"
 #include <vector>
 #include "../resources/Math/Vec3.h"
