@@ -16,62 +16,7 @@
 #include "../graphics/Mesh.h"
 #include "../resources/EntityManager.h"
 
-Mesh CreateCubeMesh() 
-{
-    Mesh mesh;
-
-    mesh.Vertices = {
-        // Front (+Z)
-        {{-0.5f, -0.5f,  0.5f}, {0, 0, 1}, {0, 0, 0}},
-        {{ 0.5f, -0.5f,  0.5f}, {0, 0, 1}, {1, 0, 0}},
-        {{ 0.5f,  0.5f,  0.5f}, {0, 0, 1}, {1, 1, 0}},
-        {{-0.5f,  0.5f,  0.5f}, {0, 0, 1}, {0, 1, 0}},
-
-        // Back (-Z)
-        {{ 0.5f, -0.5f, -0.5f}, {0, 0, -1}, {0, 0, 0}},
-        {{-0.5f, -0.5f, -0.5f}, {0, 0, -1}, {1, 0, 0}},
-        {{-0.5f,  0.5f, -0.5f}, {0, 0, -1}, {1, 1, 0}},
-        {{ 0.5f,  0.5f, -0.5f}, {0, 0, -1}, {0, 1, 0}},
-
-        // Left (-X)
-        {{-0.5f, -0.5f, -0.5f}, {-1, 0, 0}, {0, 0, 0}},
-        {{-0.5f, -0.5f,  0.5f}, {-1, 0, 0}, {1, 0, 0}},
-        {{-0.5f,  0.5f,  0.5f}, {-1, 0, 0}, {1, 1, 0}},
-        {{-0.5f,  0.5f, -0.5f}, {-1, 0, 0}, {0, 1, 0}},
-
-        // Right (+X)
-        {{ 0.5f, -0.5f,  0.5f}, {1, 0, 0}, {0, 0, 0}},
-        {{ 0.5f, -0.5f, -0.5f}, {1, 0, 0}, {1, 0, 0}},
-        {{ 0.5f,  0.5f, -0.5f}, {1, 0, 0}, {1, 1, 0}},
-        {{ 0.5f,  0.5f,  0.5f}, {1, 0, 0}, {0, 1, 0}},
-
-        // Top (+Y)
-        {{-0.5f,  0.5f,  0.5f}, {0, 1, 0}, {0, 0, 0}},
-        {{ 0.5f,  0.5f,  0.5f}, {0, 1, 0}, {1, 0, 0}},
-        {{ 0.5f,  0.5f, -0.5f}, {0, 1, 0}, {1, 1, 0}},
-        {{-0.5f,  0.5f, -0.5f}, {0, 1, 0}, {0, 1, 0}},
-
-        // Bottom (-Y)
-        {{-0.5f, -0.5f, -0.5f}, {0, -1, 0}, {0, 0, 0}},
-        {{ 0.5f, -0.5f, -0.5f}, {0, -1, 0}, {1, 0, 0}},
-        {{ 0.5f, -0.5f,  0.5f}, {0, -1, 0}, {1, 1, 0}},
-        {{-0.5f, -0.5f,  0.5f}, {0, -1, 0}, {0, 1, 0}},
-    };
-
-
-    mesh.Indices = {
-        0,1,2, 2,3,0,
-       4,5,6, 6,7,4,
-       0,4,7, 7,3,0,
-       1,5,6, 6,2,1,
-       3,2,6, 6,7,3,
-       0,1,5, 5,4,0
-    };
-
-
-
-    return mesh;
-}
+// CreateCubeMesh moved to EntityManager
 
 
 void Engine::OnMouseMove(double xpos, double ypos)
@@ -134,34 +79,6 @@ void Engine::Update(float deltaTime)
     // UI frame and draw
     uiManager.NewFrame();
     uiManager.Draw(entityManager, spawnPosition, spawnScale, deltaTime, selectedEntityIndex, camera, useSharedCube);
-    // ensure newly spawned entities get a cube mesh if they don't have one
-    if (entityManager.Size() > 0)
-    {
-        auto& list = entityManager.GetAll();
-        Entity& last = list.back();
-        if (last.Mesh.VAO == 0)
-        {
-            if (useSharedCube)
-            {
-                // use a shared cube stored in engine (create on demand)
-                static Mesh sharedCube;
-                static bool sharedInitialized = false;
-                if (!sharedInitialized)
-                {
-                    sharedCube = CreateCubeMesh();
-                    sharedCube.Upload();
-                    sharedInitialized = true;
-                }
-                last.Mesh = sharedCube;
-            }
-            else
-            {
-                Mesh m = CreateCubeMesh();
-                m.Upload();
-                last.Mesh = m;
-            }
-        }
-    }
 
 }
 

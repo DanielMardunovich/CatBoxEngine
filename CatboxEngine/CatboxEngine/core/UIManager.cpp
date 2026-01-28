@@ -51,6 +51,9 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
         }
 #endif
     }
+    static bool showModelError = false;
+    static char modelErrorMsg[512] = "";
+
     if (ImGui::Button("Spawn"))
     {
         Entity e;
@@ -66,9 +69,19 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
                 m.Upload();
                 e.Mesh = m;
                 e.name = std::string("Model: ") + modelPath;
+                entityManager.AddEntity(e, useSharedCube);
+            }
+            else
+            {
+                // show error popup
+                showModelError = true;
+                snprintf(modelErrorMsg, sizeof(modelErrorMsg), "Failed to load model: %s", modelPath);
             }
         }
-        entityManager.Add(e);
+        else
+        {
+            entityManager.AddEntity(e, useSharedCube);
+        }
     }
     ImGui::SameLine();
     if (ImGui::Button("Apply Model to Selected") && selectedIndex >= 0)
@@ -81,6 +94,11 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
                 m.Upload();
                 entityManager.GetAll()[selectedIndex].Mesh = m;
                 entityManager.GetAll()[selectedIndex].name = std::string("Model: ") + modelPath;
+            }
+            else
+            {
+                showModelError = true;
+                snprintf(modelErrorMsg, sizeof(modelErrorMsg), "Failed to load model: %s", modelPath);
             }
         }
     }
@@ -126,7 +144,26 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     ImGui::Text("Delta: %.4f", deltaTime);
     ImGui::Text("FPS: %.1f", 1.0f / deltaTime);
 
+    // Options moved into main window
+    ImGui::Checkbox("Use shared cube mesh", &useSharedCube);
+
     ImGui::End();
+
+    // error popup
+    if (showModelError)
+    {
+        ImGui::OpenPopup("Model Load Error");
+        if (ImGui::BeginPopupModal("Model Load Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::TextUnformatted(modelErrorMsg);
+            if (ImGui::Button("OK"))
+            {
+                ImGui::CloseCurrentPopup();
+                showModelError = false;
+            }
+            ImGui::EndPopup();
+        }
+    }
 
     // Inspector window
     if (selectedIndex >= 0 && selectedIndex < (int)entityManager.Size())
@@ -140,10 +177,7 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     CameraInspector camInspector;
     camInspector.Draw(camera);
 
-    // Shared mesh option
-    ImGui::Begin("Options");
-    ImGui::Checkbox("Use shared cube mesh", &useSharedCube);
-    ImGui::End();
+    // Options window removed; options are now in the main window
 }
 
 void UIManager::Render()
