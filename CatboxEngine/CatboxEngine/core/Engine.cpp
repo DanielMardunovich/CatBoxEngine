@@ -38,14 +38,10 @@ void Engine::OnDrop(const std::vector<std::string>& paths)
 
     if (ext == "obj" || ext == "gltf" || ext == "glb")
     {
-        Mesh m;
-        bool ok = false;
-        if (ext == "gltf" || ext == "glb") ok = m.LoadFromGLTF(p);
-        else ok = m.LoadFromOBJ(p);
-        if (ok)
+        MeshHandle h = MeshManager::Instance().LoadMeshSync(p);
+        if (h != 0)
         {
-            m.Upload();
-            Entity e; e.name = std::string("Model: ") + p; e.Mesh = m;
+            Entity e; e.name = std::string("Model: ") + p; e.MeshHandle = h;
             entityManager.AddEntity(e, useSharedCube);
         }
     }
@@ -55,8 +51,11 @@ void Engine::OnDrop(const std::vector<std::string>& paths)
         if (selectedEntityIndex >= 0 && selectedEntityIndex < (int)entityManager.Size())
         {
             auto& ent = entityManager.GetAll()[selectedEntityIndex];
-            ent.Mesh.LoadTexture(p);
-            ent.Mesh.DiffuseTexturePath = p;
+            if (ent.MeshHandle != 0)
+            {
+                Mesh* mptr = MeshManager::Instance().GetMesh(ent.MeshHandle);
+                if (mptr) { mptr->LoadTexture(p); mptr->DiffuseTexturePath = p; }
+            }
         }
     }
 }
@@ -129,6 +128,9 @@ void Engine::Update(float deltaTime)
     uiManager.NewFrame();
     uiManager.Draw(entityManager, spawnPosition, spawnScale, deltaTime, selectedEntityIndex, camera, useSharedCube);
 
+    // poll mesh manager for completed async loads and invoke callbacks
+    MeshManager::Instance().PollCompleted();
+
     // check clipboard for dropped path (used as a bridge by DropCallback)
     const char* clip = glfwGetClipboardString(GetWindow());
     static std::string lastClip;
@@ -179,41 +181,44 @@ void Engine::Render()
         myShader.SetMat4("u_MVP", vp);
         myShader.SetMat4("transform", model);
 
-        // set material uniforms
-        myShader.SetMat4("u_MVP", vp);
-        myShader.SetMat4("transform", model);
-        myShader.setVec3("u_DiffuseColor", e.Mesh.DiffuseColor.x, e.Mesh.DiffuseColor.y, e.Mesh.DiffuseColor.z);
-        myShader.SetBool("u_HasDiffuseMap", e.Mesh.HasDiffuseTexture);
-        if (e.Mesh.HasDiffuseTexture)
-        {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, e.Mesh.DiffuseTexture);
-            myShader.SetTexture("u_DiffuseMap", 0);
-        }
-        if (e.Mesh.HasNormalTexture)
-        {
-            glActiveTexture(GL_TEXTURE2);
-            glBindTexture(GL_TEXTURE_2D, e.Mesh.NormalTexture);
-            myShader.SetTexture("u_NormalMap", 2);
-            myShader.SetBool("u_HasNormalMap", true);
-        }
-        else myShader.SetBool("u_HasNormalMap", false);
-        // specular
-        myShader.setVec3("u_SpecularColor", e.Mesh.SpecularColor.x, e.Mesh.SpecularColor.y, e.Mesh.SpecularColor.z);
-        myShader.setFloat("u_Shininess", e.Mesh.Shininess);
-        myShader.setFloat("u_Alpha", e.Mesh.Alpha);
-        if (e.Mesh.HasSpecularTexture)
-        {
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, e.Mesh.SpecularTexture);
-            myShader.SetTexture("u_SpecularMap", 1);
-            myShader.SetBool("u_HasSpecularMap", true);
-        }
-        else myShader.SetBool("u_HasSpecularMap", false);
+        // get mesh by handle
+        Mesh* mesh = nullptr;
+        if (e.MeshHandle != 0) mesh = MeshManager::Instance().GetMesh(e.MeshHandle);
 
-        // draw entity mesh (assume mesh uploaded)
-        if (e.Mesh.VAO != 0)
-            e.Mesh.Draw();
+        if (mesh)
+        {
+            myShader.setVec3("u_DiffuseColor", mesh->DiffuseColor.x, mesh->DiffuseColor.y, mesh->DiffuseColor.z);
+            myShader.SetBool("u_HasDiffuseMap", mesh->HasDiffuseTexture);
+            if (mesh->HasDiffuseTexture)
+            {
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, mesh->DiffuseTexture);
+                myShader.SetTexture("u_DiffuseMap", 0);
+            }
+            if (mesh->HasNormalTexture)
+            {
+                glActiveTexture(GL_TEXTURE2);
+                glBindTexture(GL_TEXTURE_2D, mesh->NormalTexture);
+                myShader.SetTexture("u_NormalMap", 2);
+                myShader.SetBool("u_HasNormalMap", true);
+            }
+            else myShader.SetBool("u_HasNormalMap", false);
+
+            myShader.setVec3("u_SpecularColor", mesh->SpecularColor.x, mesh->SpecularColor.y, mesh->SpecularColor.z);
+            myShader.setFloat("u_Shininess", mesh->Shininess);
+            myShader.setFloat("u_Alpha", mesh->Alpha);
+            if (mesh->HasSpecularTexture)
+            {
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, mesh->SpecularTexture);
+                myShader.SetTexture("u_SpecularMap", 1);
+                myShader.SetBool("u_HasSpecularMap", true);
+            }
+            else myShader.SetBool("u_HasSpecularMap", false);
+
+            if (mesh->VAO != 0)
+                mesh->Draw();
+        }
     }
 
     

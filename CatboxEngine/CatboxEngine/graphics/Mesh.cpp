@@ -33,6 +33,10 @@ bool Mesh::LoadFromOBJ(const std::string& path)
     };
 
     std::string line;
+    // directory of OBJ file for resolving relative MTL/texture paths
+    std::string objDir;
+    size_t objPos = path.find_last_of("/\\");
+    if (objPos != std::string::npos) objDir = path.substr(0, objPos+1);
     std::string currentMtl;
     std::unordered_map<std::string, Vec3> mtlColors;
     std::unordered_map<std::string, Vec3> mtlSpecular;
@@ -51,8 +55,9 @@ bool Mesh::LoadFromOBJ(const std::string& path)
         {
             std::string mtlFile;
             ss >> mtlFile;
-            // attempt to parse mtl
+            // attempt to parse mtl (try given path first, then relative to OBJ)
             std::ifstream mtlin(mtlFile);
+            if (!mtlin.is_open() && !objDir.empty()) mtlin.open(objDir + mtlFile);
             if (mtlin.is_open())
             {
                 std::string mline;
@@ -71,19 +76,6 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                     else if (mprefix == "map_Ks") { std::string tex; ms >> tex; if (!tex.empty()) mtlSpecularMaps[cur] = tex; }
                     else if (mprefix == "map_Bump" || mprefix == "bump") { std::string tex; ms >> tex; if (!tex.empty()) mtlNormalMaps[cur] = tex; }
                 }
-        auto itnm = mtlNormalMaps.find(currentMtl);
-        if (itnm != mtlNormalMaps.end())
-        {
-            std::string texPath = itnm->second;
-            std::string objDir;
-            size_t p = path.find_last_of("/\\");
-            if (p != std::string::npos) objDir = path.substr(0, p+1);
-            std::string full = texPath;
-            if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) full = objDir + texPath;
-            if (LoadNormalTexture(full)) NormalTexturePath = full;
-        }
-
-// (Mesh::LoadTexture and UnloadTexture are implemented after LoadTextureFromFile)
             }
             continue;
         }
@@ -119,24 +111,42 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                 size_t p1 = token.find('/');
                 if (p1==std::string::npos)
                 {
-                    vi = std::stoi(token) - 1;
+                    int raw = std::stoi(token);
+                    if (raw < 0) vi = (int)positions.size() + raw;
+                    else vi = raw - 1;
                 }
                 else
                 {
                     std::string viStr = token.substr(0, p1);
-                    vi = viStr.empty() ? 0 : (std::stoi(viStr) - 1);
+                    if (!viStr.empty())
+                    {
+                        int raw = std::stoi(viStr);
+                        vi = raw < 0 ? (int)positions.size() + raw : raw - 1;
+                    }
                     size_t p2 = token.find('/', p1+1);
                     if (p2!=std::string::npos)
                     {
                         std::string vtStr = token.substr(p1+1, p2 - (p1+1));
-                        if (!vtStr.empty()) ti = std::stoi(vtStr) - 1;
+                        if (!vtStr.empty())
+                        {
+                            int rawt = std::stoi(vtStr);
+                            ti = rawt < 0 ? (int)texcoords.size() + rawt : rawt - 1;
+                        }
                         std::string vnStr = token.substr(p2+1);
-                        if (!vnStr.empty()) ni = std::stoi(vnStr) - 1;
+                        if (!vnStr.empty())
+                        {
+                            int rawn = std::stoi(vnStr);
+                            ni = rawn < 0 ? (int)normals.size() + rawn : rawn - 1;
+                        }
                     }
                     else
                     {
                         std::string vtStr = token.substr(p1+1);
-                        if (!vtStr.empty()) ti = std::stoi(vtStr) - 1;
+                        if (!vtStr.empty())
+                        {
+                            int rawt = std::stoi(vtStr);
+                            ti = rawt < 0 ? (int)texcoords.size() + rawt : rawt - 1;
+                        }
                     }
                 }
 

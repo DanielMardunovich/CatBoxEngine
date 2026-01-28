@@ -2,6 +2,7 @@
 #include "Mesh.h"
 #include <algorithm>
 #include <iostream>
+#include <queue>
 
 MeshManager::MeshManager() {}
 MeshManager::~MeshManager() {}
@@ -16,7 +17,13 @@ MeshHandle MeshManager::CreateEntryForPath(const std::string& path)
 {
     std::lock_guard<std::mutex> lk(m_mutex);
     auto it = m_pathToHandle.find(path);
-    if (it != m_pathToHandle.end()) return it->second;
+    if (it != m_pathToHandle.end())
+    {
+        // existing entry: increment refcount before returning
+        auto eh = m_entries.find(it->second);
+        if (eh != m_entries.end()) eh->second->refcount++;
+        return it->second;
+    }
 
     MeshHandle h = m_nextHandle.fetch_add(1);
     auto e = std::make_shared<Entry>();
@@ -25,6 +32,13 @@ MeshHandle MeshManager::CreateEntryForPath(const std::string& path)
     m_entries[h] = e;
     m_pathToHandle[path] = h;
     return h;
+}
+
+void MeshManager::AddRef(MeshHandle h)
+{
+    std::lock_guard<std::mutex> lk(m_mutex);
+    auto it = m_entries.find(h);
+    if (it != m_entries.end()) it->second->refcount++;
 }
 
 MeshHandle MeshManager::LoadMeshSync(const std::string& path)
@@ -78,6 +92,11 @@ MeshHandle MeshManager::LoadMeshAsync(const std::string& path)
         auto e = m_entries[h];
         e->mesh = std::move(m);
         e->loaded = true;
+        // notify main thread by pushing into queue
+        {
+            std::lock_guard<std::mutex> lk(m_mutex);
+            m_completed.push(h);
+        }
     }).detach();
 
     return h;
@@ -104,10 +123,43 @@ void MeshManager::Release(MeshHandle h)
     }
 }
 
+void MeshManager::RegisterLoadCallback(MeshHandle h, std::function<void(MeshHandle)> cb)
+{
+    std::lock_guard<std::mutex> lk(m_mutex);
+    m_callbacks[h].push_back(cb);
+}
+
+void MeshManager::PollCompleted()
+{
+    std::queue<MeshHandle> q;
+    {
+        std::lock_guard<std::mutex> lk(m_mutex);
+        std::swap(q, m_completed);
+    }
+    while (!q.empty())
+    {
+        MeshHandle h = q.front(); q.pop();
+        std::vector<std::function<void(MeshHandle)>> cbs;
+        {
+            std::lock_guard<std::mutex> lk(m_mutex);
+            auto it = m_callbacks.find(h);
+            if (it != m_callbacks.end()) cbs = it->second;
+        }
+        for (auto &cb : cbs) cb(h);
+    }
+}
+
 MeshHandle MeshManager::GetSharedCubeHandle()
 {
     static MeshHandle sharedHandle = 0;
-    if (sharedHandle != 0) return sharedHandle;
+    if (sharedHandle != 0)
+    {
+        // increment refcount for each caller
+        std::lock_guard<std::mutex> lk(m_mutex);
+        auto it = m_entries.find(sharedHandle);
+        if (it != m_entries.end()) it->second->refcount++;
+        return sharedHandle;
+    }
     // create a shared cube entry and synchronously load
     std::string key = "__shared_cube";
     MeshHandle h = CreateEntryForPath(key);

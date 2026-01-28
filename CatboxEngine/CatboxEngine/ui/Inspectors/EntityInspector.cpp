@@ -23,18 +23,33 @@ void EntityInspector::Draw(Entity& entity)
     ImGui::Separator();
     ImGui::Text("Material");
     // show and edit diffuse color if mesh present
-    float color[3] = { entity.Mesh.DiffuseColor.x, entity.Mesh.DiffuseColor.y, entity.Mesh.DiffuseColor.z };
+    // diffuse color edit via mesh handle
+    float color[3] = {0.8f,0.8f,0.9f};
+    if (entity.MeshHandle != 0)
+    {
+        Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
+        if (m) { color[0] = m->DiffuseColor.x; color[1] = m->DiffuseColor.y; color[2] = m->DiffuseColor.z; }
+    }
     if (ImGui::ColorEdit3("Diffuse Color", color))
     {
-        entity.Mesh.DiffuseColor.x = color[0];
-        entity.Mesh.DiffuseColor.y = color[1];
-        entity.Mesh.DiffuseColor.z = color[2];
+        if (entity.MeshHandle != 0)
+        {
+            Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
+            if (m) { m->DiffuseColor.x = color[0]; m->DiffuseColor.y = color[1]; m->DiffuseColor.z = color[2]; }
+        }
     }
 
     // Texture preview and change
     ImGui::Separator();
     ImGui::Text("Diffuse Texture");
-    ImGui::Text("%s", entity.Mesh.DiffuseTexturePath.empty() ? "(none)" : entity.Mesh.DiffuseTexturePath.c_str());
+    // show path from mesh handle
+    std::string diffPath = "(none)";
+    if (entity.MeshHandle != 0)
+    {
+        Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
+        if (m) diffPath = m->DiffuseTexturePath.empty() ? "(none)" : m->DiffuseTexturePath;
+    }
+    ImGui::Text("%s", diffPath.c_str());
     ImGui::SameLine();
     if (ImGui::Button("Change Texture"))
     {
@@ -49,46 +64,61 @@ void EntityInspector::Draw(Entity& entity)
             if (Platform::OpenFileDialog(buf, (int)sizeof(buf), "Image Files\0*.png;*.jpg;*.jpeg;*.bmp\0All\0*.*\0"))
             {
                 std::string sel(buf);
-                if (entity.Mesh.LoadTexture(sel)) entity.Mesh.DiffuseTexturePath = sel;
-            }
-        }
-        if (ImGui::MenuItem("Specular"))
-        {
-            char buf[1024] = {0};
-            if (Platform::OpenFileDialog(buf, (int)sizeof(buf), "Image Files\0*.png;*.jpg;*.jpeg;*.bmp\0All\0*.*\0"))
+            if (entity.MeshHandle != 0)
             {
-                std::string sel(buf);
-                if (entity.Mesh.LoadSpecularTexture(sel)) entity.Mesh.SpecularTexturePath = sel;
+                Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
+                if (m) { m->LoadTexture(sel); m->DiffuseTexturePath = sel; }
+            }
             }
         }
-        if (ImGui::MenuItem("Normal"))
+    if (ImGui::MenuItem("Specular"))
+    {
+        char buf[1024] = {0};
+        if (Platform::OpenFileDialog(buf, (int)sizeof(buf), "Image Files\0*.png;*.jpg;*.jpeg;*.bmp\0All\0*.*\0"))
         {
-            char buf[1024] = {0};
-            if (Platform::OpenFileDialog(buf, (int)sizeof(buf), "Image Files\0*.png;*.jpg;*.jpeg;*.bmp\0All\0*.*\0"))
+            std::string sel(buf);
+            if (entity.MeshHandle != 0)
             {
-                std::string sel(buf);
-                if (entity.Mesh.LoadNormalTexture(sel)) entity.Mesh.NormalTexturePath = sel;
+                Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
+                if (m) { m->LoadSpecularTexture(sel); m->SpecularTexturePath = sel; }
             }
         }
+    }
+    if (ImGui::MenuItem("Normal"))
+    {
+        char buf[1024] = {0};
+        if (Platform::OpenFileDialog(buf, (int)sizeof(buf), "Image Files\0*.png;*.jpg;*.jpeg;*.bmp\0All\0*.*\0"))
+        {
+            std::string sel(buf);
+            if (entity.MeshHandle != 0)
+            {
+                Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
+                if (m) { m->LoadNormalTexture(sel); m->NormalTexturePath = sel; }
+            }
+        }
+    }
         ImGui::EndPopup();
     }
-    if (entity.Mesh.HasDiffuseTexture)
+    if (entity.MeshHandle != 0)
     {
-        // show small preview (ImGui::Image requires a texture ID cast)
-        ImGui::Image((ImTextureID)(uintptr_t)entity.Mesh.DiffuseTexture, ImVec2(128,128));
-    }
-    ImGui::Text("Specular: %.2f,%.2f,%.2f", entity.Mesh.SpecularColor.x, entity.Mesh.SpecularColor.y, entity.Mesh.SpecularColor.z);
-    ImGui::Text("Shininess: %.2f", entity.Mesh.Shininess);
-    ImGui::Text("Alpha: %.2f", entity.Mesh.Alpha);
-    if (entity.Mesh.HasSpecularTexture)
-    {
-        ImGui::Text("Specular Map: %s", entity.Mesh.SpecularTexturePath.c_str());
-        ImGui::Image((ImTextureID)(uintptr_t)entity.Mesh.SpecularTexture, ImVec2(64,64));
-    }
-    if (entity.Mesh.HasNormalTexture)
-    {
-        ImGui::Text("Normal Map: %s", entity.Mesh.NormalTexturePath.c_str());
-        ImGui::Image((ImTextureID)(uintptr_t)entity.Mesh.NormalTexture, ImVec2(64,64));
+        Mesh* m = MeshManager::Instance().GetMesh(entity.MeshHandle);
+        if (m)
+        {
+            if (m->HasDiffuseTexture) ImGui::Image((ImTextureID)(uintptr_t)m->DiffuseTexture, ImVec2(128,128));
+            ImGui::Text("Specular: %.2f,%.2f,%.2f", m->SpecularColor.x, m->SpecularColor.y, m->SpecularColor.z);
+            ImGui::Text("Shininess: %.2f", m->Shininess);
+            ImGui::Text("Alpha: %.2f", m->Alpha);
+            if (m->HasSpecularTexture)
+            {
+                ImGui::Text("Specular Map: %s", m->SpecularTexturePath.c_str());
+                ImGui::Image((ImTextureID)(uintptr_t)m->SpecularTexture, ImVec2(64,64));
+            }
+            if (m->HasNormalTexture)
+            {
+                ImGui::Text("Normal Map: %s", m->NormalTexturePath.c_str());
+                ImGui::Image((ImTextureID)(uintptr_t)m->NormalTexture, ImVec2(64,64));
+            }
+        }
     }
 
     ImGui::End();

@@ -68,20 +68,29 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
                             {
                                 if (ImGui::MenuItem("Diffuse"))
                                 {
-                                    if (entityManager.GetAll()[selectedIndex].Mesh.LoadTexture(pendingTexPath))
-                                        entityManager.GetAll()[selectedIndex].Mesh.DiffuseTexturePath = pendingTexPath;
+                                    if (entityManager.GetAll()[selectedIndex].MeshHandle != 0)
+                                        {
+                                            Mesh* mm = MeshManager::Instance().GetMesh(entityManager.GetAll()[selectedIndex].MeshHandle);
+                                            if (mm) { mm->LoadTexture(pendingTexPath); mm->DiffuseTexturePath = pendingTexPath; }
+                                        }
                                     ImGui::CloseCurrentPopup();
                                 }
                                 if (ImGui::MenuItem("Specular"))
                                 {
-                                    if (entityManager.GetAll()[selectedIndex].Mesh.LoadSpecularTexture(pendingTexPath))
-                                        entityManager.GetAll()[selectedIndex].Mesh.SpecularTexturePath = pendingTexPath;
+                                    if (entityManager.GetAll()[selectedIndex].MeshHandle != 0)
+                                        {
+                                            Mesh* mm = MeshManager::Instance().GetMesh(entityManager.GetAll()[selectedIndex].MeshHandle);
+                                            if (mm) { mm->LoadSpecularTexture(pendingTexPath); mm->SpecularTexturePath = pendingTexPath; }
+                                        }
                                     ImGui::CloseCurrentPopup();
                                 }
                                 if (ImGui::MenuItem("Normal"))
                                 {
-                                    if (entityManager.GetAll()[selectedIndex].Mesh.LoadNormalTexture(pendingTexPath))
-                                        entityManager.GetAll()[selectedIndex].Mesh.NormalTexturePath = pendingTexPath;
+                                    if (entityManager.GetAll()[selectedIndex].MeshHandle != 0)
+                                        {
+                                            Mesh* mm = MeshManager::Instance().GetMesh(entityManager.GetAll()[selectedIndex].MeshHandle);
+                                            if (mm) { mm->LoadNormalTexture(pendingTexPath); mm->NormalTexturePath = pendingTexPath; }
+                                        }
                                     ImGui::CloseCurrentPopup();
                                 }
                                 ImGui::EndPopup();
@@ -102,31 +111,13 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
         e.Transform.Scale = spawnScale;
         if (modelPath[0] != '\0')
         {
-            // try load model (try glTF first, then OBJ)
-            Mesh m;
-            bool loaded = false;
+            // load model synchronously via MeshManager
             std::string pathStr(modelPath);
-            auto extPos = pathStr.find_last_of('.');
-            std::string ext = extPos != std::string::npos ? pathStr.substr(extPos+1) : std::string();
-            if (!ext.empty())
+            MeshHandle h = MeshManager::Instance().LoadMeshSync(pathStr);
+            if (h != 0)
             {
-                for (auto &c : ext) c = (char)tolower(c);
-            }
-
-            if (ext == "gltf" || ext == "glb")
-            {
-                if (m.LoadFromGLTF(pathStr)) loaded = true;
-            }
-            else
-            {
-                if (m.LoadFromOBJ(pathStr)) loaded = true;
-            }
-
-            if (loaded)
-            {
-                m.Upload();
-                e.Mesh = m;
-                e.name = std::string("Model: ") + modelPath;
+                e.MeshHandle = h;
+                e.name = std::string("Model: ") + pathStr;
                 entityManager.AddEntity(e, useSharedCube);
             }
             else
@@ -150,7 +141,14 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
             if (m.LoadFromOBJ(modelPath))
             {
                 m.Upload();
-                entityManager.GetAll()[selectedIndex].Mesh = m;
+                // store in manager and update entity handle
+                MeshHandle h = MeshManager::Instance().LoadMeshSync(modelPath);
+                if (h == 0)
+                {
+                    // not present, create entry
+                    h = MeshManager::Instance().LoadMeshSync(modelPath);
+                }
+                entityManager.GetAll()[selectedIndex].MeshHandle = h;
                 entityManager.GetAll()[selectedIndex].name = std::string("Model: ") + modelPath;
             }
             else
@@ -172,7 +170,6 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     {
         ImGui::PushID((int)i);
         bool isSelected = (selectedIndex == (int)i);
-        // Left column: selectable name (do NOT span into the action column)
         // Left column: selectable name (do NOT span into the action column)
         if (ImGui::Selectable(list[i].name.c_str(), isSelected))
         {

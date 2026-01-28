@@ -1,6 +1,7 @@
 #pragma once
 #include "Transform.h"
 #include "../graphics/Mesh.h"
+#include "../graphics/MeshManager.h"
 #include "../graphics/Material.h"
 #include <string>
 
@@ -10,6 +11,7 @@ public:
     std::string name;
 
     Transform Transform;
-    Mesh Mesh;
+    // store mesh by handle (managed by MeshManager)
+    MeshHandle MeshHandle = 0;
     //Material Material;
 };
