@@ -2,6 +2,7 @@
 #include "EntityManager.h"
 #include "../graphics/MeshManager.h"
 #include "../graphics/Mesh.h"
+#include "../graphics/LightManager.h"
 #include "../core/MessageQueue.h"
 #include <fstream>
 #include <sstream>
@@ -35,6 +36,15 @@ void Scene::OnLoad(EntityManager& entityManager)
     
     // Clear existing entities in manager
     entityManager.Clear();
+    
+    // Clear and reload lights into LightManager
+    auto& lightMgr = LightManager::Instance();
+    lightMgr.ClearLights();
+    
+    for (const auto& light : m_lights)
+    {
+        lightMgr.AddLight(light);
+    }
     
     // Load all entities from this scene into the entity manager
     for (auto& entity : m_entities)
@@ -87,8 +97,13 @@ void Scene::OnUnload(EntityManager& entityManager)
     // Capture current state before unloading
     CaptureFromEntityManager(entityManager);
     
-    // Clear entity manager
+    // Capture lights from LightManager
+    auto& lightMgr = LightManager::Instance();
+    m_lights = lightMgr.GetAllLights();
+    
+    // Clear entity manager and lights
     entityManager.Clear();
+    lightMgr.ClearLights();
     
     m_isLoaded = false;
 }
@@ -103,6 +118,10 @@ void Scene::CaptureFromEntityManager(EntityManager& entityManager)
     {
         m_entities.push_back(entity);
     }
+    
+    // ALSO capture lights from LightManager
+    auto& lightMgr = LightManager::Instance();
+    m_lights = lightMgr.GetAllLights();
     
     // Update modified time
     auto now = std::chrono::system_clock::now();
@@ -158,6 +177,14 @@ void Scene::ClearEntities()
         now.time_since_epoch()).count();
 }
 
+void Scene::RemoveLight(size_t index)
+{
+    if (index < m_lights.size())
+    {
+        m_lights.erase(m_lights.begin() + index);
+    }
+}
+
 bool Scene::SaveToFile(const std::string& path) const
 {
     std::ofstream out(path);
@@ -181,14 +208,38 @@ bool Scene::SaveToFile(const std::string& path) const
     out << "Near=" << m_camera.Near << std::endl;
     out << "Far=" << m_camera.Far << std::endl;
     
-    out << "\n[Light]" << std::endl;
-    out << "Direction=" << m_light.Direction.x << "," << m_light.Direction.y << "," << m_light.Direction.z << std::endl;
-    out << "Color=" << m_light.Color.x << "," << m_light.Color.y << "," << m_light.Color.z << std::endl;
-    out << "Intensity=" << m_light.Intensity << std::endl;
-    
     out << "\n[Environment]" << std::endl;
     out << "Ambient=" << AmbientColor.x << "," << AmbientColor.y << "," << AmbientColor.z << std::endl;
     out << "Background=" << BackgroundColor.x << "," << BackgroundColor.y << "," << BackgroundColor.z << std::endl;
+    
+    // Save lights
+    out << "\n[Lights]" << std::endl;
+    out << "Count=" << m_lights.size() << std::endl;
+    
+    for (size_t i = 0; i < m_lights.size(); ++i)
+    {
+        const auto& light = m_lights[i];
+        out << "\n[Light" << i << "]" << std::endl;
+        out << "Name=" << light.Name << std::endl;
+        out << "Type=" << (int)light.Type << std::endl;
+        out << "Position=" << light.Position.x << "," << light.Position.y << "," << light.Position.z << std::endl;
+        out << "Direction=" << light.Direction.x << "," << light.Direction.y << "," << light.Direction.z << std::endl;
+        out << "Color=" << light.Color.x << "," << light.Color.y << "," << light.Color.z << std::endl;
+        out << "Intensity=" << light.Intensity << std::endl;
+        out << "Constant=" << light.Constant << std::endl;
+        out << "Linear=" << light.Linear << std::endl;
+        out << "Quadratic=" << light.Quadratic << std::endl;
+        out << "InnerCutoff=" << light.InnerCutoff << std::endl;
+        out << "OuterCutoff=" << light.OuterCutoff << std::endl;
+        out << "CastsShadows=" << light.CastsShadows << std::endl;
+        out << "ShadowMapSize=" << light.ShadowMapSize << std::endl;
+        out << "ShadowBias=" << light.ShadowBias << std::endl;
+        out << "ShadowOrthoSize=" << light.ShadowOrthoSize << std::endl;
+        out << "ShadowNearPlane=" << light.ShadowNearPlane << std::endl;
+        out << "ShadowFarPlane=" << light.ShadowFarPlane << std::endl;
+        out << "ShadowFOV=" << light.ShadowFOV << std::endl;
+        out << "Enabled=" << light.Enabled << std::endl;
+    }
     
     out << "\n[Entities]" << std::endl;
     out << "Count=" << m_entities.size() << std::endl;
@@ -231,11 +282,14 @@ bool Scene::LoadFromFile(const std::string& path)
     }
     
     ClearEntities();
+    m_lights.clear();  // Clear lights too
     
     std::string line;
     std::string currentSection;
     Entity currentEntity;
+    Light currentLight;  // For loading lights
     bool inEntity = false;
+    bool inLight = false;  // Track if we're in a light section
     
     auto parseVec3 = [](const std::string& str) -> Vec3 {
         Vec3 result{0, 0, 0};
@@ -245,20 +299,31 @@ bool Scene::LoadFromFile(const std::string& path)
         return result;
     };
     
+    auto parseBool = [](const std::string& str) -> bool {
+        return (str == "1" || str == "true" || str == "True");
+    };
+    
     while (std::getline(in, line))
     {
         if (line.empty() || line[0] == '#') continue;
         
         if (line[0] == '[')
         {
+            // Save previous entity or light
             if (inEntity)
             {
                 AddEntity(currentEntity);
                 currentEntity = Entity();
             }
+            if (inLight)
+            {
+                AddLight(currentLight);
+                currentLight = Light();
+            }
             
             currentSection = line;
             inEntity = currentSection.find("[Entity") == 0;
+            inLight = currentSection.find("[Light") == 0 && currentSection != "[Lights]";
             continue;
         }
         
@@ -284,11 +349,27 @@ bool Scene::LoadFromFile(const std::string& path)
             else if (key == "Near") m_camera.Near = std::stof(value);
             else if (key == "Far") m_camera.Far = std::stof(value);
         }
-        else if (currentSection == "[Light]")
+        else if (inLight)  // Loading individual light
         {
-            if (key == "Direction") m_light.Direction = parseVec3(value);
-            else if (key == "Color") m_light.Color = parseVec3(value);
-            else if (key == "Intensity") m_light.Intensity = std::stof(value);
+            if (key == "Name") currentLight.Name = value;
+            else if (key == "Type") currentLight.Type = (LightType)std::stoi(value);
+            else if (key == "Position") currentLight.Position = parseVec3(value);
+            else if (key == "Direction") currentLight.Direction = parseVec3(value);
+            else if (key == "Color") currentLight.Color = parseVec3(value);
+            else if (key == "Intensity") currentLight.Intensity = std::stof(value);
+            else if (key == "Constant") currentLight.Constant = std::stof(value);
+            else if (key == "Linear") currentLight.Linear = std::stof(value);
+            else if (key == "Quadratic") currentLight.Quadratic = std::stof(value);
+            else if (key == "InnerCutoff") currentLight.InnerCutoff = std::stof(value);
+            else if (key == "OuterCutoff") currentLight.OuterCutoff = std::stof(value);
+            else if (key == "CastsShadows") currentLight.CastsShadows = parseBool(value);
+            else if (key == "ShadowMapSize") currentLight.ShadowMapSize = std::stoi(value);
+            else if (key == "ShadowBias") currentLight.ShadowBias = std::stof(value);
+            else if (key == "ShadowOrthoSize") currentLight.ShadowOrthoSize = std::stof(value);
+            else if (key == "ShadowNearPlane") currentLight.ShadowNearPlane = std::stof(value);
+            else if (key == "ShadowFarPlane") currentLight.ShadowFarPlane = std::stof(value);
+            else if (key == "ShadowFOV") currentLight.ShadowFOV = std::stof(value);
+            else if (key == "Enabled") currentLight.Enabled = parseBool(value);
         }
         else if (currentSection == "[Environment]")
         {
@@ -350,8 +431,13 @@ bool Scene::LoadFromFile(const std::string& path)
         AddEntity(currentEntity);
     }
     
+    if (inLight)
+    {
+        AddLight(currentLight);
+    }
+    
     in.close();
-    std::cout << "Scene loaded: " << path << " (" << m_entities.size() << " entities)" << std::endl;
+    std::cout << "Scene loaded: " << path << " (" << m_entities.size() << " entities, " << m_lights.size() << " lights)" << std::endl;
     return true;
 }
 

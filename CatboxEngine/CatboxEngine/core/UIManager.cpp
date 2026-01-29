@@ -751,6 +751,16 @@ void UIManager::DrawLightsWindow()
                     ImGui::SliderFloat("Near Plane", &light.ShadowNearPlane, 0.1f, 10.0f);
                     ImGui::SliderFloat("Far Plane", &light.ShadowFarPlane, 10.0f, 200.0f);
                 }
+                else // Point or Spot light
+                {
+                    ImGui::SliderFloat("Shadow FOV", &light.ShadowFOV, 60.0f, 179.0f, "%.0f°");
+                    ImGui::SliderFloat("Near Plane", &light.ShadowNearPlane, 0.1f, 5.0f);
+                    ImGui::SliderFloat("Far Plane", &light.ShadowFarPlane, 5.0f, 100.0f);
+                    
+                    // Show effective coverage
+                    float range = light.ShadowFarPlane - light.ShadowNearPlane;
+                    ImGui::Text("Shadow Range: %.1f units", range);
+                }
             }
             
             ImGui::TreePop();

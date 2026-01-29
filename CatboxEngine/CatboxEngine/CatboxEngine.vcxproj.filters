@@ -348,5 +348,8 @@
     <None Include="docs\ProjectCleanup.md" />
     <None Include="docs\CleanupSummary.md" />
     <None Include="docs\ShadowDebug.md" />
+    <None Include="docs\PointLightShadowCutoff_Fixed.md" />
+    <None Include="docs\RealisticShadows_Fixed.md" />
+    <None Include="docs\LightPersistence.md" />
   </ItemGroup>
 </Project>

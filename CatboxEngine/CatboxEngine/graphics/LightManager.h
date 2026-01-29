@@ -15,6 +15,7 @@ public:
     // Light management
     size_t AddLight(const Light& light);
     void RemoveLight(size_t index);
+    void ClearLights();  // Clear all lights
     Light* GetLight(size_t index);
     const Light* GetLight(size_t index) const;
     

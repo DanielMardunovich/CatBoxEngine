@@ -82,18 +82,20 @@ float CalculateShadow(int lightIndex, Light light, vec3 normal, vec3 lightDir)
     // Calculate bias based on slope
     float bias = max(light.shadowBias * (1.0 - dot(normal, lightDir)), light.shadowBias * 0.1);
     
-    // PCF (Percentage Closer Filtering)
+    // PCF (Percentage Closer Filtering) - 2x2 for sharper shadows
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(light.shadowMap, 0);
-    for(int x = -1; x <= 1; ++x)
+    
+    // Sample 2x2 grid for balance between soft and sharp
+    for(int x = 0; x <= 1; ++x)
     {
-        for(int y = -1; y <= 1; ++y)
+        for(int y = 0; y <= 1; ++y)
         {
             float pcfDepth = texture(light.shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
         }
     }
-    shadow /= 9.0;
+    shadow /= 4.0;  // Average of 4 samples
     
     return shadow;
 }
@@ -142,6 +144,9 @@ vec3 CalculateLight(int lightIndex, Light light, vec3 normal, vec3 viewDir, vec3
     // Calculate shadow
     float shadow = CalculateShadow(lightIndex, light, normal, lightDir);
     
+    // Make shadows darker/more pronounced (optional: increase multiplier for darker shadows)
+    shadow = clamp(shadow * 1.2, 0.0, 1.0);  // Slightly increase shadow strength
+    
     // Diffuse
     float diff = max(dot(normal, lightDir), 0.0);
     vec3 diffuse = light.color * light.intensity * diff * albedo * attenuation;
@@ -151,7 +156,7 @@ vec3 CalculateLight(int lightIndex, Light light, vec3 normal, vec3 viewDir, vec3
     float spec = pow(max(dot(normal, halfwayDir), 0.0), u_Shininess);
     vec3 specularContrib = light.color * light.intensity * spec * specular * attenuation;
     
-    // Apply shadow
+    // Apply shadow (reduces both diffuse and specular)
     diffuse *= (1.0 - shadow);
     specularContrib *= (1.0 - shadow);
     
@@ -193,7 +198,7 @@ void main()
     vec3 V = normalize(u_CameraPos - FragPos);
     
     // Ambient lighting (global illumination approximation)
-    vec3 ambient = 0.1 * albedo;
+    vec3 ambient = 0.02 * albedo;  // Reduced from 0.1 to 0.02 for darker, more visible shadows
     
     // Calculate all lights
     vec3 lighting = ambient;

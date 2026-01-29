@@ -30,6 +30,17 @@ void LightManager::RemoveLight(size_t index)
     m_lights.erase(m_lights.begin() + index);
 }
 
+void LightManager::ClearLights()
+{
+    // Delete all shadow maps first
+    for (auto& light : m_lights)
+    {
+        DeleteShadowMap(light);
+    }
+    
+    m_lights.clear();
+}
+
 Light* LightManager::GetLight(size_t index)
 {
     if (index >= m_lights.size())

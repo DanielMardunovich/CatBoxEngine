@@ -44,7 +44,7 @@ struct Light
     float ShadowFarPlane = 50.0f;
     
     // For point/spot lights (perspective projection)
-    float ShadowFOV = 90.0f;
+    float ShadowFOV = 120.0f;  // Wider FOV for better coverage (was 90°)
     
     bool Enabled = true;
 };

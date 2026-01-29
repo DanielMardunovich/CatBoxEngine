@@ -5,6 +5,7 @@
 #include "Entity.h"
 #include "Camera.h"
 #include "Math/Vec3.h"
+#include "../graphics/Light.h"  // Include Light structure
 
 // Forward declare to avoid circular dependency
 class EntityManager;
@@ -43,16 +44,13 @@ public:
     const Camera& GetCamera() const { return m_camera; }
     void SetCamera(const Camera& camera) { m_camera = camera; }
     
-    // Lighting
-    struct DirectionalLight
-    {
-        Vec3 Direction{0.5f, -0.7f, 1.0f};
-        Vec3 Color{1.0f, 1.0f, 1.0f};
-        float Intensity = 1.0f;
-    };
-    
-    DirectionalLight& GetLight() { return m_light; }
-    const DirectionalLight& GetLight() const { return m_light; }
+    // Lights (modern system)
+    void AddLight(const Light& light) { m_lights.push_back(light); }
+    void RemoveLight(size_t index);
+    const std::vector<Light>& GetLights() const { return m_lights; }
+    std::vector<Light>& GetLights() { return m_lights; }
+    void ClearLights() { m_lights.clear(); }
+    size_t GetLightCount() const { return m_lights.size(); }
     
     // Environment
     Vec3 AmbientColor{0.1f, 0.1f, 0.1f};
@@ -80,7 +78,7 @@ private:
     bool m_isLoaded = false;
     
     std::vector<Entity> m_entities;
+    std::vector<Light> m_lights;  // Store scene lights
     Camera m_camera;
-    DirectionalLight m_light;
     Metadata m_metadata;
 };
