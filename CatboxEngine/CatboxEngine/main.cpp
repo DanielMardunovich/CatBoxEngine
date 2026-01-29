@@ -7,7 +7,7 @@ int main() {
 
 	std::cout << "Welcome to Catbox Engine!" << '\n';
 	
-	Engine* engine = new Engine();
+	Engine* engine = new Engine(1920, 1080);
 	
 	engine->app();
 	

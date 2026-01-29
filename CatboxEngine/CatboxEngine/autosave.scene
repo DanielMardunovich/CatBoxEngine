@@ -1,0 +1,23 @@
+[Scene]
+Name=Default Scene
+Version=1.0
+Author=
+Description=
+
+[Camera]
+Position=0,0,3
+Yaw=-90
+Pitch=0
+FOV=60
+Near=0.1
+Far=100
+
+[Environment]
+Ambient=0.1,0.1,0.1
+Background=0.4,0.3,0.2
+
+[Lights]
+Count=0
+
+[Entities]
+Count=0
