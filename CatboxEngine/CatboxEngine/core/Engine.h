@@ -1,5 +1,6 @@
 #pragma once
 #include "../graphics/Shader.h"
+#include "../graphics/RenderPipeline.h"
 #include "../resources/Entity.h"
 #include "../resources/Camera.h"
 #include "../resources/EntityManager.h"
@@ -33,22 +34,17 @@ public:
     void OnDrop(const std::vector<std::string>& paths);
     
 private:
-void Update(float deltaTime);
-void Render();
-void RenderLightIndicators(const glm::mat4& viewProj);
-void RenderShadowMaps();  // Render shadow maps for all lights
+    void Update(float deltaTime);
+    void Render();
     
-int Initialize();
-int InitGlfw();
-int InitGlad();
-    
-int InitImGui();
-void SetupMessageSubscriptions();
-    
-    
-void Cleanup();
+    int Initialize();
+    int InitGlfw();
+    int InitGlad();
+    int InitImGui();
+    void SetupMessageSubscriptions();
+    void Cleanup();
 
-GLFWwindow* GetWindow() { return window; }
+    GLFWwindow* GetWindow() { return window; }
     
     //------------- variables -----------------
 private:
@@ -61,19 +57,17 @@ private:
     bool glfwInitialized;
     bool imguiInitialized;
     
+    // Rendering system
+    RenderPipeline m_renderPipeline;
     
-    Shader myShader;
-    Shader shadowShader;  // Shadow map rendering shader
-    
-    // spawned entities
-    EntityManager entityManager; // Updated to handle mesh assignment directly
+    // Game systems
+    EntityManager entityManager;
     UIManager uiManager;
-    bool useSharedCube = true;
-
     Camera camera;
-    // UI spawn parameters
+    
+    // UI state
     Vec3 spawnPosition{0,0,0};
     Vec3 spawnScale{0.5f,0.5f,0.5f};
     int selectedEntityIndex = -1;
-    // mouse state moved to Camera
+    bool useSharedCube = true;
 };

@@ -22,7 +22,7 @@ Count=1
 [Light0]
 Name=Point Light 0
 Type=1
-Position=0,5,0
+Position=2.6,2,0
 Direction=0,-1,0
 Color=1,1,1
 Intensity=1
@@ -31,17 +31,17 @@ Linear=0.09
 Quadratic=0.032
 InnerCutoff=12.5
 OuterCutoff=17.5
-CastsShadows=0
+CastsShadows=1
 ShadowMapSize=1024
-ShadowBias=0.005
+ShadowBias=0.01
 ShadowOrthoSize=20
-ShadowNearPlane=1
-ShadowFarPlane=50
-ShadowFOV=120
+ShadowNearPlane=1.471
+ShadowFarPlane=43.577
+ShadowFOV=148
 Enabled=1
 
 [Entities]
-Count=1
+Count=2
 
 [Entity0]
 Name=Cube
@@ -49,5 +49,14 @@ Position=0,0,0
 Rotation=0,0,0
 Scale=20,0.1,20
 MeshPath=[cube]
+Shininess=32
+Alpha=1
+
+[Entity1]
+Name=Gigi
+Position=0,0,0
+Rotation=0,0,0
+Scale=0.5,0.5,0.5
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\scene.gltf
 Shininess=32
 Alpha=1

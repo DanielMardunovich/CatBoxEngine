@@ -241,6 +241,7 @@
   <ItemGroup>
     <None Include="Dependencies\stb_image.h.orig" />
     <None Include="docs\AdvancedRendering.md" />
+    <None Include="docs\ArchitectureRefactoring.md" />
     <None Include="docs\BlendShapes_MorphTargets.md" />
     <None Include="docs\CleanupSummary.md" />
     <None Include="docs\FrustumCulling.md" />
@@ -259,6 +260,7 @@
     <None Include="docs\PointLightShadowCutoff_Fixed.md" />
     <None Include="docs\ProjectCleanup.md" />
     <None Include="docs\RealisticShadows_Fixed.md" />
+    <None Include="docs\RefactoredArchitecture.md" />
     <None Include="docs\RenderingFixes_LightVisualization.md" />
     <None Include="docs\RenderPipeline_ShadowFixes.md" />
     <None Include="docs\SceneEntitySync.md" />

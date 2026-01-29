@@ -351,5 +351,7 @@
     <None Include="docs\PointLightShadowCutoff_Fixed.md" />
     <None Include="docs\RealisticShadows_Fixed.md" />
     <None Include="docs\LightPersistence.md" />
+    <None Include="docs\ArchitectureRefactoring.md" />
+    <None Include="docs\RefactoredArchitecture.md" />
   </ItemGroup>
 </Project>
