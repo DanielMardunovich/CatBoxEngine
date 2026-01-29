@@ -8,9 +8,14 @@ out vec2 TexCoord;
 out vec3 FragNormal;
 out vec3 FragTangent;
 out vec3 FragPos;
+out vec4 FragPosLightSpace[8];  // Light space position for each light
 
 uniform mat4 u_MVP;
 uniform mat4 transform;
+
+// Light space matrices for shadow mapping (separate from Light struct)
+uniform mat4 u_LightSpaceMatrices[8];
+uniform int u_NumLights;
 
 void main()
 {
@@ -24,6 +29,12 @@ void main()
     mat3 normalMat = transpose(inverse(mat3(transform)));
     FragNormal = normalize(normalMat * aNormal);
     FragTangent = normalize(mat3(transform) * aTangent);
+    
+    // Calculate light space positions for shadow mapping
+    for (int i = 0; i < u_NumLights && i < 8; ++i)
+    {
+        FragPosLightSpace[i] = u_LightSpaceMatrices[i] * worldPos;
+    }
     
     gl_Position = u_MVP * worldPos;
 }

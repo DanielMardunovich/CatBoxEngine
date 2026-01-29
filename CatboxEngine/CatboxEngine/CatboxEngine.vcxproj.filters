@@ -102,12 +102,6 @@
     <ClCompile Include="graphics\passes\ShadowPass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="graphics\RenderCommand.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\Renderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="graphics\RenderPipeline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -230,16 +224,7 @@
     <ClInclude Include="graphics\passes\LightingPass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="graphics\passes\RenderPass.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="graphics\passes\ShadowPass.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\RenderCommand.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\RenderItem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="graphics\RenderPipeline.h">
@@ -288,9 +273,6 @@
       <Filter>Header Files\Entety</Filter>
     </ClInclude>
     <ClInclude Include="graphics\Mesh.h">
-      <Filter>Header Files\Entety</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\Renderer.h">
       <Filter>Header Files\Entety</Filter>
     </ClInclude>
     <ClInclude Include="ui\Inspectors\CameraInspector.h">
@@ -358,5 +340,13 @@
     <None Include="docs\AdvancedRendering.md" />
     <None Include="docs\LightSpawningUI.md" />
     <None Include="docs\LightingSystemTest.md" />
+    <None Include="docs\RenderingFixes_LightVisualization.md" />
+    <None Include="docs\ShadowMapping.md" />
+    <None Include="docs\SceneLoadingFix.md" />
+    <None Include="docs\ShaderCompilationFix.md" />
+    <None Include="docs\RenderPipeline_ShadowFixes.md" />
+    <None Include="docs\ProjectCleanup.md" />
+    <None Include="docs\CleanupSummary.md" />
+    <None Include="docs\ShadowDebug.md" />
   </ItemGroup>
 </Project>

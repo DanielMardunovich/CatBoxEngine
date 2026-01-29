@@ -1,11 +1,13 @@
 #include "Scene.h"
 #include "EntityManager.h"
 #include "../graphics/MeshManager.h"
+#include "../graphics/Mesh.h"
 #include "../core/MessageQueue.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <chrono>
+#include <cfloat>
 
 Scene::Scene(const std::string& name)
     : m_name(name)
@@ -29,26 +31,58 @@ void Scene::OnLoad(EntityManager& entityManager)
 {
     if (m_isLoaded) return;
     
-    std::cout << "Loading scene: " << m_name << " (" << m_entities.size() << " entities)" << std::endl;
     m_isLoaded = true;
     
     // Clear existing entities in manager
     entityManager.Clear();
     
     // Load all entities from this scene into the entity manager
-    for (const auto& entity : m_entities)
+    for (auto& entity : m_entities)
     {
+        // Ensure mesh is loaded with correct handle
+        if (!entity.MeshPath.empty() && entity.MeshPath != "[cube]")
+        {
+            // Reload mesh to ensure it's in memory
+            MeshHandle newHandle = MeshManager::Instance().LoadMeshSync(entity.MeshPath);
+            if (newHandle != 0)
+            {
+                // Release old handle if different
+                if (entity.MeshHandle != 0 && entity.MeshHandle != newHandle)
+                {
+                    MeshManager::Instance().Release(entity.MeshHandle);
+                }
+                entity.MeshHandle = newHandle;
+                
+                // Ensure bounds are calculated
+                Mesh* mesh = MeshManager::Instance().GetMesh(newHandle);
+                if (mesh)
+                {
+                    // Check if bounds are valid
+                    bool validBounds = (mesh->BoundsMin.x != FLT_MAX) && (mesh->BoundsMax.x != -FLT_MAX);
+                    if (!validBounds)
+                    {
+                        mesh->CalculateBounds();
+                    }
+                }
+            }
+            else
+            {
+                std::cerr << "  Failed to reload mesh: " << entity.MeshPath << std::endl;
+            }
+        }
+        else if (entity.MeshPath == "[cube]")
+        {
+            // Use shared cube
+            entity.MeshHandle = MeshManager::Instance().GetSharedCubeHandle();
+        }
+        
         entityManager.AddEntity(entity, false); // false = don't save to scene (we already have them)
     }
-    
-    std::cout << "  Loaded " << m_entities.size() << " entities into scene" << std::endl;
 }
 
 void Scene::OnUnload(EntityManager& entityManager)
 {
     if (!m_isLoaded) return;
-    
-    std::cout << "Unloading scene: " << m_name << std::endl;
     
     // Capture current state before unloading
     CaptureFromEntityManager(entityManager);
@@ -74,8 +108,6 @@ void Scene::CaptureFromEntityManager(EntityManager& entityManager)
     auto now = std::chrono::system_clock::now();
     m_metadata.modifiedTime = std::chrono::duration_cast<std::chrono::seconds>(
         now.time_since_epoch()).count();
-    
-    std::cout << "  Captured " << m_entities.size() << " entities from EntityManager" << std::endl;
 }
 
 void Scene::Update(float deltaTime)

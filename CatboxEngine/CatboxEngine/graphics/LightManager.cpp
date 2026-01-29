@@ -18,7 +18,6 @@ size_t LightManager::AddLight(const Light& light)
         CreateShadowMap(m_lights[index]);
     }
     
-    std::cout << "Light added: " << light.Name << " (Index: " << index << ")" << std::endl;
     return index;
 }
 
@@ -29,8 +28,6 @@ void LightManager::RemoveLight(size_t index)
     
     DeleteShadowMap(m_lights[index]);
     m_lights.erase(m_lights.begin() + index);
-    
-    std::cout << "Light removed at index: " << index << std::endl;
 }
 
 Light* LightManager::GetLight(size_t index)
@@ -82,8 +79,6 @@ void LightManager::CreateShadowMap(Light& light)
     }
     
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    
-    std::cout << "Shadow map created: " << light.ShadowMapSize << "x" << light.ShadowMapSize << std::endl;
 }
 
 void LightManager::DeleteShadowMap(Light& light)
@@ -141,6 +136,4 @@ void LightManager::CreateDefaultLights()
     pointLight.Intensity = 1.0f;
     pointLight.CastsShadows = false;
     AddLight(pointLight);
-    
-    std::cout << "Default lights created" << std::endl;
 }

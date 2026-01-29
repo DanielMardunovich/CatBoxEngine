@@ -35,6 +35,8 @@ public:
 private:
 void Update(float deltaTime);
 void Render();
+void RenderLightIndicators(const glm::mat4& viewProj);
+void RenderShadowMaps();  // Render shadow maps for all lights
     
 int Initialize();
 int InitGlfw();
@@ -61,6 +63,7 @@ private:
     
     
     Shader myShader;
+    Shader shadowShader;  // Shadow map rendering shader
     
     // spawned entities
     EntityManager entityManager; // Updated to handle mesh assignment directly

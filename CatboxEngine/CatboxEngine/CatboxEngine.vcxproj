@@ -157,8 +157,6 @@
     <ClCompile Include="graphics\passes\GBufferPass.cpp" />
     <ClCompile Include="graphics\passes\LightingPass.cpp" />
     <ClCompile Include="graphics\passes\ShadowPass.cpp" />
-    <ClCompile Include="graphics\RenderCommand.cpp" />
-    <ClCompile Include="graphics\Renderer.cpp" />
     <ClCompile Include="graphics\RenderPipeline.cpp" />
     <ClCompile Include="graphics\Shader.cpp" />
     <ClCompile Include="graphics\Texture.cpp" />
@@ -209,11 +207,7 @@
     <ClInclude Include="graphics\passes\ForwardPass.h" />
     <ClInclude Include="graphics\passes\GBufferPass.h" />
     <ClInclude Include="graphics\passes\LightingPass.h" />
-    <ClInclude Include="graphics\passes\RenderPass.h" />
     <ClInclude Include="graphics\passes\ShadowPass.h" />
-    <ClInclude Include="graphics\RenderCommand.h" />
-    <ClInclude Include="graphics\Renderer.h" />
-    <ClInclude Include="graphics\RenderItem.h" />
     <ClInclude Include="graphics\RenderPipeline.h" />
     <ClInclude Include="graphics\Shader.h" />
     <ClInclude Include="graphics\Texture.h" />
@@ -248,6 +242,7 @@
     <None Include="Dependencies\stb_image.h.orig" />
     <None Include="docs\AdvancedRendering.md" />
     <None Include="docs\BlendShapes_MorphTargets.md" />
+    <None Include="docs\CleanupSummary.md" />
     <None Include="docs\FrustumCulling.md" />
     <None Include="docs\GLTF_Implementation_Guide.md" />
     <None Include="docs\GLTF_QuickStart.md" />
@@ -260,9 +255,16 @@
     <None Include="docs\MultiMaterialSupport.md" />
     <None Include="docs\OBJ_UVs_Normals.md" />
     <None Include="docs\PerEntityTextures.md" />
+    <None Include="docs\ProjectCleanup.md" />
+    <None Include="docs\RenderingFixes_LightVisualization.md" />
+    <None Include="docs\RenderPipeline_ShadowFixes.md" />
     <None Include="docs\SceneEntitySync.md" />
+    <None Include="docs\SceneLoadingFix.md" />
     <None Include="docs\ScenePersistenceFix.md" />
     <None Include="docs\SceneSystem.md" />
+    <None Include="docs\ShaderCompilationFix.md" />
+    <None Include="docs\ShadowDebug.md" />
+    <None Include="docs\ShadowMapping.md" />
     <None Include="README.md" />
     <None Include="shaders\ShadowMap.frag" />
     <None Include="shaders\ShadowMap.vert" />

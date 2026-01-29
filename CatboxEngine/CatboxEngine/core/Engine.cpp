@@ -196,7 +196,13 @@ void Engine::Render()
     // Render ImGui
     ImGui::Render();
     
-    // Render scene
+    // 1. Shadow pass: Render shadow maps for all lights
+    RenderShadowMaps();
+    
+    // Reset viewport for main rendering
+    glViewport(0, 0, display_w, display_h);
+    
+    // 2. Main pass: Render scene with lighting
     myShader.Use();
 
     // Use camera for view/projection
@@ -234,10 +240,23 @@ void Engine::Render()
         myShader.setFloat((base + "innerCutoff").c_str(), std::cos(glm::radians(light.InnerCutoff)));
         myShader.setFloat((base + "outerCutoff").c_str(), std::cos(glm::radians(light.OuterCutoff)));
         
-        // Shadows (placeholder for now)
-        myShader.SetBool((base + "castsShadows").c_str(), false);  // TODO: Implement shadow mapping
+        // Shadows
+        myShader.SetBool((base + "castsShadows").c_str(), light.CastsShadows && light.Enabled);
         myShader.setFloat((base + "shadowBias").c_str(), light.ShadowBias);
         myShader.SetBool((base + "enabled").c_str(), light.Enabled);
+        
+        // Pass light space matrix to vertex shader (separate array)
+        std::string lightSpaceMatrixName = "u_LightSpaceMatrices[" + std::to_string(i) + "]";
+        myShader.SetMat4(lightSpaceMatrixName.c_str(), light.LightSpaceMatrix);
+        
+        // Bind shadow map
+        if (light.CastsShadows && light.Enabled)
+        {
+            // Bind shadow map to texture unit 3+i
+            glActiveTexture(GL_TEXTURE3 + i);
+            glBindTexture(GL_TEXTURE_2D, light.ShadowMapTexture);
+            myShader.SetInt((base + "shadowMap").c_str(), 3 + i);
+        }
     }
     
     // Frustum culling statistics
@@ -254,16 +273,21 @@ void Engine::Render()
         if (e.MeshHandle != 0) 
             mesh = MeshManager::Instance().GetMesh(e.MeshHandle);
         
-        // Transform bounding box to world space
-        if (mesh)
+        if (!mesh)
+            continue;  // Skip if no mesh
+        
+        // Create model matrix (used for both culling and rendering)
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(e.Transform.Position.x, e.Transform.Position.y, e.Transform.Position.z));
+        model = glm::rotate(model, glm::radians(e.Transform.Rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(e.Transform.Rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(e.Transform.Rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::scale(model, glm::vec3(e.Transform.Scale.x, e.Transform.Scale.y, e.Transform.Scale.z));
+        
+        // Frustum culling (only if bounds are valid)
+        bool validBounds = (mesh->BoundsMin.x != FLT_MAX) && (mesh->BoundsMax.x != -FLT_MAX);
+        if (validBounds)
         {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, glm::vec3(e.Transform.Position.x, e.Transform.Position.y, e.Transform.Position.z));
-            model = glm::rotate(model, glm::radians(e.Transform.Rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-            model = glm::rotate(model, glm::radians(e.Transform.Rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-            model = glm::rotate(model, glm::radians(e.Transform.Rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-            model = glm::scale(model, glm::vec3(e.Transform.Scale.x, e.Transform.Scale.y, e.Transform.Scale.z));
-            
             // Transform bounding box corners
             glm::vec4 min4(mesh->BoundsMin.x, mesh->BoundsMin.y, mesh->BoundsMin.z, 1.0f);
             glm::vec4 max4(mesh->BoundsMax.x, mesh->BoundsMax.y, mesh->BoundsMax.z, 1.0f);
@@ -283,16 +307,6 @@ void Engine::Render()
         }
         
         // Entity is visible, render it
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(e.Transform.Position.x, e.Transform.Position.y, e.Transform.Position.z));
-
-        // apply rotation from inspector (Euler degrees -> radians)
-        model = glm::rotate(model, glm::radians(e.Transform.Rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(e.Transform.Rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(e.Transform.Rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-
-        model = glm::scale(model, glm::vec3(e.Transform.Scale.x, e.Transform.Scale.y, e.Transform.Scale.z));
-
         myShader.SetMat4("u_MVP", vp);
         myShader.SetMat4("transform", model);
 
@@ -406,6 +420,9 @@ void Engine::Render()
         }
     }
     
+    // Render light indicators (small cubes at light positions)
+    RenderLightIndicators(vp);
+    
     // Optional: Print frustum culling statistics (debug only)
     // std::cout << "Frustum Culling: " << culledEntities << "/" << totalEntities 
     //           << " entities culled" << std::endl;
@@ -415,6 +432,196 @@ void Engine::Render()
     uiManager.Render();
 
     glfwSwapBuffers(GetWindow());
+}
+
+void Engine::RenderShadowMaps()
+{
+    auto& lightMgr = LightManager::Instance();
+    auto& lights = lightMgr.GetAllLights();
+    
+    // DEBUG: Shadow pass info
+    std::cout << "\n=== Shadow Pass Debug ===" << std::endl;
+    std::cout << "Total lights: " << lights.size() << std::endl;
+    for (size_t i = 0; i < lights.size(); ++i)
+    {
+        std::cout << "Light " << i << " (" << lights[i].Name << "): "
+                  << "FBO=" << lights[i].ShadowMapFBO 
+                  << ", Tex=" << lights[i].ShadowMapTexture
+                  << ", Casts=" << lights[i].CastsShadows 
+                  << ", Enabled=" << lights[i].Enabled << std::endl;
+    }
+    
+    // Use shadow shader
+    shadowShader.Use();
+    
+    // Disable color writes, only depth
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    
+    for (size_t lightIdx = 0; lightIdx < lights.size(); ++lightIdx)
+    {
+        auto& light = lights[lightIdx];
+        
+        if (!light.CastsShadows || !light.Enabled || light.ShadowMapFBO == 0)
+            continue;
+        
+        // Bind shadow map framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, light.ShadowMapFBO);
+        glViewport(0, 0, light.ShadowMapSize, light.ShadowMapSize);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        
+        // Verify framebuffer is complete
+        GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_COMPLETE)
+        {
+            std::cerr << "Shadow framebuffer incomplete for light: " << light.Name << std::endl;
+            continue;
+        }
+        
+        // Calculate light space matrix
+        glm::mat4 lightProjection, lightView;
+        glm::mat4 lightSpaceMatrix;
+        
+        if (light.Type == LightType::Directional)
+        {
+            // Orthographic projection for directional light
+            float size = light.ShadowOrthoSize;
+            lightProjection = glm::ortho(-size, size, -size, size, 
+                                        light.ShadowNearPlane, light.ShadowFarPlane);
+            
+            // View from light position looking along direction
+            glm::vec3 lightPos = glm::vec3(
+                -light.Direction.x * 10.0f,
+                -light.Direction.y * 10.0f,
+                -light.Direction.z * 10.0f
+            );
+            glm::vec3 lightDir(light.Direction.x, light.Direction.y, light.Direction.z);
+            glm::vec3 target = lightPos + lightDir;
+            lightView = glm::lookAt(lightPos, target, glm::vec3(0.0f, 1.0f, 0.0f));
+        }
+        else if (light.Type == LightType::Point || light.Type == LightType::Spot)
+        {
+            // Normalize direction vector to avoid camera issues
+            glm::vec3 direction(light.Direction.x, light.Direction.y, light.Direction.z);
+            float dirLength = glm::length(direction);
+            if (dirLength > 0.001f)
+            {
+                direction = glm::normalize(direction);
+            }
+            else
+            {
+                direction = glm::vec3(0.0f, -1.0f, 0.0f); // Default downward
+            }
+            
+            // Use proper FOV for spot lights
+            float fov = (light.Type == LightType::Spot) ? light.OuterCutoff * 2.0f : light.ShadowFOV;
+            lightProjection = glm::perspective(glm::radians(fov), 1.0f,
+                                              light.ShadowNearPlane, light.ShadowFarPlane);
+            
+            glm::vec3 lightPos(light.Position.x, light.Position.y, light.Position.z);
+            glm::vec3 target = lightPos + direction;
+            
+            // Choose appropriate up vector
+            glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+            if (std::abs(direction.y) > 0.99f)  // Nearly vertical
+            {
+                up = glm::vec3(1.0f, 0.0f, 0.0f);
+            }
+            
+            lightView = glm::lookAt(lightPos, target, up);
+        }
+        
+        lightSpaceMatrix = lightProjection * lightView;
+        shadowShader.SetMat4("u_LightSpaceMatrix", lightSpaceMatrix);
+        
+        // Store light space matrix for main pass
+        light.LightSpaceMatrix = lightSpaceMatrix;
+        
+        // Render all entities to shadow map
+        for (const auto& e : entityManager.GetAll())
+        {
+            Mesh* mesh = nullptr;
+            if (e.MeshHandle != 0)
+                mesh = MeshManager::Instance().GetMesh(e.MeshHandle);
+            
+            if (!mesh)
+                continue;
+            
+            // Create model matrix
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(e.Transform.Position.x, e.Transform.Position.y, e.Transform.Position.z));
+            model = glm::rotate(model, glm::radians(e.Transform.Rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+            model = glm::rotate(model, glm::radians(e.Transform.Rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::rotate(model, glm::radians(e.Transform.Rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::scale(model, glm::vec3(e.Transform.Scale.x, e.Transform.Scale.y, e.Transform.Scale.z));
+            
+            shadowShader.SetMat4("u_Model", model);
+            
+            // Draw mesh (simple depth only)
+            if (mesh->VAO != 0)
+                mesh->Draw();
+        }
+    }
+    
+    // Restore default framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+}
+
+void Engine::RenderLightIndicators(const glm::mat4& viewProj)
+{
+    auto& lightMgr = LightManager::Instance();
+    auto& lights = lightMgr.GetAllLights();
+    
+    if (lights.empty())
+        return;
+    
+    // Get the shared cube mesh for light visualization
+    static MeshHandle lightCubeMesh = 0;
+    if (lightCubeMesh == 0)
+    {
+        lightCubeMesh = MeshManager::Instance().GetSharedCubeHandle();
+    }
+    
+    Mesh* cubeMesh = MeshManager::Instance().GetMesh(lightCubeMesh);
+    if (!cubeMesh)
+        return;
+    
+    // Render a small cube at each light position
+    for (size_t i = 0; i < lights.size(); ++i)
+    {
+        const auto& light = lights[i];
+        
+        // Skip directional lights (they don't have a position)
+        if (light.Type == LightType::Directional)
+            continue;
+        
+        // Skip disabled lights (make them semi-transparent)
+        float alpha = light.Enabled ? 1.0f : 0.3f;
+        
+        // Create model matrix for light indicator
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(light.Position.x, light.Position.y, light.Position.z));
+        model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));  // Small cube
+        
+        // Set shader uniforms
+        myShader.SetMat4("u_MVP", viewProj);
+        myShader.SetMat4("transform", model);
+        
+        // Use light color for the indicator cube
+        myShader.setVec3("u_DiffuseColor", light.Color.x, light.Color.y, light.Color.z);
+        myShader.SetBool("u_HasDiffuseMap", false);
+        myShader.SetBool("u_HasSpecularMap", false);
+        myShader.SetBool("u_HasNormalMap", false);
+        
+        // Make it bright/emissive looking
+        myShader.setVec3("u_SpecularColor", light.Color.x, light.Color.y, light.Color.z);
+        myShader.setFloat("u_Shininess", 8.0f);
+        myShader.setFloat("u_Alpha", alpha);
+        
+        // Draw the cube
+        if (cubeMesh->VAO != 0)
+            cubeMesh->Draw();
+    }
 }
 
 
@@ -442,6 +649,9 @@ int Engine::Initialize()
 
     // initialize the simple shader
     myShader.Initialize("./shaders/VertexShader.vert", "./shaders/FragmentShader.frag");
+    
+    // initialize shadow shader
+    shadowShader.Initialize("./shaders/ShadowMap.vert", "./shaders/ShadowMap.frag");
 
     // Initialize camera
     camera.Initialize({0,0,3}, {0,0,0}, {0,1,0}, 60.0f, width / height, 0.1f, 100.0f);

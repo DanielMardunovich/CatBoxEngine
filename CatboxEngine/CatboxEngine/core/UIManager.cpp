@@ -12,6 +12,7 @@
 #include "../ui/Inspectors/CameraInspector.h"
 #include "../graphics/MeshManager.h"
 #include "../graphics/LightManager.h"
+#include <glad/glad.h>
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -675,7 +676,57 @@ void UIManager::DrawLightsWindow()
         // Shadows
         if (ImGui::TreeNode("Shadows"))
         {
-            ImGui::Checkbox("Cast Shadows", &light.CastsShadows);
+            bool castsShadows = light.CastsShadows;
+            if (ImGui::Checkbox("Cast Shadows", &castsShadows))
+            {
+                light.CastsShadows = castsShadows;
+                
+                // Create or destroy shadow map
+                if (castsShadows && light.ShadowMapFBO == 0)
+                {
+                    // Create shadow map
+                    glGenFramebuffers(1, &light.ShadowMapFBO);
+                    glGenTextures(1, &light.ShadowMapTexture);
+                    
+                    glBindTexture(GL_TEXTURE_2D, light.ShadowMapTexture);
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+                                light.ShadowMapSize, light.ShadowMapSize, 0,
+                                GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+                    
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+                    float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+                    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+                    
+                    glBindFramebuffer(GL_FRAMEBUFFER, light.ShadowMapFBO);
+                    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                          GL_TEXTURE_2D, light.ShadowMapTexture, 0);
+                    
+                    glDrawBuffer(GL_NONE);
+                    glReadBuffer(GL_NONE);
+                    
+                    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+                    {
+                        std::cerr << "ERROR: Shadow framebuffer incomplete!" << std::endl;
+                    }
+                    
+                    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                    
+                    std::cout << "Shadow map created for " << light.Name << std::endl;
+                }
+                else if (!castsShadows && light.ShadowMapFBO != 0)
+                {
+                    // Destroy shadow map
+                    glDeleteFramebuffers(1, &light.ShadowMapFBO);
+                    glDeleteTextures(1, &light.ShadowMapTexture);
+                    light.ShadowMapFBO = 0;
+                    light.ShadowMapTexture = 0;
+                    
+                    std::cout << "Shadow map destroyed for " << light.Name << std::endl;
+                }
+            }
             
             if (light.CastsShadows)
             {

@@ -22,22 +22,13 @@ Ambient=0.1,0.1,0.1
 Background=0.4,0.3,0.2
 
 [Entities]
-Count=2
+Count=1
 
 [Entity0]
-Name=Cube
-Position=0,0,0
-Rotation=0,0,0
-Scale=20,0.1,20
-MeshPath=[cube]
-Shininess=32
-Alpha=1
-
-[Entity1]
-Name=Gigi
+Name=GIGI
 Position=0,0,0
 Rotation=0,0,0
 Scale=0.5,0.5,0.5
 MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\scene.gltf
-Shininess=32
-Alpha=1
+Shininess=219
+Alpha=0

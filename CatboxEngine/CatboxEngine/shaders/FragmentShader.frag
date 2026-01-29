@@ -7,6 +7,7 @@ in vec2 TexCoord;
 in vec3 FragNormal;
 in vec3 FragTangent;
 in vec3 FragPos;  // World position
+in vec4 FragPosLightSpace[8];  // Light space position for each light
 out vec4 FragColor;
 
 // Material properties
@@ -58,10 +59,12 @@ uniform int u_NumLights;
 uniform Light u_Lights[MAX_LIGHTS];
 
 // Shadow calculation with PCF
-float CalculateShadow(Light light, vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
+float CalculateShadow(int lightIndex, Light light, vec3 normal, vec3 lightDir)
 {
     if (!light.castsShadows)
         return 0.0;
+    
+    vec4 fragPosLightSpace = FragPosLightSpace[lightIndex];
     
     // Perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -96,7 +99,7 @@ float CalculateShadow(Light light, vec4 fragPosLightSpace, vec3 normal, vec3 lig
 }
 
 // Calculate lighting for one light
-vec3 CalculateLight(Light light, vec3 normal, vec3 viewDir, vec3 albedo, vec3 specular, float shadow)
+vec3 CalculateLight(int lightIndex, Light light, vec3 normal, vec3 viewDir, vec3 albedo, vec3 specular)
 {
     if (!light.enabled)
         return vec3(0.0);
@@ -135,6 +138,9 @@ vec3 CalculateLight(Light light, vec3 normal, vec3 viewDir, vec3 albedo, vec3 sp
         float intensity = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
         attenuation *= intensity;
     }
+    
+    // Calculate shadow
+    float shadow = CalculateShadow(lightIndex, light, normal, lightDir);
     
     // Diffuse
     float diff = max(dot(normal, lightDir), 0.0);
@@ -193,11 +199,7 @@ void main()
     vec3 lighting = ambient;
     for (int i = 0; i < u_NumLights && i < MAX_LIGHTS; ++i)
     {
-        // Calculate shadow (placeholder - need light space position)
-        float shadow = 0.0;
-        // TODO: Calculate shadow properly with light space matrix
-        
-        lighting += CalculateLight(u_Lights[i], N, V, albedo, specularColor, shadow);
+        lighting += CalculateLight(i, u_Lights[i], N, V, albedo, specularColor);
     }
     
     // Final color

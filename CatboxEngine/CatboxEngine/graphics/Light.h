@@ -1,6 +1,7 @@
 #pragma once
 #include "../resources/Math/Vec3.h"
 #include <string>
+#include <glm/glm.hpp>
 
 enum class LightType
 {
@@ -35,6 +36,7 @@ struct Light
     unsigned int ShadowMapFBO = 0;
     unsigned int ShadowMapTexture = 0;
     float ShadowBias = 0.005f;
+    glm::mat4 LightSpaceMatrix;      // Light's view-projection matrix
     
     // For directional lights (orthographic projection)
     float ShadowOrthoSize = 20.0f;
