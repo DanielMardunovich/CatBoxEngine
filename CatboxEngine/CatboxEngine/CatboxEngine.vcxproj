@@ -145,6 +145,7 @@
     <ClCompile Include="core\Time.cpp" />
     <ClCompile Include="core\UIManager.cpp" />
     <ClCompile Include="glad.c" />
+    <ClCompile Include="graphics\GraphicsSettings.cpp" />
     <ClCompile Include="graphics\LightManager.cpp" />
     <ClCompile Include="graphics\Mesh.cpp" />
     <ClCompile Include="graphics\MeshManager.cpp" />
@@ -158,6 +159,7 @@
     <ClCompile Include="resources\SceneManager.cpp" />
     <ClCompile Include="ui\Inspectors\CameraInspector.cpp" />
     <ClCompile Include="ui\Inspectors\EntityManagerInspector.cpp" />
+    <ClCompile Include="ui\Inspectors\GraphicsSettingsInspector.cpp" />
     <ClCompile Include="ui\Inspectors\LightInspector.cpp" />
     <ClCompile Include="ui\Inspectors\StatsInspector.cpp" />
   </ItemGroup>
@@ -183,6 +185,7 @@
     <ClInclude Include="Dependencies\stb_image.h" />
     <ClInclude Include="Dependencies\stb_image_write.h" />
     <ClInclude Include="Dependencies\tiny_gltf.h" />
+    <ClInclude Include="graphics\GraphicsSettings.h" />
     <ClInclude Include="graphics\Light.h" />
     <ClInclude Include="graphics\LightManager.h" />
     <ClInclude Include="graphics\Mesh.h" />
@@ -199,6 +202,7 @@
     <ClInclude Include="resources\Transform.h" />
     <ClInclude Include="ui\Inspectors\CameraInspector.h" />
     <ClInclude Include="ui\Inspectors\EntityManagerInspector.h" />
+    <ClInclude Include="ui\Inspectors\GraphicsSettingsInspector.h" />
     <ClInclude Include="ui\Inspectors\LightInspector.h" />
     <ClInclude Include="ui\Inspectors\StatsInspector.h" />
   </ItemGroup>

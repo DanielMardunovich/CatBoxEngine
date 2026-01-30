@@ -8,6 +8,7 @@ class CameraInspector;
 class EntityManagerInspector;
 class StatsInspector;
 class LightInspector;
+class GraphicsSettingsInspector;
 
 class UIManager
 {
@@ -40,4 +41,5 @@ private:
     EntityManagerInspector* m_entityManagerInspector = nullptr;
     StatsInspector* m_statsInspector = nullptr;
     LightInspector* m_lightInspector = nullptr;
+    GraphicsSettingsInspector* m_graphicsSettingsInspector = nullptr;
 };

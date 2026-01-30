@@ -4,6 +4,7 @@
 #include "../../resources/Entity.h"
 #include "../../graphics/MeshManager.h"
 #include "../../graphics/Mesh.h"
+#include "../../graphics/GraphicsSettings.h"
 #include "../../Dependencies/stb_image.h"
 #include "imgui.h"
 #include <glad/glad.h>
@@ -326,9 +327,17 @@ void EntityManagerInspector::DrawFullEntityInspector(EntityManager& entityManage
                     glGenTextures(1, &tex);
                     glBindTexture(GL_TEXTURE_2D, tex);
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-                    glGenerateMipmap(GL_TEXTURE_2D);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    
+                    // Generate mipmaps if enabled
+                    auto& settings = GraphicsSettings::Instance();
+                    if (settings.EnableMipmaps)
+                    {
+                        glGenerateMipmap(GL_TEXTURE_2D);
+                    }
+                    
+                    // Apply graphics settings
+                    settings.ApplyToTexture(tex);
+                    
                     stbi_image_free(data);
                     
                     entity.DiffuseTexture = tex;
@@ -375,9 +384,17 @@ void EntityManagerInspector::DrawFullEntityInspector(EntityManager& entityManage
                     glGenTextures(1, &tex);
                     glBindTexture(GL_TEXTURE_2D, tex);
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
-                    glGenerateMipmap(GL_TEXTURE_2D);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    
+                    // Generate mipmaps if enabled
+                    auto& settings = GraphicsSettings::Instance();
+                    if (settings.EnableMipmaps)
+                    {
+                        glGenerateMipmap(GL_TEXTURE_2D);
+                    }
+                    
+                    // Apply graphics settings
+                    settings.ApplyToTexture(tex);
+                    
                     stbi_image_free(data);
                     
                     entity.SpecularTexture = tex;
@@ -424,9 +441,17 @@ void EntityManagerInspector::DrawFullEntityInspector(EntityManager& entityManage
                     glGenTextures(1, &tex);
                     glBindTexture(GL_TEXTURE_2D, tex);
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-                    glGenerateMipmap(GL_TEXTURE_2D);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    
+                    // Generate mipmaps if enabled
+                    auto& settings = GraphicsSettings::Instance();
+                    if (settings.EnableMipmaps)
+                    {
+                        glGenerateMipmap(GL_TEXTURE_2D);
+                    }
+                    
+                    // Apply graphics settings
+                    settings.ApplyToTexture(tex);
+                    
                     stbi_image_free(data);
                     
                     entity.NormalTexture = tex;

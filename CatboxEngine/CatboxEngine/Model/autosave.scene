@@ -17,12 +17,12 @@ Ambient=0.1,0.1,0.1
 Background=0.4,0.3,0.2
 
 [Lights]
-Count=1
+Count=2
 
 [Light0]
 Name=Point Light 0
 Type=1
-Position=1.7,2.5,1.2
+Position=2.9,1.4,1.2
 Direction=0,-1,0
 Color=1,1,1
 Intensity=1
@@ -31,32 +31,45 @@ Linear=0.09
 Quadratic=0.032
 InnerCutoff=12.5
 OuterCutoff=17.5
-CastsShadows=1
+CastsShadows=0
 ShadowMapSize=1024
-ShadowBias=0.007
+ShadowBias=0.005
 ShadowOrthoSize=20
 ShadowNearPlane=1
 ShadowFarPlane=50
-ShadowFOV=133
+ShadowFOV=120
+Enabled=1
+
+[Light1]
+Name=Point Light 1
+Type=1
+Position=0,5,0
+Direction=0,-1,0
+Color=1,1,1
+Intensity=1
+Constant=1
+Linear=0.09
+Quadratic=0.032
+InnerCutoff=12.5
+OuterCutoff=17.5
+CastsShadows=0
+ShadowMapSize=1024
+ShadowBias=0.005
+ShadowOrthoSize=20
+ShadowNearPlane=1
+ShadowFarPlane=50
+ShadowFOV=120
 Enabled=1
 
 [Entities]
-Count=2
+Count=1
 
 [Entity0]
 Name=Cube
 Position=0,0,0
 Rotation=0,0,0
-Scale=1,1,1
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\scene.gltf
-Shininess=32
-Alpha=1
-
-[Entity1]
-Name=Cube
-Position=0,-0.1,0
-Rotation=0,0,0
-Scale=8.41,0.1,6.29
-MeshPath=[cube]
+Scale=0.73,0.5,0.5
+MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\FortificationsLevel5.obj
+DiffuseTexturePath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\fortifications.png
 Shininess=32
 Alpha=1

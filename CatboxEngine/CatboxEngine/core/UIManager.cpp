@@ -12,6 +12,7 @@
 #include "../ui/Inspectors/EntityManagerInspector.h"
 #include "../ui/Inspectors/StatsInspector.h"
 #include "../ui/Inspectors/LightInspector.h"
+#include "../ui/Inspectors/GraphicsSettingsInspector.h"
 #include "../graphics/MeshManager.h"
 #include "../graphics/LightManager.h"
 #include <glad/glad.h>
@@ -27,6 +28,7 @@ UIManager::UIManager()
     m_entityManagerInspector = new EntityManagerInspector();
     m_statsInspector = new StatsInspector();
     m_lightInspector = new LightInspector();
+    m_graphicsSettingsInspector = new GraphicsSettingsInspector();
 }
 
 UIManager::~UIManager()
@@ -36,6 +38,7 @@ UIManager::~UIManager()
     delete m_entityManagerInspector;
     delete m_statsInspector;
     delete m_lightInspector;
+    delete m_graphicsSettingsInspector;
 }
 
 void UIManager::NewFrame()
@@ -60,6 +63,9 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     
     // Light Inspector
     m_lightInspector->Draw();
+    
+    // Graphics Settings Inspector
+    m_graphicsSettingsInspector->Draw();
     
     // Scene Manager
     DrawSceneManager(entityManager);
