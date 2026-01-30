@@ -31,6 +31,7 @@ struct Camera
     float Aspect = 1.0f;
     float Near = 0.1f;
     float Far = 100.0f;
+	float Speed = 2.5f;
 
     // Setters
     void SetPerspective(float fovDegrees, float aspect, float nearPlane, float farPlane)
@@ -57,7 +58,7 @@ struct Camera
 
     // Initialize camera fields and compute initial orientation
     void Initialize(const Vec3& position, const Vec3& target, const Vec3& up,
-                    float fovDegrees, float aspect, float nearPlane, float farPlane);
+                    float fovDegrees, float aspect, float nearPlane, float farPlane, float cameraSpeed);
 
     // Matrix getters
     [[nodiscard]] glm::mat4 GetViewMatrix() const;

@@ -23,7 +23,7 @@ void CameraInspector::Draw(Camera& camera)
     // Field of View
     if (ImGui::SliderFloat("FOV", &camera.FOV, MIN_FOV, MAX_FOV))
     {
-        // Value updated directly
+        
     }
 
     // Near and Far planes
@@ -32,6 +32,9 @@ void CameraInspector::Draw(Camera& camera)
 
     // Mouse sensitivity
     ImGui::SliderFloat("Mouse Sensitivity", &camera.MouseSensitivity, MIN_SENSITIVITY, MAX_SENSITIVITY);
+
+	//Camera speed
+    ImGui::InputFloat("Camera Speed", &camera.Speed);
 
     // Transform
     ImGui::Separator();
@@ -43,7 +46,7 @@ void CameraInspector::Draw(Camera& camera)
     if (ImGui::Button("Reset Camera"))
     {
         camera.Initialize({0.0f, 0.0f, 3.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, 
-                         DEFAULT_FOV, camera.Aspect, DEFAULT_NEAR, DEFAULT_FAR);
+                         DEFAULT_FOV, camera.Aspect, DEFAULT_NEAR, DEFAULT_FAR, 2.5f);
     }
 
     ImGui::End();

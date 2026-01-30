@@ -6,14 +6,13 @@
 // Constants
 namespace
 {
-    constexpr float DEFAULT_MOVE_SPEED = 2.5f;
     constexpr float MAX_PITCH = 89.0f;
     constexpr float MIN_PITCH = -89.0f;
 }
 
 void Camera::Update(GLFWwindow* window, float deltaTime)
 {
-    const float speed = DEFAULT_MOVE_SPEED * deltaTime;
+    const float cameraSpeed = Speed * deltaTime;
 
     glm::vec3 camPos(Position.x, Position.y, Position.z);
     glm::vec3 camFront(Front.x, Front.y, Front.z);
@@ -23,18 +22,18 @@ void Camera::Update(GLFWwindow* window, float deltaTime)
     const glm::vec3 right = glm::normalize(glm::cross(forward, camUpVec));
 
     // Movement input
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camPos += forward * speed;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camPos -= forward * speed;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camPos -= right * speed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camPos += right * speed;
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camPos += camUpVec * speed;
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) camPos -= camUpVec * speed;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camPos += forward * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camPos -= forward * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camPos -= right * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camPos += right * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camPos += camUpVec * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) camPos -= camUpVec * cameraSpeed;
 
     Position = { camPos.x, camPos.y, camPos.z };
 }
 
 void Camera::Initialize(const Vec3& position, const Vec3& target, const Vec3& up,
-                        float fovDegrees, float aspect, float nearPlane, float farPlane)
+                        float fovDegrees, float aspect, float nearPlane, float farPlane, float cameraSpeed)
 {
     Position = position;
     Target = target;
@@ -43,6 +42,7 @@ void Camera::Initialize(const Vec3& position, const Vec3& target, const Vec3& up
     Aspect = aspect;
     Near = nearPlane;
     Far = farPlane;
+	Speed = cameraSpeed;
 
     // compute initial front vector from target
     glm::vec3 dir = glm::normalize(glm::vec3(target.x - position.x, target.y - position.y, target.z - position.z));

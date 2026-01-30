@@ -189,7 +189,7 @@ int Engine::Initialize()
     }
 
     // Initialize camera
-    m_camera.Initialize({0,0,3}, {0,0,0}, {0,1,0}, 60.0f, m_width / m_height, 0.1f, 100.0f);
+    m_camera.Initialize({0,0,3}, {0,0,0}, {0,1,0}, 60.0f, m_width / m_height, 0.1f, 100.0f, 2.5f);
 
     // ImGui
     if (InitImGui() != 0)
