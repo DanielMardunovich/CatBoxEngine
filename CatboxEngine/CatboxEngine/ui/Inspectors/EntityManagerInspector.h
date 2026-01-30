@@ -4,6 +4,7 @@
 
 class EntityManager;
 class Camera;
+class Entity;
 
 class EntityManagerInspector
 {
@@ -31,10 +32,20 @@ private:
     // Entity list
     void DrawEntityList(EntityManager& entityManager, int& selectedIndex);
     
-    // Full entity inspector (embedded when selected)
+    // Full entity inspector (when selected)
     void DrawFullEntityInspector(EntityManager& entityManager, int selectedIndex);
+    void DrawEntityInfo(Entity& entity);
+    void DrawEntityTransform(Entity& entity);
+    void DrawEntityMesh(Entity& entity);
+    void DrawEntityMaterial(Entity& entity);
+    void DrawEntityTextures(Entity& entity);
     
-    // Helpers
+    // Texture management helpers
+    enum class TextureType { Diffuse, Specular, Normal };
+    void DrawTextureOverride(Entity& entity, TextureType type);
+    unsigned int LoadTextureWithSettings(const char* path, int& width, int& height, int channels);
+    
+    // Popups
     void DrawTextureAssignmentPopup(EntityManager& entityManager, int selectedIndex);
     void DrawModelErrorPopup();
     

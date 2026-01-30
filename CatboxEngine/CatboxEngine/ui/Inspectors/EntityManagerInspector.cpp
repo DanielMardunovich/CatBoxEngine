@@ -1,4 +1,4 @@
-#include "EntityManagerInspector.h"
+﻿#include "EntityManagerInspector.h"
 #include "../../core/Platform.h"
 #include "../../resources/EntityManager.h"
 #include "../../resources/Entity.h"
@@ -12,27 +12,31 @@
 #include <cctype>
 #include <iostream>
 
+// Constants
+namespace
+{
+    constexpr int ENTITY_LIST_HEIGHT = 200;
+    constexpr float DELETE_BUTTON_WIDTH = 90.0f;
+    constexpr int DIFFUSE_CHANNELS = 4;
+    constexpr int SPECULAR_CHANNELS = 1;
+    constexpr int NORMAL_CHANNELS = 4;
+}
+
 void EntityManagerInspector::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale,
                                  int& selectedIndex, bool& useSharedCube)
 {
-    ImGui::Begin("Entity Manager");
+    ImGui::Begin("Entity Inspector");
 
-    // Header with entity count
     ImGui::Text("Entities: %zu", entityManager.Size());
     ImGui::Separator();
 
-    // Spawn controls at the top
     DrawSpawnControls(entityManager, spawnPosition, spawnScale, selectedIndex, useSharedCube);
-
     ImGui::Separator();
 
-    // Entity list
     ImGui::Text("Entity List:");
     DrawEntityList(entityManager, selectedIndex);
-
     ImGui::Separator();
 
-    // Full entity inspector embedded when selected
     if (selectedIndex >= 0 && selectedIndex < static_cast<int>(entityManager.Size()))
     {
         DrawFullEntityInspector(entityManager, selectedIndex);
@@ -40,7 +44,6 @@ void EntityManagerInspector::Draw(EntityManager& entityManager, Vec3& spawnPosit
 
     ImGui::End();
 
-    // Popups
     DrawTextureAssignmentPopup(entityManager, selectedIndex);
     DrawModelErrorPopup();
 }
@@ -155,9 +158,9 @@ void EntityManagerInspector::DrawEntityList(EntityManager& entityManager, int& s
 {
     auto& entities = entityManager.GetAll();
 
-    ImGui::BeginChild("EntityListScroll", ImVec2(0, 200), true);
+    ImGui::BeginChild("EntityListScroll", ImVec2(0, ENTITY_LIST_HEIGHT), true);
     ImGui::Columns(2);
-    ImGui::SetColumnWidth(1, 90.0f);
+    ImGui::SetColumnWidth(1, DELETE_BUTTON_WIDTH);
 
     for (size_t i = 0; i < entities.size(); ++i)
     {
@@ -166,18 +169,10 @@ void EntityManagerInspector::DrawEntityList(EntityManager& entityManager, int& s
         auto& entity = entities[i];
         bool isSelected = (selectedIndex == static_cast<int>(i));
 
-        // Show entity name with icon and vertex count
-        std::string displayName = "?? " + entity.name;
-        if (entity.MeshHandle != 0)
-        {
-            Mesh* mesh = MeshManager::Instance().GetMesh(entity.MeshHandle);
-            if (mesh)
-            {
-                displayName = "?? " + entity.name;
-            }
-        }
+        // Icon based on mesh status
+        const char* icon = entity.MeshHandle != 0 ? "🔷 " : "📦 ";
+        std::string displayName = icon + entity.name;
 
-        // Left column: selectable entity name
         if (ImGui::Selectable(displayName.c_str(), isSelected))
         {
             selectedIndex = static_cast<int>(i);
@@ -185,19 +180,15 @@ void EntityManagerInspector::DrawEntityList(EntityManager& entityManager, int& s
 
         ImGui::NextColumn();
 
-        // Right column: delete button
         ImGui::AlignTextToFramePadding();
         if (ImGui::SmallButton("Delete"))
         {
             entityManager.RemoveAt(i);
             if (selectedIndex == static_cast<int>(i))
-            {
                 selectedIndex = -1;
-            }
             else if (selectedIndex > static_cast<int>(i))
-            {
-                selectedIndex -= 1;
-            }
+                selectedIndex--;
+            
             ImGui::PopID();
             break;
         }
@@ -213,254 +204,209 @@ void EntityManagerInspector::DrawEntityList(EntityManager& entityManager, int& s
 void EntityManagerInspector::DrawFullEntityInspector(EntityManager& entityManager, int selectedIndex)
 {
     if (selectedIndex < 0 || selectedIndex >= static_cast<int>(entityManager.Size()))
-    {
         return;
-    }
 
     auto& entity = entityManager.GetAll()[selectedIndex];
 
+    DrawEntityInfo(entity);
+    DrawEntityTransform(entity);
+    DrawEntityMesh(entity);
+    DrawEntityMaterial(entity);
+    DrawEntityTextures(entity);
+}
+
+void EntityManagerInspector::DrawEntityInfo(Entity& entity)
+{
     ImGui::Text("Selected: %s", entity.name.c_str());
     ImGui::Separator();
 
-    // Name
     char nameBuf[128];
     strncpy_s(nameBuf, entity.name.c_str(), sizeof(nameBuf));
     if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf)))
     {
         entity.name = nameBuf;
     }
+}
 
-    // Transform
+void EntityManagerInspector::DrawEntityTransform(Entity& entity)
+{
     ImGui::Spacing();
     ImGui::Text("Transform");
     ImGui::DragFloat3("Position", &entity.Transform.Position.x, 0.1f);
     ImGui::DragFloat3("Rotation", &entity.Transform.Rotation.x, 1.0f);
     ImGui::DragFloat3("Scale", &entity.Transform.Scale.x, 0.01f);
+}
 
-    // Mesh section
+void EntityManagerInspector::DrawEntityMesh(Entity& entity)
+{
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Text("Mesh");
-    if (entity.MeshHandle != 0)
-    {
-        Mesh* mesh = MeshManager::Instance().GetMesh(entity.MeshHandle);
-        if (mesh)
-        {
-            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Loaded: [Cube]");
-            ImGui::Text("Vertices: %zu", mesh->Vertices.size());
 
-            if (ImGui::Button("Change Mesh"))
-            {
-                char buf[1024] = {0};
-                if (Platform::OpenFileDialog(buf, sizeof(buf),
-                    "3D Models\0*.obj;*.gltf;*.glb\0OBJ Files\0*.obj\0GLTF Files\0*.gltf;*.glb\0All\0*.*\0"))
-                {
-                    MeshHandle newHandle = MeshManager::Instance().LoadMeshSync(buf);
-                    if (newHandle != 0)
-                    {
-                        if (entity.MeshHandle != 0)
-                        {
-                            MeshManager::Instance().Release(entity.MeshHandle);
-                        }
-                        entity.MeshHandle = newHandle;
-                        entity.MeshPath = buf;
-                    }
-                }
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Remove Mesh"))
+    if (entity.MeshHandle == 0)
+    {
+        ImGui::Text("No mesh assigned");
+        return;
+    }
+
+    Mesh* mesh = MeshManager::Instance().GetMesh(entity.MeshHandle);
+    if (!mesh)
+        return;
+
+    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Loaded: [Cube]");
+    ImGui::Text("Vertices: %zu", mesh->Vertices.size());
+
+    if (ImGui::Button("Change Mesh"))
+    {
+        char buf[1024] = {0};
+        if (Platform::OpenFileDialog(buf, sizeof(buf),
+            "3D Models\0*.obj;*.gltf;*.glb\0OBJ Files\0*.obj\0GLTF Files\0*.gltf;*.glb\0All\0*.*\0"))
+        {
+            MeshHandle newHandle = MeshManager::Instance().LoadMeshSync(buf);
+            if (newHandle != 0)
             {
                 MeshManager::Instance().Release(entity.MeshHandle);
-                entity.MeshHandle = 0;
-                entity.MeshPath = "";
+                entity.MeshHandle = newHandle;
+                entity.MeshPath = buf;
             }
         }
     }
-    else
-    {
-        ImGui::Text("No mesh assigned");
-    }
 
-    // Material Properties
+    ImGui::SameLine();
+    
+    if (ImGui::Button("Remove Mesh"))
+    {
+        MeshManager::Instance().Release(entity.MeshHandle);
+        entity.MeshHandle = 0;
+        entity.MeshPath = "";
+    }
+}
+
+void EntityManagerInspector::DrawEntityMaterial(Entity& entity)
+{
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Text("Material Properties");
     ImGui::SliderFloat("Shininess", &entity.Shininess, 1.0f, 256.0f);
     ImGui::SliderFloat("Alpha", &entity.Alpha, 0.0f, 1.0f);
+}
 
-    // Textures
+void EntityManagerInspector::DrawEntityTextures(Entity& entity)
+{
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Text("Textures");
+
+    DrawTextureOverride(entity, TextureType::Diffuse);
+    ImGui::Spacing();
+    DrawTextureOverride(entity, TextureType::Specular);
+    ImGui::Spacing();
+    DrawTextureOverride(entity, TextureType::Normal);
+}
+
+void EntityManagerInspector::DrawTextureOverride(Entity& entity, TextureType type)
+{
+    struct TextureInfo
+    {
+        const char* label;
+        const char* tag;
+        bool& hasOverride;
+        unsigned int& texture;
+        std::string& path;
+        int channels;
+        GLenum format;
+    };
+
+    TextureInfo info = [&]() -> TextureInfo
+    {
+        switch (type)
+        {
+            case TextureType::Diffuse:
+                return {"Diffuse", "##Diffuse", entity.HasDiffuseTextureOverride, 
+                        entity.DiffuseTexture, entity.DiffuseTexturePath, 
+                        DIFFUSE_CHANNELS, GL_RGBA};
+            case TextureType::Specular:
+                return {"Specular", "##Specular", entity.HasSpecularTextureOverride,
+                        entity.SpecularTexture, entity.SpecularTexturePath,
+                        SPECULAR_CHANNELS, GL_RED};
+            case TextureType::Normal:
+                return {"Normal", "##Normal", entity.HasNormalTextureOverride,
+                        entity.NormalTexture, entity.NormalTexturePath,
+                        NORMAL_CHANNELS, GL_RGBA};
+            default:
+                return {"Unknown", "##Unknown", entity.HasDiffuseTextureOverride,
+                        entity.DiffuseTexture, entity.DiffuseTexturePath,
+                        DIFFUSE_CHANNELS, GL_RGBA};
+        }
+    }();
+
+    if (info.hasOverride)
+    {
+        ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "%s: Override Active", info.label);
+        ImGui::Text("  %s", info.path.c_str());
+        
+        std::string buttonLabel = std::string("Remove Override") + info.tag;
+        if (ImGui::Button(buttonLabel.c_str()))
+        {
+            if (info.texture != 0)
+            {
+                glDeleteTextures(1, &info.texture);
+                info.texture = 0;
+            }
+            info.hasOverride = false;
+            info.path = "";
+        }
+    }
+    else
+    {
+        ImGui::Text("%s: (using mesh default)", info.label);
+        
+        std::string buttonLabel = std::string("Set Override") + info.tag;
+        if (ImGui::Button(buttonLabel.c_str()))
+        {
+            char buf[1024] = {0};
+            if (Platform::OpenFileDialog(buf, sizeof(buf),
+                "Image Files\0*.png;*.jpg;*.jpeg;*.bmp;*.tga\0All\0*.*\0"))
+            {
+                int width, height;
+                unsigned int tex = LoadTextureWithSettings(buf, width, height, info.channels);
+                
+                if (tex != 0)
+                {
+                    info.texture = tex;
+                    info.path = buf;
+                    info.hasOverride = true;
+                }
+            }
+        }
+    }
+}
+
+unsigned int EntityManagerInspector::LoadTextureWithSettings(const char* path, int& width, int& height, int channels)
+{
+    int actualChannels;
+    unsigned char* data = stbi_load(path, &width, &height, &actualChannels, channels);
     
-    // Diffuse
-    if (entity.HasDiffuseTextureOverride)
-    {
-        ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Diffuse: Override Active");
-        ImGui::Text("  %s", entity.DiffuseTexturePath.c_str());
-        if (ImGui::Button("Remove Override##Diffuse"))
-        {
-            if (entity.DiffuseTexture != 0)
-            {
-                glDeleteTextures(1, &entity.DiffuseTexture);
-                entity.DiffuseTexture = 0;
-            }
-            entity.HasDiffuseTextureOverride = false;
-            entity.DiffuseTexturePath = "";
-        }
-    }
-    else
-    {
-        ImGui::Text("Diffuse: (using mesh default)");
-        if (ImGui::Button("Set Override##Diffuse"))
-        {
-            char buf[1024] = {0};
-            if (Platform::OpenFileDialog(buf, sizeof(buf),
-                "Image Files\0*.png;*.jpg;*.jpeg;*.bmp;*.tga\0All\0*.*\0"))
-            {
-                // Load texture
-                int width, height, channels;
-                unsigned char* data = stbi_load(buf, &width, &height, &channels, 4);
-                if (data)
-                {
-                    unsigned int tex;
-                    glGenTextures(1, &tex);
-                    glBindTexture(GL_TEXTURE_2D, tex);
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-                    
-                    // Generate mipmaps if enabled
-                    auto& settings = GraphicsSettings::Instance();
-                    if (settings.EnableMipmaps)
-                    {
-                        glGenerateMipmap(GL_TEXTURE_2D);
-                    }
-                    
-                    // Apply graphics settings
-                    settings.ApplyToTexture(tex);
-                    
-                    stbi_image_free(data);
-                    
-                    entity.DiffuseTexture = tex;
-                    entity.DiffuseTexturePath = buf;
-                    entity.HasDiffuseTextureOverride = true;
-                }
-            }
-        }
-    }
+    if (!data)
+        return 0;
 
-    ImGui::Spacing();
+    unsigned int tex;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
 
-    // Specular
-    if (entity.HasSpecularTextureOverride)
-    {
-        ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Specular: Override Active");
-        ImGui::Text("  %s", entity.SpecularTexturePath.c_str());
-        if (ImGui::Button("Remove Override##Specular"))
-        {
-            if (entity.SpecularTexture != 0)
-            {
-                glDeleteTextures(1, &entity.SpecularTexture);
-                entity.SpecularTexture = 0;
-            }
-            entity.HasSpecularTextureOverride = false;
-            entity.SpecularTexturePath = "";
-        }
-    }
-    else
-    {
-        ImGui::Text("Specular: (using mesh default)");
-        if (ImGui::Button("Set Override##Specular"))
-        {
-            char buf[1024] = {0};
-            if (Platform::OpenFileDialog(buf, sizeof(buf),
-                "Image Files\0*.png;*.jpg;*.jpeg;*.bmp;*.tga\0All\0*.*\0"))
-            {
-                // Load texture
-                int width, height, channels;
-                unsigned char* data = stbi_load(buf, &width, &height, &channels, 1);
-                if (data)
-                {
-                    unsigned int tex;
-                    glGenTextures(1, &tex);
-                    glBindTexture(GL_TEXTURE_2D, tex);
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
-                    
-                    // Generate mipmaps if enabled
-                    auto& settings = GraphicsSettings::Instance();
-                    if (settings.EnableMipmaps)
-                    {
-                        glGenerateMipmap(GL_TEXTURE_2D);
-                    }
-                    
-                    // Apply graphics settings
-                    settings.ApplyToTexture(tex);
-                    
-                    stbi_image_free(data);
-                    
-                    entity.SpecularTexture = tex;
-                    entity.SpecularTexturePath = buf;
-                    entity.HasSpecularTextureOverride = true;
-                }
-            }
-        }
-    }
+    GLenum format = (channels == 1) ? GL_RED : GL_RGBA;
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 
-    ImGui::Spacing();
+    // Apply graphics settings
+    auto& settings = GraphicsSettings::Instance();
+    if (settings.EnableMipmaps)
+    {
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    settings.ApplyToTexture(tex);
 
-    // Normal
-    if (entity.HasNormalTextureOverride)
-    {
-        ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Normal: Override Active");
-        ImGui::Text("  %s", entity.NormalTexturePath.c_str());
-        if (ImGui::Button("Remove Override##Normal"))
-        {
-            if (entity.NormalTexture != 0)
-            {
-                glDeleteTextures(1, &entity.NormalTexture);
-                entity.NormalTexture = 0;
-            }
-            entity.HasNormalTextureOverride = false;
-            entity.NormalTexturePath = "";
-        }
-    }
-    else
-    {
-        ImGui::Text("Normal: (using mesh default)");
-        if (ImGui::Button("Set Override##Normal"))
-        {
-            char buf[1024] = {0};
-            if (Platform::OpenFileDialog(buf, sizeof(buf),
-                "Image Files\0*.png;*.jpg;*.jpeg;*.bmp;*.tga\0All\0*.*\0"))
-            {
-                // Load texture
-                int width, height, channels;
-                unsigned char* data = stbi_load(buf, &width, &height, &channels, 4);
-                if (data)
-                {
-                    unsigned int tex;
-                    glGenTextures(1, &tex);
-                    glBindTexture(GL_TEXTURE_2D, tex);
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-                    
-                    // Generate mipmaps if enabled
-                    auto& settings = GraphicsSettings::Instance();
-                    if (settings.EnableMipmaps)
-                    {
-                        glGenerateMipmap(GL_TEXTURE_2D);
-                    }
-                    
-                    // Apply graphics settings
-                    settings.ApplyToTexture(tex);
-                    
-                    stbi_image_free(data);
-                    
-                    entity.NormalTexture = tex;
-                    entity.NormalTexturePath = buf;
-                    entity.HasNormalTextureOverride = true;
-                }
-            }
-        }
-    }
+    stbi_image_free(data);
+    return tex;
 }
 
 void EntityManagerInspector::DrawTextureAssignmentPopup(EntityManager& entityManager, int selectedIndex)
