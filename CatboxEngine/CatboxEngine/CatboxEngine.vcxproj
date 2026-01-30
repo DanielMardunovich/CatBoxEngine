@@ -139,6 +139,7 @@
     <ClCompile Include="..\Dependencies\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\Dependencies\imgui\imgui_widgets.cpp" />
     <ClCompile Include="core\Engine.cpp" />
+    <ClCompile Include="core\InputHandler.cpp" />
     <ClCompile Include="core\MemoryTracker.cpp" />
     <ClCompile Include="core\Platform.cpp" />
     <ClCompile Include="core\Time.cpp" />
@@ -170,6 +171,7 @@
     <ClInclude Include="..\Dependencies\imgui\imstb_textedit.h" />
     <ClInclude Include="..\Dependencies\imgui\imstb_truetype.h" />
     <ClInclude Include="core\Engine.h" />
+    <ClInclude Include="core\InputHandler.h" />
     <ClInclude Include="core\MemoryTracker.h" />
     <ClInclude Include="core\Message.h" />
     <ClInclude Include="core\MessageQueue.h" />

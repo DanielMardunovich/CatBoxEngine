@@ -6,6 +6,7 @@
 #include "../resources/EntityManager.h"
 #include "../resources/SceneManager.h"
 #include "UIManager.h"
+#include "InputHandler.h"
 #include <vector>
 #include <string>
 #include "../resources/Math/Vec3.h"
@@ -59,6 +60,7 @@ private:
     EntityManager m_entityManager;
     UIManager m_uiManager;
     Camera m_camera;
+    InputHandler m_inputHandler;
     
     // UI state
     Vec3 m_spawnPosition { 0.0f, 0.0f, 0.0f };

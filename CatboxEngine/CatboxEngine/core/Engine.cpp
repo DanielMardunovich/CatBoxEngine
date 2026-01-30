@@ -13,10 +13,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include "Time.h"
-#include "../graphics/Mesh.h"
-#include "../graphics/MeshManager.h"
 #include "../graphics/LightManager.h"
-#include "../resources/EntityManager.h"
 #include "../resources/SceneManager.h"
 
 Engine::Engine(float windowWidth, float windowHeight, const char* name)
@@ -36,59 +33,12 @@ void Engine::OnMouseMove(double xpos, double ypos)
 
 void Engine::OnDrop(const std::vector<std::string>& paths)
 {
-    if (paths.empty()) return;
-    // handle first dropped path: try load model or texture depending on extension
-    std::string p = paths[0];
-    std::string ext;
-    auto pos = p.find_last_of('.');
-    if (pos != std::string::npos) ext = p.substr(pos+1);
-    for (auto &c : ext) c = (char)tolower(c);
-
-    if (ext == "obj" || ext == "gltf" || ext == "glb")
-    {
-        // Post model dropped message
-        auto msg = std::make_shared<ModelDroppedMessage>(p);
-        MessageQueue::Instance().Post(msg);
-        
-        MeshHandle h = MeshManager::Instance().LoadMeshSync(p);
-        if (h != 0)
-        {
-            Entity e;
-            e.name = "Model: " + p;
-            e.MeshHandle = h;
-            m_entityManager.AddEntity(e, m_useSharedCube);
-        }
-    }
-    else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
-    {
-        // Post texture dropped message
-        auto msg = std::make_shared<TextureDroppedMessage>(p);
-        MessageQueue::Instance().Post(msg);
-        
-        // assign to selected entity if any
-        if (m_selectedEntityIndex >= 0 && m_selectedEntityIndex < (int)m_entityManager.Size())
-        {
-            auto& ent = m_entityManager.GetAll()[m_selectedEntityIndex];
-            if (ent.MeshHandle != 0)
-            {
-                Mesh* mptr = MeshManager::Instance().GetMesh(ent.MeshHandle);
-                if (mptr)
-                {
-                    mptr->LoadTexture(p);
-                    mptr->DiffuseTexturePath = p;
-                    
-                    // Post texture loaded message
-                    auto loadMsg = std::make_shared<TextureLoadedMessage>(p, m_selectedEntityIndex);
-                    MessageQueue::Instance().Post(loadMsg);
-                }
-            }
-        }
-    }
+    m_inputHandler.HandleFileDrop(paths, m_entityManager, m_selectedEntityIndex, m_useSharedCube);
 }
 
 void Engine::OnMouseButton(GLFWwindow* window, int button, int action, int mods)
 {
-    m_camera.OnMouseButton(window, button, action, mods);
+    
 }
 
 Engine::~Engine()
