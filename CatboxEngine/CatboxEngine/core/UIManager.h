@@ -7,6 +7,7 @@ class SceneManager;
 class CameraInspector;
 class EntityManagerInspector;
 class StatsInspector;
+class LightInspector;
 
 class UIManager
 {
@@ -33,15 +34,10 @@ public:
 private:
     // Draw scene manager window
     void DrawSceneManager(EntityManager& entityManager);
-    
-    // Draw lights window
-    void DrawLightsWindow();
 
     // Inspectors (owned by UIManager)
     CameraInspector* m_cameraInspector = nullptr;
     EntityManagerInspector* m_entityManagerInspector = nullptr;
     StatsInspector* m_statsInspector = nullptr;
-
-    // Selected light index (-1 = none selected)
-    int selectedLightIndex = -1;
+    LightInspector* m_lightInspector = nullptr;
 };
