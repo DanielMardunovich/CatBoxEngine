@@ -13,6 +13,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include "Time.h"
+#include "../graphics/MeshManager.h"
 #include "../graphics/LightManager.h"
 #include "../resources/SceneManager.h"
 
@@ -28,7 +29,7 @@ Engine::Engine(float windowWidth, float windowHeight, const char* name)
 
 void Engine::OnMouseMove(double xpos, double ypos)
 {
-    m_camera.OnMouseMove(xpos, ypos);
+    m_inputHandler.HandleMouseMove(xpos, ypos, m_camera);
 }
 
 void Engine::OnDrop(const std::vector<std::string>& paths)
@@ -38,7 +39,7 @@ void Engine::OnDrop(const std::vector<std::string>& paths)
 
 void Engine::OnMouseButton(GLFWwindow* window, int button, int action, int mods)
 {
-    
+    m_inputHandler.HandleMouseButton(window, button, action, mods, m_camera);
 }
 
 Engine::~Engine()
@@ -112,7 +113,7 @@ void Engine::Update(float deltaTime)
     GLFWwindow* window = GetWindow();
     
     // Handle window-level input
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    if (m_inputHandler.ShouldCloseWindow(window))
     {
         glfwSetWindowShouldClose(window, true);
     }
@@ -132,16 +133,7 @@ void Engine::Update(float deltaTime)
     MessageQueue::Instance().ProcessMessages();
 
     // Check clipboard for dropped path
-    if (const char* clip = glfwGetClipboardString(window))
-    {
-        static std::string lastClip;
-        std::string clipStr(clip);
-        if (clipStr != lastClip)
-        {
-            lastClip = clipStr;
-            OnDrop({clipStr});
-        }
-    }
+    m_inputHandler.CheckClipboardForDrop(window, m_entityManager, m_selectedEntityIndex, m_useSharedCube);
 }
 
 void Engine::Render()

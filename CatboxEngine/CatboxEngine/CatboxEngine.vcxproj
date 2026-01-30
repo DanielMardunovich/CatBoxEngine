@@ -158,7 +158,10 @@
     <ClCompile Include="resources\SceneManager.cpp" />
     <ClCompile Include="ui\Inspectors\CameraInspector.cpp" />
     <ClCompile Include="ui\Inspectors\EntityInspector.cpp" />
+    <ClCompile Include="ui\Inspectors\EntityListInspector.cpp" />
     <ClCompile Include="ui\Inspectors\LightInspector.cpp" />
+    <ClCompile Include="ui\Inspectors\SpawnInspector.cpp" />
+    <ClCompile Include="ui\Inspectors\StatsInspector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Dependencies\imgui\imconfig.h" />
@@ -198,7 +201,10 @@
     <ClInclude Include="resources\Transform.h" />
     <ClInclude Include="ui\Inspectors\CameraInspector.h" />
     <ClInclude Include="ui\Inspectors\EntityInspector.h" />
+    <ClInclude Include="ui\Inspectors\EntityListInspector.h" />
     <ClInclude Include="ui\Inspectors\LightInspector.h" />
+    <ClInclude Include="ui\Inspectors\SpawnInspector.h" />
+    <ClInclude Include="ui\Inspectors\StatsInspector.h" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="shaders\forward.frag" />

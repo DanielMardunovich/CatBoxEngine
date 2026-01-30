@@ -4,8 +4,39 @@
 #include "../graphics/MeshManager.h"
 #include "../resources/EntityManager.h"
 #include "../resources/Entity.h"
+#include "../resources/Camera.h"
+#include <glfw3.h>
 #include <algorithm>
 #include <cctype>
+
+void InputHandler::HandleMouseMove(double xpos, double ypos, Camera& camera)
+{
+    camera.OnMouseMove(xpos, ypos);
+}
+
+void InputHandler::HandleMouseButton(GLFWwindow* window, int button, int action, int mods, Camera& camera)
+{
+    camera.OnMouseButton(window, button, action, mods);
+}
+
+bool InputHandler::ShouldCloseWindow(GLFWwindow* window) const
+{
+    return glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS;
+}
+
+void InputHandler::CheckClipboardForDrop(GLFWwindow* window, EntityManager& entityManager,
+                                         int selectedEntityIndex, bool useSharedCube)
+{
+    if (const char* clip = glfwGetClipboardString(window))
+    {
+        std::string clipStr(clip);
+        if (clipStr != m_lastClipboard)
+        {
+            m_lastClipboard = clipStr;
+            HandleFileDrop({clipStr}, entityManager, selectedEntityIndex, useSharedCube);
+        }
+    }
+}
 
 void InputHandler::HandleFileDrop(const std::vector<std::string>& paths, EntityManager& entityManager,
                                   int selectedEntityIndex, bool useSharedCube)
