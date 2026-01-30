@@ -7,6 +7,16 @@
 #include <iostream>
 #include <iomanip>
 
+namespace
+{
+    // Memory conversion
+    constexpr float BYTES_TO_MB = 1.0f / (1024.0f * 1024.0f);
+    constexpr float MS_TO_SECONDS = 1000.0f;
+    
+    // UI constants
+    constexpr int DECIMAL_PRECISION = 2;
+}
+
 void StatsInspector::Draw(float deltaTime, EntityManager& entityManager)
 {
     ImGui::Begin("Statistics");
@@ -25,7 +35,7 @@ void StatsInspector::DrawTimingStats(float deltaTime)
     ImGui::Text("Performance");
     ImGui::Spacing();
     
-    ImGui::Text("Delta Time: %.4f ms", deltaTime * 1000.0f);
+    ImGui::Text("Delta Time: %.4f ms", deltaTime * MS_TO_SECONDS);
     ImGui::Text("FPS: %.1f", 1.0f / deltaTime);
 }
 
@@ -34,10 +44,10 @@ void StatsInspector::DrawMemoryStats(EntityManager& entityManager)
     ImGui::Text("Memory");
     ImGui::Spacing();
 
-    // Mesh memory (always available)
+    // Mesh memory
     auto& meshMgr = MeshManager::Instance();
-    const float meshCPU = meshMgr.GetTotalCPUMemory() / (1024.0f * 1024.0f);
-    const float meshGPU = meshMgr.GetTotalGPUMemory() / (1024.0f * 1024.0f);
+    const float meshCPU = meshMgr.GetTotalCPUMemory() * BYTES_TO_MB;
+    const float meshGPU = meshMgr.GetTotalGPUMemory() * BYTES_TO_MB;
     
     ImGui::Text("Meshes: %zu", meshMgr.GetMeshCount());
     ImGui::Text("CPU: %.2f MB", meshCPU);
@@ -47,7 +57,7 @@ void StatsInspector::DrawMemoryStats(EntityManager& entityManager)
 
 #if TRACK_MEMORY
     auto& memTracker = MemoryTracker::Instance();
-    ImGui::Text("Tracked: %.2f MB", memTracker.GetCurrentUsage() / (1024.0f * 1024.0f));
+    ImGui::Text("Tracked: %.2f MB", memTracker.GetCurrentUsage() * BYTES_TO_MB);
     ImGui::Text("Allocations: %zu", memTracker.GetActiveAllocations());
 
     ImGui::Spacing();
@@ -84,14 +94,14 @@ void StatsInspector::PrintMemoryReport(EntityManager& entityManager)
 
     // Mesh memory
     auto& meshMgr = MeshManager::Instance();
-    const float meshCPU = meshMgr.GetTotalCPUMemory() / (1024.0f * 1024.0f);
-    const float meshGPU = meshMgr.GetTotalGPUMemory() / (1024.0f * 1024.0f);
+    const float meshCPU = meshMgr.GetTotalCPUMemory() * BYTES_TO_MB;
+    const float meshGPU = meshMgr.GetTotalGPUMemory() * BYTES_TO_MB;
 
     std::cout << "\n=== MESH MEMORY ===" << std::endl;
     std::cout << "Mesh Count:     " << meshMgr.GetMeshCount() << std::endl;
-    std::cout << "CPU Memory:     " << std::fixed << std::setprecision(2) << meshCPU << " MB" << std::endl;
-    std::cout << "GPU Memory:     " << std::fixed << std::setprecision(2) << meshGPU << " MB" << std::endl;
-    std::cout << "Total Memory:   " << std::fixed << std::setprecision(2) << (meshCPU + meshGPU) << " MB" << std::endl;
+    std::cout << "CPU Memory:     " << std::fixed << std::setprecision(DECIMAL_PRECISION) << meshCPU << " MB" << std::endl;
+    std::cout << "GPU Memory:     " << std::fixed << std::setprecision(DECIMAL_PRECISION) << meshGPU << " MB" << std::endl;
+    std::cout << "Total Memory:   " << std::fixed << std::setprecision(DECIMAL_PRECISION) << (meshCPU + meshGPU) << " MB" << std::endl;
     std::cout << "===================\n" << std::endl;
 
     // Scene memory

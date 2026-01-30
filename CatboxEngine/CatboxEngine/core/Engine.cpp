@@ -7,6 +7,7 @@
 #include "imgui_impl_opengl3.h"
 #include <iostream>
 #include <fstream>
+#include <direct.h>  // For _mkdir
 #include <glad/glad.h>
 #include <glfw3.h>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -49,8 +50,13 @@ Engine::~Engine()
     auto* activeScene = sceneMgr.GetActiveScene();
     if (activeScene)
     {
-        std::cout << "Auto-saving active scene: " << activeScene->GetName() << std::endl;
-        sceneMgr.SaveScene(sceneMgr.GetActiveSceneID(), "autosave.scene", m_entityManager);
+        // Create Scenes directory if it doesn't exist
+        _mkdir("Scenes");  // Will fail silently if already exists
+        
+        std::string autosavePath = "Scenes/autosave.scene";
+        std::cout << "Auto-saving active scene: " << activeScene->GetName() 
+                  << " to " << autosavePath << std::endl;
+        sceneMgr.SaveScene(sceneMgr.GetActiveSceneID(), autosavePath, m_entityManager);
     }
     
     Cleanup();
