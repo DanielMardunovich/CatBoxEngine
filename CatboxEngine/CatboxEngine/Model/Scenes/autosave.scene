@@ -1,0 +1,32 @@
+[Scene]
+Name=Default Scene
+Version=1.0
+Author=
+Description=
+
+[Camera]
+Position=0,0,3
+Yaw=-90
+Pitch=0
+FOV=60
+Near=0.1
+Far=100
+
+[Environment]
+Ambient=0.1,0.1,0.1
+Background=0.4,0.3,0.2
+
+[Lights]
+Count=0
+
+[Entities]
+Count=1
+
+[Entity0]
+Name=Model: F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Viking_House.obj
+Position=0,0,0
+Rotation=0,0,0
+Scale=0.5,0.5,0.5
+MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Viking_House.obj
+Shininess=32
+Alpha=1

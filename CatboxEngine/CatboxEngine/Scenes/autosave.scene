@@ -17,7 +17,28 @@ Ambient=0.1,0.1,0.1
 Background=0.4,0.3,0.2
 
 [Lights]
-Count=0
+Count=1
+
+[Light0]
+Name=po
+Type=2
+Position=0,5,0
+Direction=0,-1,0
+Color=1,1,1
+Intensity=1
+Constant=1
+Linear=0.09
+Quadratic=0.032
+InnerCutoff=12.5
+OuterCutoff=17.5
+CastsShadows=0
+ShadowMapSize=1024
+ShadowBias=0.005
+ShadowOrthoSize=20
+ShadowNearPlane=1
+ShadowFarPlane=50
+ShadowFOV=120
+Enabled=1
 
 [Entities]
 Count=0

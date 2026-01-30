@@ -331,9 +331,9 @@ const char* LightInspector::GetLightTypeIcon(LightType type)
 {
     switch (type)
     {
-        case LightType::Directional: return "?";
-        case LightType::Point: return "?";
-        case LightType::Spot: return "?";
+        case LightType::Directional: return "(Dir)";
+        case LightType::Point: return "(Pnt)";
+        case LightType::Spot: return "(Spt)";
         default: return "?";
     }
 }

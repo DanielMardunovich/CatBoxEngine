@@ -138,9 +138,6 @@
     <ClCompile Include="core\InputHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ui\Inspectors\EntityManagerInspector.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="graphics\GraphicsSettings.cpp">
       <Filter>Source Files\Managers</Filter>
     </ClCompile>
@@ -149,6 +146,9 @@
     </ClCompile>
     <ClCompile Include="ui\Inspectors\StatsInspector.cpp">
       <Filter>Source Files\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="ui\Inspectors\EntityManagerInspector.cpp">
+      <Filter>Source Files\UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -280,5 +280,35 @@
     <None Include="Dependencies\stb_image.h.orig" />
     <None Include="shaders\ShadowMap.vert" />
     <None Include="shaders\ShadowMap.frag" />
+    <None Include="shaders\gbuffer.vert">
+      <Filter>Source Files\Shader</Filter>
+    </None>
+    <None Include="shaders\lighting.frag">
+      <Filter>Source Files\Shader</Filter>
+    </None>
+    <None Include="shaders\lighting.vert">
+      <Filter>Source Files\Shader</Filter>
+    </None>
+    <None Include="shaders\shadow.frag">
+      <Filter>Source Files\Shader</Filter>
+    </None>
+    <None Include="shaders\shadow.vert">
+      <Filter>Source Files\Shader</Filter>
+    </None>
+    <None Include="shaders\VertexShader.vert">
+      <Filter>Source Files\Shader</Filter>
+    </None>
+    <None Include="shaders\forward.frag">
+      <Filter>Source Files\Shader</Filter>
+    </None>
+    <None Include="shaders\forward.vert">
+      <Filter>Source Files\Shader</Filter>
+    </None>
+    <None Include="shaders\FragmentShader.frag">
+      <Filter>Source Files\Shader</Filter>
+    </None>
+    <None Include="shaders\gbuffer.frag">
+      <Filter>Source Files\Shader</Filter>
+    </None>
   </ItemGroup>
 </Project>

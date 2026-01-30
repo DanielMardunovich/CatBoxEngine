@@ -170,7 +170,7 @@ void EntityManagerInspector::DrawEntityList(EntityManager& entityManager, int& s
         bool isSelected = (selectedIndex == static_cast<int>(i));
 
         // Icon based on mesh status
-        const char* icon = entity.MeshHandle != 0 ? "🔷 " : "📦 ";
+        const char* icon = entity.MeshHandle != 0 ? "(Rendered) " : "(NotRendered) ";
         std::string displayName = icon + entity.name;
 
         if (ImGui::Selectable(displayName.c_str(), isSelected))
