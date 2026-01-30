@@ -20,10 +20,10 @@ public:
              int selectedIndex, bool& useSharedCube);
 
 private:
-    void DrawModelBrowser();
+    void SpawnNewEntity(EntityManager& entityManager, const Vec3& spawnPosition,
+                       const Vec3& spawnScale, bool useSharedCube);
+    void ApplyModelToSelected(EntityManager& entityManager, int selectedIndex);
     void DrawTextureAssignmentPopup(EntityManager& entityManager, int selectedIndex);
-    void DrawSpawnButtons(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, 
-                         int selectedIndex, bool useSharedCube);
     void DrawModelErrorPopup();
     
     // State

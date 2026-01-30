@@ -8,10 +8,8 @@
 #include "../resources/EntityManager.h"
 #include "../resources/Entity.h"
 #include "../resources/Camera.h"
-#include "../ui/Inspectors/EntityInspector.h"
 #include "../ui/Inspectors/CameraInspector.h"
-#include "../ui/Inspectors/SpawnInspector.h"
-#include "../ui/Inspectors/EntityListInspector.h"
+#include "../ui/Inspectors/EntityManagerInspector.h"
 #include "../ui/Inspectors/StatsInspector.h"
 #include "../graphics/MeshManager.h"
 #include "../graphics/LightManager.h"
@@ -24,20 +22,16 @@
 UIManager::UIManager()
 {
     // Create inspectors
-    m_entityInspector = new EntityInspector();
     m_cameraInspector = new CameraInspector();
-    m_spawnInspector = new SpawnInspector();
-    m_entityListInspector = new EntityListInspector();
+    m_entityManagerInspector = new EntityManagerInspector();
     m_statsInspector = new StatsInspector();
 }
 
 UIManager::~UIManager()
 {
     // Clean up inspectors
-    delete m_entityInspector;
     delete m_cameraInspector;
-    delete m_spawnInspector;
-    delete m_entityListInspector;
+    delete m_entityManagerInspector;
     delete m_statsInspector;
 }
 
@@ -51,21 +45,12 @@ void UIManager::NewFrame()
 void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, 
                     float deltaTime, int& selectedIndex, Camera& camera, bool& useSharedCube)
 {
-    // Spawn Inspector
-    m_spawnInspector->Draw(entityManager, spawnPosition, spawnScale, selectedIndex, useSharedCube);
+    // Entity Manager Inspector (unified: spawn + list + embedded entity inspector)
+    m_entityManagerInspector->Draw(entityManager, spawnPosition, spawnScale, 
+                                   selectedIndex, useSharedCube);
 
-    // Entity List Inspector
-    m_entityListInspector->Draw(entityManager, selectedIndex);
-
-    // Statistics Inspector
+    // Statistics Inspector (separate window)
     m_statsInspector->Draw(deltaTime, entityManager);
-
-    // Entity Inspector (for selected entity)
-    if (selectedIndex >= 0 && selectedIndex < static_cast<int>(entityManager.Size()))
-    {
-        auto& entity = entityManager.GetAll()[selectedIndex];
-        m_entityInspector->Draw(entity);
-    }
 
     // Camera Inspector
     m_cameraInspector->Draw(camera);

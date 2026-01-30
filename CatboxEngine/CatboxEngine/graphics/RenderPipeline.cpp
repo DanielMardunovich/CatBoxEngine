@@ -199,27 +199,41 @@ void RenderPipeline::GeometryPass(EntityManager& entityManager, Camera& camera, 
             for (const auto& sub : mesh->SubMeshes)
             {
                 m_mainShader.SetVec3("u_DiffuseColor", sub.DiffuseColor.x, sub.DiffuseColor.y, sub.DiffuseColor.z);
-                m_mainShader.SetBool("u_HasDiffuseMap", sub.HasDiffuseTexture);
-                if (sub.HasDiffuseTexture)
+                
+                // Check for entity texture override first, then submesh texture
+                bool hasDiffuse = e.HasDiffuseTextureOverride || sub.HasDiffuseTexture;
+                m_mainShader.SetBool("u_HasDiffuseMap", hasDiffuse);
+                if (hasDiffuse)
                 {
                     glActiveTexture(GL_TEXTURE0);
-                    glBindTexture(GL_TEXTURE_2D, sub.DiffuseTexture);
+                    // Use entity override if available, otherwise use submesh texture
+                    unsigned int texToUse = e.HasDiffuseTextureOverride ? e.DiffuseTexture : sub.DiffuseTexture;
+                    glBindTexture(GL_TEXTURE_2D, texToUse);
                     m_mainShader.SetTexture("u_DiffuseMap", 0);
                 }
-                m_mainShader.SetBool("u_HasNormalMap", sub.HasNormalTexture);
-                if (sub.HasNormalTexture)
+                
+                // Check for normal map override
+                bool hasNormal = e.HasNormalTextureOverride || sub.HasNormalTexture;
+                m_mainShader.SetBool("u_HasNormalMap", hasNormal);
+                if (hasNormal)
                 {
                     glActiveTexture(GL_TEXTURE2);
-                    glBindTexture(GL_TEXTURE_2D, sub.NormalTexture);
+                    unsigned int texToUse = e.HasNormalTextureOverride ? e.NormalTexture : sub.NormalTexture;
+                    glBindTexture(GL_TEXTURE_2D, texToUse);
                     m_mainShader.SetTexture("u_NormalMap", 2);
                 }
-                m_mainShader.SetBool("u_HasSpecularMap", sub.HasSpecularTexture);
-                if (sub.HasSpecularTexture)
+                
+                // Check for specular map override
+                bool hasSpecular = e.HasSpecularTextureOverride || sub.HasSpecularTexture;
+                m_mainShader.SetBool("u_HasSpecularMap", hasSpecular);
+                if (hasSpecular)
                 {
                     glActiveTexture(GL_TEXTURE1);
-                    glBindTexture(GL_TEXTURE_2D, sub.SpecularTexture);
+                    unsigned int texToUse = e.HasSpecularTextureOverride ? e.SpecularTexture : sub.SpecularTexture;
+                    glBindTexture(GL_TEXTURE_2D, texToUse);
                     m_mainShader.SetTexture("u_SpecularMap", 1);
                 }
+                
                 m_mainShader.SetVec3("u_SpecularColor", sub.SpecularColor.x, sub.SpecularColor.y, sub.SpecularColor.z);
                 m_mainShader.SetFloat("u_Shininess", e.Shininess);
                 m_mainShader.SetFloat("u_Alpha", e.Alpha);
@@ -231,9 +245,38 @@ void RenderPipeline::GeometryPass(EntityManager& entityManager, Camera& camera, 
         else
         {
             m_mainShader.SetVec3("u_DiffuseColor", mesh->DiffuseColor.x, mesh->DiffuseColor.y, mesh->DiffuseColor.z);
-            m_mainShader.SetBool("u_HasDiffuseMap", mesh->HasDiffuseTexture);
-            m_mainShader.SetBool("u_HasNormalMap", mesh->HasNormalTexture);
-            m_mainShader.SetBool("u_HasSpecularMap", mesh->HasSpecularTexture);
+            
+            // Check for entity texture overrides
+            bool hasDiffuse = e.HasDiffuseTextureOverride || mesh->HasDiffuseTexture;
+            m_mainShader.SetBool("u_HasDiffuseMap", hasDiffuse);
+            if (hasDiffuse)
+            {
+                glActiveTexture(GL_TEXTURE0);
+                unsigned int texToUse = e.HasDiffuseTextureOverride ? e.DiffuseTexture : mesh->DiffuseTexture;
+                glBindTexture(GL_TEXTURE_2D, texToUse);
+                m_mainShader.SetTexture("u_DiffuseMap", 0);
+            }
+            
+            bool hasNormal = e.HasNormalTextureOverride || mesh->HasNormalTexture;
+            m_mainShader.SetBool("u_HasNormalMap", hasNormal);
+            if (hasNormal)
+            {
+                glActiveTexture(GL_TEXTURE2);
+                unsigned int texToUse = e.HasNormalTextureOverride ? e.NormalTexture : mesh->NormalTexture;
+                glBindTexture(GL_TEXTURE_2D, texToUse);
+                m_mainShader.SetTexture("u_NormalMap", 2);
+            }
+            
+            bool hasSpecular = e.HasSpecularTextureOverride || mesh->HasSpecularTexture;
+            m_mainShader.SetBool("u_HasSpecularMap", hasSpecular);
+            if (hasSpecular)
+            {
+                glActiveTexture(GL_TEXTURE1);
+                unsigned int texToUse = e.HasSpecularTextureOverride ? e.SpecularTexture : mesh->SpecularTexture;
+                glBindTexture(GL_TEXTURE_2D, texToUse);
+                m_mainShader.SetTexture("u_SpecularMap", 1);
+            }
+            
             m_mainShader.SetVec3("u_SpecularColor", mesh->SpecularColor.x, mesh->SpecularColor.y, mesh->SpecularColor.z);
             m_mainShader.SetFloat("u_Shininess", e.Shininess);
             m_mainShader.SetFloat("u_Alpha", e.Alpha);

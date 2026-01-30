@@ -4,10 +4,8 @@
 class EntityManager;
 class Camera;
 class SceneManager;
-class EntityInspector;
 class CameraInspector;
-class SpawnInspector;
-class EntityListInspector;
+class EntityManagerInspector;
 class StatsInspector;
 
 class UIManager
@@ -40,10 +38,8 @@ private:
     void DrawLightsWindow();
 
     // Inspectors (owned by UIManager)
-    EntityInspector* m_entityInspector = nullptr;
     CameraInspector* m_cameraInspector = nullptr;
-    SpawnInspector* m_spawnInspector = nullptr;
-    EntityListInspector* m_entityListInspector = nullptr;
+    EntityManagerInspector* m_entityManagerInspector = nullptr;
     StatsInspector* m_statsInspector = nullptr;
 
     // Selected light index (-1 = none selected)

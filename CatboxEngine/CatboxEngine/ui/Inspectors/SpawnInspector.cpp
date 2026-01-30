@@ -13,32 +13,22 @@ void SpawnInspector::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec
 {
     ImGui::Begin("Spawn Entity");
 
-    // Position and Scale
-    ImGui::InputFloat3("Position", &spawnPosition.x);
-    ImGui::InputFloat3("Scale", &spawnScale.x);
-
-    // Model Path Browser
-    DrawModelBrowser();
-
-    // Handle texture assignment popup
-    DrawTextureAssignmentPopup(entityManager, selectedIndex);
-
-    // Spawn Buttons
-    DrawSpawnButtons(entityManager, spawnPosition, spawnScale, selectedIndex, useSharedCube);
-
-    // Options
+    ImGui::Text("Entities: %zu", entityManager.Size());
     ImGui::Separator();
-    ImGui::Checkbox("Use shared cube mesh", &useSharedCube);
 
-    ImGui::End();
+    // Spawn position controls
+    ImGui::Text("Spawn Position");
+    ImGui::DragFloat3("##Position", &spawnPosition.x, 0.1f);
 
-    // Error Popup
-    DrawModelErrorPopup();
-}
+    // Spawn scale controls
+    ImGui::Text("Scale");
+    ImGui::DragFloat3("##Scale", &spawnScale.x, 0.01f, 0.001f, 100.0f);
 
-void SpawnInspector::DrawModelBrowser()
-{
-    ImGui::InputText("Model Path", m_modelPath, IM_ARRAYSIZE(m_modelPath));
+    ImGui::Separator();
+
+    // Model Path
+    ImGui::Text("Model Path");
+    ImGui::InputText("##ModelPath", m_modelPath, IM_ARRAYSIZE(m_modelPath));
     ImGui::SameLine();
     
     if (ImGui::Button("Browse..."))
@@ -49,6 +39,100 @@ void SpawnInspector::DrawModelBrowser()
         {
             strncpy_s(m_modelPath, szFile, sizeof(m_modelPath));
         }
+    }
+
+    ImGui::Separator();
+
+    // Spawn buttons in a row (like Light Inspector)
+    if (ImGui::Button("Spawn Entity"))
+    {
+        SpawnNewEntity(entityManager, spawnPosition, spawnScale, useSharedCube);
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Apply to Selected"))
+    {
+        ApplyModelToSelected(entityManager, selectedIndex);
+    }
+
+    ImGui::Separator();
+
+    // Options
+    ImGui::Checkbox("Use shared cube mesh", &useSharedCube);
+
+    ImGui::End();
+
+    // Handle texture assignment popup
+    DrawTextureAssignmentPopup(entityManager, selectedIndex);
+
+    // Error Popup
+    DrawModelErrorPopup();
+}
+
+void SpawnInspector::SpawnNewEntity(EntityManager& entityManager, const Vec3& spawnPosition,
+                                   const Vec3& spawnScale, bool useSharedCube)
+{
+    Entity entity;
+    entity.name = "Cube";
+    entity.Transform.Position = spawnPosition;
+    entity.Transform.Scale = spawnScale;
+    
+    if (m_modelPath[0] != '\0')
+    {
+        std::string pathStr(m_modelPath);
+        MeshHandle handle = MeshManager::Instance().LoadMeshSync(pathStr);
+        if (handle != 0)
+        {
+            entity.MeshHandle = handle;
+            entity.MeshPath = pathStr;
+            entity.name = "Model: " + pathStr;
+            entityManager.AddEntity(entity, useSharedCube);
+        }
+        else
+        {
+            m_showModelError = true;
+            snprintf(m_modelErrorMsg, sizeof(m_modelErrorMsg), "Failed to load model: %s", m_modelPath);
+        }
+    }
+    else
+    {
+        entityManager.AddEntity(entity, useSharedCube);
+    }
+}
+
+void SpawnInspector::ApplyModelToSelected(EntityManager& entityManager, int selectedIndex)
+{
+    if (selectedIndex < 0 || selectedIndex >= static_cast<int>(entityManager.Size()))
+    {
+        return;
+    }
+
+    if (m_modelPath[0] == '\0')
+    {
+        return;
+    }
+
+    auto& entity = entityManager.GetAll()[selectedIndex];
+    
+    // Release old mesh handle
+    if (entity.MeshHandle != 0)
+    {
+        MeshManager::Instance().Release(entity.MeshHandle);
+    }
+
+    // Load and assign new mesh
+    MeshHandle handle = MeshManager::Instance().LoadMeshSync(m_modelPath);
+    if (handle != 0)
+    {
+        entity.MeshHandle = handle;
+        entity.MeshPath = std::string(m_modelPath);
+        entity.name = "Model: " + std::string(m_modelPath);
+    }
+    else
+    {
+        m_showModelError = true;
+        snprintf(m_modelErrorMsg, sizeof(m_modelErrorMsg), "Failed to load model: %s", m_modelPath);
     }
 }
 
@@ -126,77 +210,6 @@ void SpawnInspector::DrawTextureAssignmentPopup(EntityManager& entityManager, in
         }
         
         ImGui::EndPopup();
-    }
-}
-
-void SpawnInspector::DrawSpawnButtons(EntityManager& entityManager, Vec3& spawnPosition, 
-                                     Vec3& spawnScale, int selectedIndex, bool useSharedCube)
-{
-    ImGui::Separator();
-    
-    // Spawn new entity
-    if (ImGui::Button("Spawn Entity"))
-    {
-        Entity entity;
-        entity.name = "Cube";
-        entity.Transform.Position = spawnPosition;
-        entity.Transform.Scale = spawnScale;
-        
-        if (m_modelPath[0] != '\0')
-        {
-            std::string pathStr(m_modelPath);
-            MeshHandle handle = MeshManager::Instance().LoadMeshSync(pathStr);
-            if (handle != 0)
-            {
-                entity.MeshHandle = handle;
-                entity.MeshPath = pathStr;
-                entity.name = "Model: " + pathStr;
-                entityManager.AddEntity(entity, useSharedCube);
-            }
-            else
-            {
-                m_showModelError = true;
-                snprintf(m_modelErrorMsg, sizeof(m_modelErrorMsg), "Failed to load model: %s", m_modelPath);
-            }
-        }
-        else
-        {
-            entityManager.AddEntity(entity, useSharedCube);
-        }
-    }
-
-    ImGui::SameLine();
-
-    // Apply model to selected entity
-    if (ImGui::Button("Apply to Selected"))
-    {
-        if (selectedIndex >= 0 && selectedIndex < static_cast<int>(entityManager.Size()))
-        {
-            if (m_modelPath[0] != '\0')
-            {
-                auto& entity = entityManager.GetAll()[selectedIndex];
-                
-                // Release old mesh handle
-                if (entity.MeshHandle != 0)
-                {
-                    MeshManager::Instance().Release(entity.MeshHandle);
-                }
-
-                // Load and assign new mesh
-                MeshHandle handle = MeshManager::Instance().LoadMeshSync(m_modelPath);
-                if (handle != 0)
-                {
-                    entity.MeshHandle = handle;
-                    entity.MeshPath = std::string(m_modelPath);
-                    entity.name = "Model: " + std::string(m_modelPath);
-                }
-                else
-                {
-                    m_showModelError = true;
-                    snprintf(m_modelErrorMsg, sizeof(m_modelErrorMsg), "Failed to load model: %s", m_modelPath);
-                }
-            }
-        }
     }
 }
 

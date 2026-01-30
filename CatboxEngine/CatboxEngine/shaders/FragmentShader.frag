@@ -194,13 +194,39 @@ void main()
     vec3 N = normalize(FragNormal);
     if (u_HasNormalMap)
     {
-        vec3 T = normalize(FragTangent);
-        vec3 B = normalize(cross(N, T));
-        mat3 TBN = mat3(T, B, N);
+        // Check if we have valid tangent data
+        vec3 T = FragTangent;
+        float tangentLength = length(T);
         
-        vec3 normalMap = texture(u_NormalMap, TexCoord).rgb;
-        normalMap = normalMap * 2.0 - 1.0;  // [0,1] -> [-1,1]
-        N = normalize(TBN * normalMap);
+        // Only apply normal mapping if tangents are valid (non-zero)
+        if (tangentLength > 0.001)
+        {
+            // Re-orthogonalize TBN matrix using Gram-Schmidt process
+            T = normalize(T);
+            T = normalize(T - dot(T, N) * N);  // Gram-Schmidt orthogonalization
+            vec3 B = cross(N, T);
+            mat3 TBN = mat3(T, B, N);
+            
+            vec3 normalMap = texture(u_NormalMap, TexCoord).rgb;
+            normalMap = normalMap * 2.0 - 1.0;  // [0,1] -> [-1,1]
+            N = normalize(TBN * normalMap);
+        }
+        else
+        {
+            // Fallback: Generate tangent space from normal and apply normal map
+            // This is less accurate but works for meshes without tangent data
+            vec3 normalMap = texture(u_NormalMap, TexCoord).rgb;
+            normalMap = normalMap * 2.0 - 1.0;  // [0,1] -> [-1,1]
+            
+            // Create arbitrary tangent space
+            vec3 up = abs(N.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+            vec3 T_gen = normalize(cross(up, N));
+            vec3 B_gen = cross(N, T_gen);
+            mat3 TBN = mat3(T_gen, B_gen, N);
+            
+            // Apply normal map perturbation (reduced strength for stability)
+            N = normalize(N + TBN * normalMap * 0.5);
+        }
     }
     
     // View direction

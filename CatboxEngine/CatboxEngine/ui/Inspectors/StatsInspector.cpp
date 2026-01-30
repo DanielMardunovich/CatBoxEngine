@@ -12,7 +12,9 @@ void StatsInspector::Draw(float deltaTime, EntityManager& entityManager)
     ImGui::Begin("Statistics");
 
     DrawTimingStats(deltaTime);
+    
     ImGui::Separator();
+    
     DrawMemoryStats(entityManager);
 
     ImGui::End();
@@ -21,6 +23,8 @@ void StatsInspector::Draw(float deltaTime, EntityManager& entityManager)
 void StatsInspector::DrawTimingStats(float deltaTime)
 {
     ImGui::Text("Performance");
+    ImGui::Spacing();
+    
     ImGui::Text("Delta Time: %.4f ms", deltaTime * 1000.0f);
     ImGui::Text("FPS: %.1f", 1.0f / deltaTime);
 }
@@ -28,6 +32,7 @@ void StatsInspector::DrawTimingStats(float deltaTime)
 void StatsInspector::DrawMemoryStats(EntityManager& entityManager)
 {
     ImGui::Text("Memory");
+    ImGui::Spacing();
 
     // Mesh memory (always available)
     auto& meshMgr = MeshManager::Instance();
@@ -35,12 +40,17 @@ void StatsInspector::DrawMemoryStats(EntityManager& entityManager)
     const float meshGPU = meshMgr.GetTotalGPUMemory() / (1024.0f * 1024.0f);
     
     ImGui::Text("Meshes: %zu", meshMgr.GetMeshCount());
-    ImGui::Text("CPU: %.2f MB | GPU: %.2f MB", meshCPU, meshGPU);
+    ImGui::Text("CPU: %.2f MB", meshCPU);
+    ImGui::Text("GPU: %.2f MB", meshGPU);
+
+    ImGui::Spacing();
 
 #if TRACK_MEMORY
     auto& memTracker = MemoryTracker::Instance();
     ImGui::Text("Tracked: %.2f MB", memTracker.GetCurrentUsage() / (1024.0f * 1024.0f));
     ImGui::Text("Allocations: %zu", memTracker.GetActiveAllocations());
+
+    ImGui::Spacing();
 
     if (ImGui::Button("Print Report"))
     {
