@@ -3,18 +3,26 @@
 #include <glfw3.h>
 #include <glm/glm.hpp>
 
-// keyboard movement
+// Constants
+namespace
+{
+    constexpr float DEFAULT_MOVE_SPEED = 2.5f;
+    constexpr float MAX_PITCH = 89.0f;
+    constexpr float MIN_PITCH = -89.0f;
+}
+
 void Camera::Update(GLFWwindow* window, float deltaTime)
 {
-    float speed = 2.5f * deltaTime;
+    const float speed = DEFAULT_MOVE_SPEED * deltaTime;
 
     glm::vec3 camPos(Position.x, Position.y, Position.z);
     glm::vec3 camFront(Front.x, Front.y, Front.z);
     glm::vec3 camUpVec(Up.x, Up.y, Up.z);
 
-    glm::vec3 forward = glm::normalize(camFront);
-    glm::vec3 right = glm::normalize(glm::cross(forward, camUpVec));
+    const glm::vec3 forward = glm::normalize(camFront);
+    const glm::vec3 right = glm::normalize(glm::cross(forward, camUpVec));
 
+    // Movement input
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camPos += forward * speed;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camPos -= forward * speed;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camPos -= right * speed;
@@ -106,16 +114,15 @@ void Camera::ProcessMouseMovement(float xoffset, float yoffset, bool constrainPi
 
     if (constrainPitch)
     {
-        if (Pitch > 89.0f) Pitch = 89.0f;
-        if (Pitch < -89.0f) Pitch = -89.0f;
+        Pitch = glm::clamp(Pitch, MIN_PITCH, MAX_PITCH);
     }
 
-    // update Front vector
+    // Update front vector from yaw and pitch
     glm::vec3 front;
     front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
     front.y = sin(glm::radians(Pitch));
     front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-    front = glm::normalize(front);
+    
     Front = { front.x, front.y, front.z };
 }
 
