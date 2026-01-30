@@ -384,6 +384,10 @@ void EntityManagerInspector::DrawTextureOverride(Entity& entity, TextureType typ
 
 unsigned int EntityManagerInspector::LoadTextureWithSettings(const char* path, int& width, int& height, int channels)
 {
+    // Match OBJ loader behavior - don't flip for manually loaded textures
+    // This ensures consistency with how the model's UVs were exported
+    stbi_set_flip_vertically_on_load(false);
+    
     int actualChannels;
     unsigned char* data = stbi_load(path, &width, &height, &actualChannels, channels);
     

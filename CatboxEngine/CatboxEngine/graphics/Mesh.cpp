@@ -227,7 +227,12 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                 v.Position = {p.x, p.y, p.z};
                 if (ni >=0 && ni < (int)normals.size()) { glm::vec3 n = normals[ni]; v.Normal = {n.x, n.y, n.z}; }
                 else v.Normal = {0,0,0};
-                if (ti >=0 && ti < (int)texcoords.size()) { glm::vec2 uv = texcoords[ti]; v.UV = {uv.x, uv.y, 0}; }
+                if (ti >=0 && ti < (int)texcoords.size()) 
+                { 
+                    glm::vec2 uv = texcoords[ti]; 
+                    // Flip V coordinate for proper texture mapping
+                    v.UV = {uv.x, 1.0f - uv.y, 0}; 
+                }
                 else v.UV = {0,0,0};
 
                 uint32_t newIndex = (uint32_t)outVerts.size();
@@ -335,6 +340,29 @@ bool Mesh::LoadFromOBJ(const std::string& path)
     std::vector<glm::vec3> tanAccum(Vertices.size(), glm::vec3(0.0f));
     bool haveUV = false;
     for (const auto &v : Vertices) if (v.UV.x != 0.0f || v.UV.y != 0.0f) { haveUV = true; break; }
+    
+    // Debug: Print UV range for first 10 vertices
+    if (haveUV && Vertices.size() > 0)
+    {
+        std::cout << "  UV Debug (first 10 vertices):" << std::endl;
+        for (size_t i = 0; i < std::min<size_t>(10, Vertices.size()); ++i)
+        {
+            std::cout << "    v[" << i << "] UV: (" << Vertices[i].UV.x << ", " << Vertices[i].UV.y << ")" << std::endl;
+        }
+        
+        // Find UV range
+        float minU = FLT_MAX, maxU = -FLT_MAX;
+        float minV = FLT_MAX, maxV = -FLT_MAX;
+        for (const auto& v : Vertices)
+        {
+            minU = std::min(minU, v.UV.x);
+            maxU = std::max(maxU, v.UV.x);
+            minV = std::min(minV, v.UV.y);
+            maxV = std::max(maxV, v.UV.y);
+        }
+        std::cout << "  UV Range: U[" << minU << ", " << maxU << "], V[" << minV << ", " << maxV << "]" << std::endl;
+    }
+    
     if (haveUV)
     {
         for (size_t i = 0; i + 2 < Indices.size(); i += 3)
@@ -448,7 +476,8 @@ bool Mesh::LoadFromOBJ(const std::string& path)
         // Try each path
         for (const auto& path : pathsToTry)
         {
-            // Don't flip for OBJ files - many exporters already have correct UV coordinates
+            // Don't flip for OBJ files - Blender and most modern exporters 
+            // already export with correct UV orientation
             stbi_set_flip_vertically_on_load(false);
             unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 4);
             if (data)
