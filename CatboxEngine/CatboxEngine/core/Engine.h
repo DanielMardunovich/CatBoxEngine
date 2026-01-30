@@ -7,6 +7,7 @@
 #include "../resources/SceneManager.h"
 #include "UIManager.h"
 #include <vector>
+#include <string>
 #include "../resources/Math/Vec3.h"
 #include "Platform.h"
 
@@ -15,18 +16,14 @@ struct GLFWwindow;
 class Engine
 {
 public:
-    Engine(float windowWidth = 800.f, float windowHeight = 800.f, const char* name = "Catbox Engine")
-        : window(nullptr),
-          width(windowWidth),
-          height(windowHeight),
-          name(name),
-          glfwInitialized(false),
-          imguiInitialized(false)
-    {
-        
-    }
-    
+    Engine(float windowWidth = 800.0f, float windowHeight = 800.0f, const char* name = "Catbox Engine");
     ~Engine();
+
+    // Disable copy, enable move
+    Engine(const Engine&) = delete;
+    Engine& operator=(const Engine&) = delete;
+    Engine(Engine&&) noexcept = default;
+    Engine& operator=(Engine&&) noexcept = default;
 
     void app();
     void OnMouseMove(double xpos, double ypos);
@@ -38,36 +35,34 @@ private:
     void Render();
     
     int Initialize();
-    int InitGlfw();
-    int InitGlad();
     int InitImGui();
     void SetupMessageSubscriptions();
     void Cleanup();
 
-    GLFWwindow* GetWindow() { return window; }
+    [[nodiscard]] GLFWwindow* GetWindow() const noexcept { return m_window; }
     
-    //------------- variables -----------------
-private:
-    GLFWwindow* window;
-    Platform platform;
+    // Window and platform
+    GLFWwindow* m_window = nullptr;
+    Platform m_platform;
 
-    float width, height;
-    const char* name;
+    float m_width;
+    float m_height;
+    std::string m_name;
 
-    bool glfwInitialized;
-    bool imguiInitialized;
+    bool m_glfwInitialized = false;
+    bool m_imguiInitialized = false;
     
     // Rendering system
     RenderPipeline m_renderPipeline;
     
     // Game systems
-    EntityManager entityManager;
-    UIManager uiManager;
-    Camera camera;
+    EntityManager m_entityManager;
+    UIManager m_uiManager;
+    Camera m_camera;
     
     // UI state
-    Vec3 spawnPosition{0,0,0};
-    Vec3 spawnScale{0.5f,0.5f,0.5f};
-    int selectedEntityIndex = -1;
-    bool useSharedCube = true;
+    Vec3 m_spawnPosition { 0.0f, 0.0f, 0.0f };
+    Vec3 m_spawnScale { 0.5f, 0.5f, 0.5f };
+    int m_selectedEntityIndex = -1;
+    bool m_useSharedCube = true;
 };

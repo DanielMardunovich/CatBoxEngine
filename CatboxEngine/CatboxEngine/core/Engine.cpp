@@ -19,11 +19,19 @@
 #include "../resources/EntityManager.h"
 #include "../resources/SceneManager.h"
 
+Engine::Engine(float windowWidth, float windowHeight, const char* name)
+    : m_window(nullptr)
+    , m_width(windowWidth)
+    , m_height(windowHeight)
+    , m_name(name)
+    , m_glfwInitialized(false)
+    , m_imguiInitialized(false)
+{
+}
 
 void Engine::OnMouseMove(double xpos, double ypos)
 {
-    // forward mouse movement to camera (camera itself ignores movement when not captured)
-    camera.OnMouseMove(xpos, ypos);
+    m_camera.OnMouseMove(xpos, ypos);
 }
 
 void Engine::OnDrop(const std::vector<std::string>& paths)
@@ -45,8 +53,10 @@ void Engine::OnDrop(const std::vector<std::string>& paths)
         MeshHandle h = MeshManager::Instance().LoadMeshSync(p);
         if (h != 0)
         {
-            Entity e; e.name = std::string("Model: ") + p; e.MeshHandle = h;
-            entityManager.AddEntity(e, useSharedCube);
+            Entity e;
+            e.name = "Model: " + p;
+            e.MeshHandle = h;
+            m_entityManager.AddEntity(e, m_useSharedCube);
         }
     }
     else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp")
@@ -56,9 +66,9 @@ void Engine::OnDrop(const std::vector<std::string>& paths)
         MessageQueue::Instance().Post(msg);
         
         // assign to selected entity if any
-        if (selectedEntityIndex >= 0 && selectedEntityIndex < (int)entityManager.Size())
+        if (m_selectedEntityIndex >= 0 && m_selectedEntityIndex < (int)m_entityManager.Size())
         {
-            auto& ent = entityManager.GetAll()[selectedEntityIndex];
+            auto& ent = m_entityManager.GetAll()[m_selectedEntityIndex];
             if (ent.MeshHandle != 0)
             {
                 Mesh* mptr = MeshManager::Instance().GetMesh(ent.MeshHandle);
@@ -68,7 +78,7 @@ void Engine::OnDrop(const std::vector<std::string>& paths)
                     mptr->DiffuseTexturePath = p;
                     
                     // Post texture loaded message
-                    auto loadMsg = std::make_shared<TextureLoadedMessage>(p, selectedEntityIndex);
+                    auto loadMsg = std::make_shared<TextureLoadedMessage>(p, m_selectedEntityIndex);
                     MessageQueue::Instance().Post(loadMsg);
                 }
             }
@@ -78,10 +88,8 @@ void Engine::OnDrop(const std::vector<std::string>& paths)
 
 void Engine::OnMouseButton(GLFWwindow* window, int button, int action, int mods)
 {
-    camera.OnMouseButton(window, button, action, mods);
+    m_camera.OnMouseButton(window, button, action, mods);
 }
-
-// mouse handling moved to Camera
 
 Engine::~Engine()
 {
@@ -91,7 +99,7 @@ Engine::~Engine()
     if (activeScene)
     {
         std::cout << "Auto-saving active scene: " << activeScene->GetName() << std::endl;
-        sceneMgr.SaveScene(sceneMgr.GetActiveSceneID(), "autosave.scene", entityManager);
+        sceneMgr.SaveScene(sceneMgr.GetActiveSceneID(), "autosave.scene", m_entityManager);
     }
     
     Cleanup();
@@ -137,7 +145,7 @@ void Engine::app()
     std::cout << "Initial memory state:" << std::endl;
     MemoryTracker::Instance().PrintMemoryReport();
     
-    while (!glfwWindowShouldClose(window))
+    while (!glfwWindowShouldClose(m_window))
     {
         Time::Update();
 
@@ -149,45 +157,48 @@ void Engine::app()
     MemoryTracker::Instance().PrintMemoryReport();
 }
 
-// mouse movement handled in Camera
-
 void Engine::Update(float deltaTime)
 {
-    // handle window-level input
-    if (glfwGetKey(GetWindow(), GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(GetWindow(), true);
+    GLFWwindow* window = GetWindow();
+    
+    // Handle window-level input
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(window, true);
+    }
 
-    // let camera handle inputs
-    camera.Update(GetWindow(), deltaTime);
+    // Let camera handle inputs
+    m_camera.Update(window, deltaTime);
     glfwPollEvents();
 
     // UI frame and draw
-    uiManager.NewFrame();
-    uiManager.Draw(entityManager, spawnPosition, spawnScale, deltaTime, selectedEntityIndex, camera, useSharedCube);
+    m_uiManager.NewFrame();
+    m_uiManager.Draw(m_entityManager, m_spawnPosition, m_spawnScale, deltaTime, m_selectedEntityIndex, m_camera, m_useSharedCube);
 
-    // poll mesh manager for completed async loads and invoke callbacks
+    // Poll mesh manager for completed async loads and invoke callbacks
     MeshManager::Instance().PollCompleted();
     
-    // process message queue
+    // Process message queue
     MessageQueue::Instance().ProcessMessages();
 
-    // check clipboard for dropped path (used as a bridge by DropCallback)
-    const char* clip = glfwGetClipboardString(GetWindow());
-    static std::string lastClip;
-    if (clip && std::string(clip) != lastClip)
+    // Check clipboard for dropped path
+    if (const char* clip = glfwGetClipboardString(window))
     {
-        lastClip = clip;
-        std::vector<std::string> paths;
-        paths.push_back(std::string(clip));
-        OnDrop(paths);
+        static std::string lastClip;
+        std::string clipStr(clip);
+        if (clipStr != lastClip)
+        {
+            lastClip = clipStr;
+            OnDrop({clipStr});
+        }
     }
-
 }
 
 void Engine::Render()
 {
+    GLFWwindow* window = GetWindow();
     int display_w, display_h;
-    glfwGetFramebufferSize(GetWindow(), &display_w, &display_h);
+    glfwGetFramebufferSize(window, &display_w, &display_h);
     
     // Clear screen
     glViewport(0, 0, display_w, display_h);
@@ -198,29 +209,29 @@ void Engine::Render()
     ImGui::Render();
     
     // Render scene using RenderPipeline
-    m_renderPipeline.Render(entityManager, camera, display_w, display_h);
+    m_renderPipeline.Render(m_entityManager, m_camera, display_w, display_h);
     
     // Render UI
-    uiManager.Render();
+    m_uiManager.Render();
 
-    glfwSwapBuffers(GetWindow());
+    glfwSwapBuffers(window);
 }
 
 int Engine::Initialize()
 {
     // platform (GLFW window)
-    if (!platform.Init((int)width, (int)height, name))
+    if (!m_platform.Init((int)m_width, (int)m_height, m_name.c_str()))
         return -1;
 
-    window = platform.GetWindow();
+    m_window = m_platform.GetWindow();
 
     // Set user pointer so callbacks can access the Engine instance
-    glfwSetWindowUserPointer(window, this);
+    glfwSetWindowUserPointer(m_window, this);
     // install input callbacks
-    glfwSetCursorPosCallback(window, MouseCallback);
-    glfwSetMouseButtonCallback(window, MouseButtonCallback);
+    glfwSetCursorPosCallback(m_window, MouseCallback);
+    glfwSetMouseButtonCallback(m_window, MouseButtonCallback);
     // install drop callback for drag-and-drop support
-    Platform::InstallDropCallback(window);
+    Platform::InstallDropCallback(m_window);
 
     // glad
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -236,7 +247,7 @@ int Engine::Initialize()
     }
 
     // Initialize camera
-    camera.Initialize({0,0,3}, {0,0,0}, {0,1,0}, 60.0f, width / height, 0.1f, 100.0f);
+    m_camera.Initialize({0,0,3}, {0,0,0}, {0,1,0}, 60.0f, m_width / m_height, 0.1f, 100.0f);
 
     // ImGui
     if (InitImGui() != 0)
@@ -263,7 +274,7 @@ int Engine::Initialize()
         SceneID id = sceneMgr.LoadScene("autosave.scene");
         if (id != 0)
         {
-            sceneMgr.SetActiveScene(id, entityManager);
+            sceneMgr.SetActiveScene(id, m_entityManager);
         }
     }
     else
@@ -271,7 +282,7 @@ int Engine::Initialize()
         // No autosave, create default scene
         std::cout << "No autosave found, creating default scene..." << std::endl;
         SceneID defaultScene = sceneMgr.CreateScene("Default Scene");
-        sceneMgr.SetActiveScene(defaultScene, entityManager);
+        sceneMgr.SetActiveScene(defaultScene, m_entityManager);
     }
 
     return 0;
@@ -302,51 +313,39 @@ void Engine::SetupMessageSubscriptions()
     });
 }
 
-int Engine::InitGlfw()
-{
-    // removed: platform initialization is handled by Platform class
-    return 0;
-}
-
-int Engine::InitGlad()
-{
-    // handled in Initialize
-    return 0;
-}
-
 int Engine::InitImGui()
 {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO();
 
     ImGui::StyleColorsDark();
 
-    //Setup platform/renderer bindings
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    // Setup platform/renderer bindings
+    ImGui_ImplGlfw_InitForOpenGL(m_window, true);
     ImGui_ImplOpenGL3_Init("#version 440");
 
-    imguiInitialized = true;
+    m_imguiInitialized = true;
 
     return 0;
 }
 
 void Engine::Cleanup()
 {
-    if (imguiInitialized)
+    if (m_imguiInitialized)
     {
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
 
-        imguiInitialized = false;
+        m_imguiInitialized = false;
     }
 
-    if (glfwInitialized)
+    if (m_glfwInitialized)
     {
-        glfwDestroyWindow(window);
+        glfwDestroyWindow(m_window);
         glfwTerminate();
 
-        glfwInitialized = false;
+        m_glfwInitialized = false;
     }
 }

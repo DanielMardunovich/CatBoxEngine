@@ -21,9 +21,14 @@
 // Minimal OBJ loader supporting positions, normals and triangular faces
 bool Mesh::LoadFromOBJ(const std::string& path)
 {
+    std::cout << "[DEBUG] LoadFromOBJ called with path: " << path << std::endl;
     std::ifstream in(path);
     if (!in.is_open())
+    {
+        std::cerr << "[ERROR] LoadFromOBJ: Failed to open file: " << path << std::endl;
         return false;
+    }
+    std::cout << "[DEBUG] LoadFromOBJ: File opened successfully" << std::endl;
 
     std::vector<glm::vec3> positions;
     std::vector<glm::vec3> normals;
@@ -115,6 +120,21 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                 {
                     std::cout << "MTL loaded: " << mtlMaps.size() << " diffuse, " 
                               << mtlNormalMaps.size() << " normal maps" << std::endl;
+                    
+                    // Debug: Print all material texture mappings
+                    std::cout << "[DEBUG] Material texture mappings:" << std::endl;
+                    for (const auto& pair : mtlMaps)
+                    {
+                        std::cout << "  Material '" << pair.first << "' -> Diffuse: " << pair.second << std::endl;
+                    }
+                    for (const auto& pair : mtlSpecularMaps)
+                    {
+                        std::cout << "  Material '" << pair.first << "' -> Specular: " << pair.second << std::endl;
+                    }
+                    for (const auto& pair : mtlNormalMaps)
+                    {
+                        std::cout << "  Material '" << pair.first << "' -> Normal: " << pair.second << std::endl;
+                    }
                 }
             }
             continue;
@@ -239,8 +259,34 @@ bool Mesh::LoadFromOBJ(const std::string& path)
         }
     }
 
-    if (outVerts.empty() || outIndices.empty())
+    // Validate that we have geometry
+    bool hasGeometry = false;
+    if (!outVerts.empty())
+    {
+        // Check if we have indices in either legacy indices or material groups
+        if (!outIndices.empty())
+        {
+            hasGeometry = true;
+        }
+        else
+        {
+            // Check if any material group has indices
+            for (const auto& group : materialGroups)
+            {
+                if (!group.indices.empty())
+                {
+                    hasGeometry = true;
+                    break;
+                }
+            }
+        }
+    }
+    
+    if (!hasGeometry)
+    {
+        std::cerr << "[ERROR] LoadFromOBJ: No geometry found (vertices or indices empty)" << std::endl;
         return false;
+    }
 
     Vertices = std::move(outVerts);
     Indices = std::move(outIndices);
@@ -334,6 +380,89 @@ bool Mesh::LoadFromOBJ(const std::string& path)
         materialToUse = mtlColors.begin()->first;
     }
     
+    // Helper function to try loading texture with fallback patterns
+    auto TryLoadTextureWithFallbacks = [&objDir](const std::string& texPath, int& width, int& height, int& channels) -> unsigned char* {
+        std::vector<std::string> pathsToTry;
+        
+        // Build full path
+        std::string full = texPath;
+        if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) 
+            full = objDir + texPath;
+        
+        // Extract directory and filename
+        size_t lastSlash = full.find_last_of("/\\");
+        std::string dir = (lastSlash != std::string::npos) ? full.substr(0, lastSlash + 1) : "";
+        std::string filename = (lastSlash != std::string::npos) ? full.substr(lastSlash + 1) : full;
+        
+        // Extract base name and extension
+        size_t extPos = filename.find_last_of('.');
+        std::string baseName = (extPos != std::string::npos) ? filename.substr(0, extPos) : filename;
+        std::string ext = (extPos != std::string::npos) ? filename.substr(extPos) : "";
+        
+        // Generate variations
+        std::vector<std::string> baseVariations;
+        baseVariations.push_back(baseName);           // Original
+        baseVariations.push_back("1_" + baseName);    // With 1_ prefix
+        baseVariations.push_back(baseName + "1");     // With 1 suffix
+        baseVariations.push_back("1_" + baseName + "1"); // Both
+        
+        // Handle plural/singular (object vs objects)
+        if (baseName.back() != 's')
+        {
+            baseVariations.push_back(baseName + "s");
+            baseVariations.push_back("1_" + baseName + "s");
+            baseVariations.push_back(baseName + "s1");
+            baseVariations.push_back("1_" + baseName + "s1");
+        }
+        else
+        {
+            std::string singular = baseName.substr(0, baseName.length() - 1);
+            baseVariations.push_back(singular);
+            baseVariations.push_back("1_" + singular);
+            baseVariations.push_back(singular + "1");
+            baseVariations.push_back("1_" + singular + "1");
+        }
+        
+        // Extension variations
+        std::vector<std::string> extVariations;
+        extVariations.push_back(ext);  // Original case
+        
+        std::string extUpper = ext;
+        for (auto& c : extUpper) c = (char)toupper(c);
+        extVariations.push_back(extUpper);
+        
+        std::string extLower = ext;
+        for (auto& c : extLower) c = (char)tolower(c);
+        extVariations.push_back(extLower);
+        
+        // Combine all variations
+        for (const auto& base : baseVariations)
+        {
+            for (const auto& extension : extVariations)
+            {
+                pathsToTry.push_back(dir + base + extension);
+            }
+        }
+        
+        // Try each path
+        for (const auto& path : pathsToTry)
+        {
+            // Don't flip for OBJ files - many exporters already have correct UV coordinates
+            stbi_set_flip_vertically_on_load(false);
+            unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 4);
+            if (data)
+            {
+                if (path != full)
+                {
+                    std::cout << "  Found texture using fallback: " << path << std::endl;
+                }
+                return data;
+            }
+        }
+        
+        return nullptr;
+    };
+    
     // Create SubMeshes for multi-material models
     if (!materialGroups.empty())
     {
@@ -366,11 +495,12 @@ bool Mesh::LoadFromOBJ(const std::string& path)
             if (itm != mtlMaps.end())
             {
                 std::string texPath = itm->second;
-                std::string full = texPath;
-                if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) full = objDir + texPath;
+                
+                std::cout << "[DEBUG] Loading diffuse texture for material '" << group.materialName << "'" << std::endl;
+                std::cout << "  MTL texture path: " << texPath << std::endl;
                 
                 int width, height, channels;
-                unsigned char* data = stbi_load(full.c_str(), &width, &height, &channels, 4);
+                unsigned char* data = TryLoadTextureWithFallbacks(texPath, width, height, channels);
                 if (data)
                 {
                     glGenTextures(1, &sub.DiffuseTexture);
@@ -383,10 +513,20 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                     stbi_image_free(data);
                     
+                    std::cout << "  ? Diffuse texture loaded successfully (" << width << "x" << height << ")" << std::endl;
                     
                     sub.HasDiffuseTexture = true;
-                    sub.DiffuseTexturePath = full;
+                    sub.DiffuseTexturePath = texPath;
                 }
+                else
+                {
+                    std::cerr << "  ? Failed to load diffuse texture (tried multiple paths)" << std::endl;
+                    std::cerr << "    Reason: " << stbi_failure_reason() << std::endl;
+                }
+            }
+            else
+            {
+                std::cout << "[DEBUG] No diffuse texture mapped for material '" << group.materialName << "'" << std::endl;
             }
             
             // Load specular texture
@@ -394,11 +534,11 @@ bool Mesh::LoadFromOBJ(const std::string& path)
             if (itsm != mtlSpecularMaps.end())
             {
                 std::string texPath = itsm->second;
-                std::string full = texPath;
-                if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) full = objDir + texPath;
+                
+                std::cout << "[DEBUG] Loading specular texture for material '" << group.materialName << "'" << std::endl;
                 
                 int width, height, channels;
-                unsigned char* data = stbi_load(full.c_str(), &width, &height, &channels, 4);
+                unsigned char* data = TryLoadTextureWithFallbacks(texPath, width, height, channels);
                 if (data)
                 {
                     glGenTextures(1, &sub.SpecularTexture);
@@ -411,8 +551,14 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                     stbi_image_free(data);
                     
+                    std::cout << "  ? Specular texture loaded successfully" << std::endl;
+                    
                     sub.HasSpecularTexture = true;
-                    sub.SpecularTexturePath = full;
+                    sub.SpecularTexturePath = texPath;
+                }
+                else
+                {
+                    std::cerr << "  ? Failed to load specular texture (tried multiple paths)" << std::endl;
                 }
             }
             
@@ -421,11 +567,11 @@ bool Mesh::LoadFromOBJ(const std::string& path)
             if (itnm != mtlNormalMaps.end())
             {
                 std::string texPath = itnm->second;
-                std::string full = texPath;
-                if (objDir.size() && texPath.find_first_of("/\\") == std::string::npos) full = objDir + texPath;
+                
+                std::cout << "[DEBUG] Loading normal map for material '" << group.materialName << "'" << std::endl;
                 
                 int width, height, channels;
-                unsigned char* data = stbi_load(full.c_str(), &width, &height, &channels, 4);
+                unsigned char* data = TryLoadTextureWithFallbacks(texPath, width, height, channels);
                 if (data)
                 {
                     glGenTextures(1, &sub.NormalTexture);
@@ -438,8 +584,14 @@ bool Mesh::LoadFromOBJ(const std::string& path)
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                     stbi_image_free(data);
                     
+                    std::cout << "  ? Normal map loaded successfully" << std::endl;
+                    
                     sub.HasNormalTexture = true;
-                    sub.NormalTexturePath = full;
+                    sub.NormalTexturePath = texPath;
+                }
+                else
+                {
+                    std::cerr << "  ? Failed to load normal map (tried multiple paths)" << std::endl;
                 }
             }
             

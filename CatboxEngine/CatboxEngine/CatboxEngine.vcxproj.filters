@@ -37,11 +37,26 @@
     <Filter Include="Header Files\UI">
       <UniqueIdentifier>{484aeacc-c032-4607-bd1f-fbd5e7cf7bca}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Shaders">
+      <UniqueIdentifier>{470c698e-991a-483c-bb49-8fe007c966c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Engine">
+      <UniqueIdentifier>{4d9ef256-d655-42c5-b225-d8377190402d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Helpers">
+      <UniqueIdentifier>{670b8f58-5d7b-4c96-9fee-cbbccf34947a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Engine">
+      <UniqueIdentifier>{973820eb-97c7-4e5a-b031-c4d81ee900ca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\UI">
+      <UniqueIdentifier>{a332ed57-5956-493a-9b21-cefaf1276758}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shader">
+      <UniqueIdentifier>{31221c3f-1c9e-4a6b-8f77-3f76bb083bfc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\Dependencies\imgui\imgui_demo.cpp">
       <Filter>Source Files\imgui</Filter>
     </ClCompile>
@@ -63,104 +78,65 @@
     <ClCompile Include="..\Dependencies\imgui\imgui.cpp">
       <Filter>Source Files\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="core\Engine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="core\Logger.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="core\Memory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="core\Time.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\Buffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\Frustum.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\GLDebug.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\Material.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\Mesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\passes\ForwardPass.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\passes\GBufferPass.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\passes\LightingPass.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\passes\ShadowPass.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\RenderPipeline.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\Shader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\Texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="platform\Input.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="platform\Window.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="resources\Entity.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="resources\EntityManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="resources\Scene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\ImGuiLayer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\Inspectors\CameraInspector.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\Inspectors\EntityInspector.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="resources\Camera.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="resources\Entity.cpp">
+      <Filter>Source Files\Entity</Filter>
     </ClCompile>
-    <ClCompile Include="core\UIManager.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="graphics\Mesh.cpp">
+      <Filter>Source Files\Entity</Filter>
     </ClCompile>
-    <ClCompile Include="core\Platform.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\MeshManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="core\MemoryTracker.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="resources\SceneManager.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="resources\EntityManager.cpp">
+      <Filter>Source Files\Managers</Filter>
     </ClCompile>
     <ClCompile Include="graphics\LightManager.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\RenderPipeline.cpp">
+      <Filter>Source Files\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="resources\SceneManager.cpp">
+      <Filter>Source Files\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\MeshManager.cpp">
+      <Filter>Source Files\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="core\Engine.cpp">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="resources\Camera.cpp">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="core\MemoryTracker.cpp">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="ui\Inspectors\EntityInspector.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="ui\Inspectors\CameraInspector.cpp">
+      <Filter>Source Files\UI</Filter>
     </ClCompile>
     <ClCompile Include="ui\Inspectors\LightInspector.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="core\UIManager.cpp">
+      <Filter>Source Files\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="core\Platform.cpp">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="resources\Scene.cpp">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\Shader.cpp">
+      <Filter>Source Files\Shader</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -191,78 +167,6 @@
     <ClInclude Include="..\Dependencies\imgui\imgui_impl_opengl3_loader.h">
       <Filter>Header Files\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="core\Engine.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="core\Logger.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="core\Memory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="core\Time.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\Buffer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\Frustum.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\GLDebug.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\Material.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\passes\ForwardPass.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\passes\GBufferPass.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\passes\LightingPass.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\passes\ShadowPass.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\RenderPipeline.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\Shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\Texture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="platform\Input.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="platform\Window.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resources\Scene.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resources\Transform.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\ImGuiLayer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\Inspectors\EntityInspector.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resources\Math\Vec3.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resources\Math\Vec4.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resources\Camera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="core\UIManager.h">
       <Filter>Header Files\Managers</Filter>
     </ClInclude>
@@ -278,80 +182,79 @@
     <ClInclude Include="ui\Inspectors\CameraInspector.h">
       <Filter>Header Files\UI</Filter>
     </ClInclude>
-    <ClInclude Include="core\Platform.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Dependencies\stb_image.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="graphics\LightManager.h">
+      <Filter>Header Files\Managers</Filter>
     </ClInclude>
     <ClInclude Include="graphics\MeshManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="core\Message.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="core\MessageQueue.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Dependencies\tiny_gltf.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Dependencies\json.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Dependencies\stb_image_write.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="core\MemoryTracker.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Managers</Filter>
     </ClInclude>
     <ClInclude Include="resources\SceneManager.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Managers</Filter>
     </ClInclude>
-    <ClInclude Include="graphics\Light.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\LightManager.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="ui\Inspectors\EntityInspector.h">
+      <Filter>Header Files\UI</Filter>
     </ClInclude>
     <ClInclude Include="ui\Inspectors\LightInspector.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\Shader.h">
+      <Filter>Header Files\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\Light.h">
+      <Filter>Header Files\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="core\Engine.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\Camera.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\stb_image.h">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\stb_image_write.h">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\Math\Vec3.h">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\Math\Vec4.h">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\tiny_gltf.h">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\json.hpp">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\Transform.h">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="core\Time.h">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="core\Platform.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\Scene.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\RenderPipeline.h">
+      <Filter>Header Files\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="core\MessageQueue.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="core\Message.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="core\MemoryTracker.h">
+      <Filter>Header Files\Engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Dependencies\stb_image.h.orig" />
-    <None Include="docs\MessageSystem.md" />
-    <None Include="docs\MultiMaterialSupport.md" />
-    <None Include="docs\GLTF_Setup.md" />
-    <None Include="docs\GLTF_Implementation_Guide.md" />
-    <None Include="docs\GLTF_QuickStart.md" />
-    <None Include="docs\GLTF_Texture_Troubleshooting.md" />
-    <None Include="README.md" />
-    <None Include="docs\MemoryTracking.md" />
-    <None Include="docs\SceneSystem.md" />
-    <None Include="docs\SceneEntitySync.md" />
-    <None Include="docs\ScenePersistenceFix.md" />
-    <None Include="docs\OBJ_UVs_Normals.md" />
-    <None Include="docs\PerEntityTextures.md" />
-    <None Include="docs\BlendShapes_MorphTargets.md" />
-    <None Include="docs\FrustumCulling.md" />
     <None Include="shaders\ShadowMap.vert" />
     <None Include="shaders\ShadowMap.frag" />
-    <None Include="docs\AdvancedRendering.md" />
-    <None Include="docs\LightSpawningUI.md" />
-    <None Include="docs\LightingSystemTest.md" />
-    <None Include="docs\RenderingFixes_LightVisualization.md" />
-    <None Include="docs\ShadowMapping.md" />
-    <None Include="docs\SceneLoadingFix.md" />
-    <None Include="docs\ShaderCompilationFix.md" />
-    <None Include="docs\RenderPipeline_ShadowFixes.md" />
-    <None Include="docs\ProjectCleanup.md" />
-    <None Include="docs\CleanupSummary.md" />
-    <None Include="docs\ShadowDebug.md" />
-    <None Include="docs\PointLightShadowCutoff_Fixed.md" />
-    <None Include="docs\RealisticShadows_Fixed.md" />
-    <None Include="docs\LightPersistence.md" />
-    <None Include="docs\ArchitectureRefactoring.md" />
-    <None Include="docs\RefactoredArchitecture.md" />
   </ItemGroup>
 </Project>

@@ -168,7 +168,7 @@ void RenderPipeline::ShadowPass(EntityManager& entityManager)
 void RenderPipeline::GeometryPass(EntityManager& entityManager, Camera& camera, const glm::mat4& viewProj)
 {
     m_mainShader.Use();
-    m_mainShader.setVec3("u_CameraPos", camera.Position.x, camera.Position.y, camera.Position.z);
+    m_mainShader.SetVec3("u_CameraPos", camera.Position.x, camera.Position.y, camera.Position.z);
     SetupLightUniforms(viewProj);
     
     for (const auto& e : entityManager.GetAll())
@@ -198,7 +198,7 @@ void RenderPipeline::GeometryPass(EntityManager& entityManager, Camera& camera, 
             glBindVertexArray(mesh->VAO);
             for (const auto& sub : mesh->SubMeshes)
             {
-                m_mainShader.setVec3("u_DiffuseColor", sub.DiffuseColor.x, sub.DiffuseColor.y, sub.DiffuseColor.z);
+                m_mainShader.SetVec3("u_DiffuseColor", sub.DiffuseColor.x, sub.DiffuseColor.y, sub.DiffuseColor.z);
                 m_mainShader.SetBool("u_HasDiffuseMap", sub.HasDiffuseTexture);
                 if (sub.HasDiffuseTexture)
                 {
@@ -220,9 +220,9 @@ void RenderPipeline::GeometryPass(EntityManager& entityManager, Camera& camera, 
                     glBindTexture(GL_TEXTURE_2D, sub.SpecularTexture);
                     m_mainShader.SetTexture("u_SpecularMap", 1);
                 }
-                m_mainShader.setVec3("u_SpecularColor", sub.SpecularColor.x, sub.SpecularColor.y, sub.SpecularColor.z);
-                m_mainShader.setFloat("u_Shininess", e.Shininess);
-                m_mainShader.setFloat("u_Alpha", e.Alpha);
+                m_mainShader.SetVec3("u_SpecularColor", sub.SpecularColor.x, sub.SpecularColor.y, sub.SpecularColor.z);
+                m_mainShader.SetFloat("u_Shininess", e.Shininess);
+                m_mainShader.SetFloat("u_Alpha", e.Alpha);
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sub.EBO);
                 glDrawElements(GL_TRIANGLES, (GLsizei)sub.Indices.size(), GL_UNSIGNED_INT, 0);
                 m_stats.DrawCalls++;
@@ -230,13 +230,13 @@ void RenderPipeline::GeometryPass(EntityManager& entityManager, Camera& camera, 
         }
         else
         {
-            m_mainShader.setVec3("u_DiffuseColor", mesh->DiffuseColor.x, mesh->DiffuseColor.y, mesh->DiffuseColor.z);
+            m_mainShader.SetVec3("u_DiffuseColor", mesh->DiffuseColor.x, mesh->DiffuseColor.y, mesh->DiffuseColor.z);
             m_mainShader.SetBool("u_HasDiffuseMap", mesh->HasDiffuseTexture);
             m_mainShader.SetBool("u_HasNormalMap", mesh->HasNormalTexture);
             m_mainShader.SetBool("u_HasSpecularMap", mesh->HasSpecularTexture);
-            m_mainShader.setVec3("u_SpecularColor", mesh->SpecularColor.x, mesh->SpecularColor.y, mesh->SpecularColor.z);
-            m_mainShader.setFloat("u_Shininess", e.Shininess);
-            m_mainShader.setFloat("u_Alpha", e.Alpha);
+            m_mainShader.SetVec3("u_SpecularColor", mesh->SpecularColor.x, mesh->SpecularColor.y, mesh->SpecularColor.z);
+            m_mainShader.SetFloat("u_Shininess", e.Shininess);
+            m_mainShader.SetFloat("u_Alpha", e.Alpha);
             if (mesh->VAO != 0)
             {
                 mesh->Draw();
@@ -257,17 +257,17 @@ void RenderPipeline::SetupLightUniforms(const glm::mat4& viewProj)
         const auto& light = lights[i];
         std::string base = "u_Lights[" + std::to_string(i) + "].";
         m_mainShader.SetInt((base + "type").c_str(), (int)light.Type);
-        m_mainShader.setVec3((base + "position").c_str(), light.Position.x, light.Position.y, light.Position.z);
-        m_mainShader.setVec3((base + "direction").c_str(), light.Direction.x, light.Direction.y, light.Direction.z);
-        m_mainShader.setVec3((base + "color").c_str(), light.Color.x, light.Color.y, light.Color.z);
-        m_mainShader.setFloat((base + "intensity").c_str(), light.Intensity);
-        m_mainShader.setFloat((base + "constant").c_str(), light.Constant);
-        m_mainShader.setFloat((base + "linear").c_str(), light.Linear);
-        m_mainShader.setFloat((base + "quadratic").c_str(), light.Quadratic);
-        m_mainShader.setFloat((base + "innerCutoff").c_str(), std::cos(glm::radians(light.InnerCutoff)));
-        m_mainShader.setFloat((base + "outerCutoff").c_str(), std::cos(glm::radians(light.OuterCutoff)));
+        m_mainShader.SetVec3((base + "position").c_str(), light.Position.x, light.Position.y, light.Position.z);
+        m_mainShader.SetVec3((base + "direction").c_str(), light.Direction.x, light.Direction.y, light.Direction.z);
+        m_mainShader.SetVec3((base + "color").c_str(), light.Color.x, light.Color.y, light.Color.z);
+        m_mainShader.SetFloat((base + "intensity").c_str(), light.Intensity);
+        m_mainShader.SetFloat((base + "constant").c_str(), light.Constant);
+        m_mainShader.SetFloat((base + "linear").c_str(), light.Linear);
+        m_mainShader.SetFloat((base + "quadratic").c_str(), light.Quadratic);
+        m_mainShader.SetFloat((base + "innerCutoff").c_str(), std::cos(glm::radians(light.InnerCutoff)));
+        m_mainShader.SetFloat((base + "outerCutoff").c_str(), std::cos(glm::radians(light.OuterCutoff)));
         m_mainShader.SetBool((base + "castsShadows").c_str(), light.CastsShadows && light.Enabled);
-        m_mainShader.setFloat((base + "shadowBias").c_str(), light.ShadowBias);
+        m_mainShader.SetFloat((base + "shadowBias").c_str(), light.ShadowBias);
         m_mainShader.SetBool((base + "enabled").c_str(), light.Enabled);
         m_mainShader.SetMat4(("u_LightSpaceMatrices[" + std::to_string(i) + "]").c_str(), light.LightSpaceMatrix);
         if (light.CastsShadows && light.Enabled)
@@ -310,11 +310,11 @@ void RenderPipeline::RenderLightIndicators(const glm::mat4& viewProj)
         
         m_mainShader.SetMat4("u_MVP", viewProj);
         m_mainShader.SetMat4("transform", model);
-        m_mainShader.setVec3("u_DiffuseColor", light.Color.x, light.Color.y, light.Color.z);
+        m_mainShader.SetVec3("u_DiffuseColor", light.Color.x, light.Color.y, light.Color.z);
         m_mainShader.SetBool("u_HasDiffuseMap", false);
         m_mainShader.SetBool("u_HasSpecularMap", false);
         m_mainShader.SetBool("u_HasNormalMap", false);
-        m_mainShader.setFloat("u_Alpha", light.Enabled ? 1.0f : 0.3f);
+        m_mainShader.SetFloat("u_Alpha", light.Enabled ? 1.0f : 0.3f);
         
         if (cubeMesh->VAO != 0) cubeMesh->Draw();
     }

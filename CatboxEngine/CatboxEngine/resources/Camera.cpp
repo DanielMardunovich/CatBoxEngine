@@ -47,19 +47,19 @@ void Camera::Initialize(const Vec3& position, const Vec3& target, const Vec3& up
 
 void Camera::OnMouseMove(double xpos, double ypos)
 {
-    if (!cursorCaptured) return;
-    if (firstMouse)
+    if (!m_cursorCaptured) return;
+    if (m_firstMouse)
     {
-        lastX = (float)xpos;
-        lastY = (float)ypos;
-        firstMouse = false;
+        m_lastX = (float)xpos;
+        m_lastY = (float)ypos;
+        m_firstMouse = false;
     }
 
-    float xoffset = (float)xpos - lastX;
-    float yoffset = lastY - (float)ypos;
+    float xoffset = (float)xpos - m_lastX;
+    float yoffset = m_lastY - (float)ypos;
 
-    lastX = (float)xpos;
-    lastY = (float)ypos;
+    m_lastX = (float)xpos;
+    m_lastY = (float)ypos;
 
     ProcessMouseMovement(xoffset, yoffset);
 }
@@ -71,14 +71,14 @@ void Camera::OnMouseButton(GLFWwindow* window, int button, int action, int mods)
     if (action == GLFW_PRESS)
     {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        firstMouse = true;
-        cursorCaptured = true;
+        m_firstMouse = true;
+        m_cursorCaptured = true;
     }
     else if (action == GLFW_RELEASE)
     {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        firstMouse = true;
-        cursorCaptured = false;
+        m_firstMouse = true;
+        m_cursorCaptured = false;
     }
 }
 

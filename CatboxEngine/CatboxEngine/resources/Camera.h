@@ -1,7 +1,8 @@
 #pragma once
 #include "Math/Vec3.h"
-struct GLFWwindow;
 #include <glm/glm.hpp>
+
+struct GLFWwindow;
 
 // Frustum planes for culling
 struct Frustum
@@ -14,21 +15,24 @@ struct Frustum
 
 struct Camera
 {
-    Vec3 Position{0,0,3};
-    Vec3 Target{0,0,0};
-    Vec3 Front{0,0,-1};
+    // Position and orientation
+    Vec3 Position { 0.0f, 0.0f, 3.0f };
+    Vec3 Target { 0.0f, 0.0f, 0.0f };
+    Vec3 Front { 0.0f, 0.0f, -1.0f };
+    Vec3 Up { 0.0f, 1.0f, 0.0f };
+    
     // Euler angles
-    float Yaw = -90.0f; // pointing towards -Z
+    float Yaw = -90.0f;   // Pointing towards -Z
     float Pitch = 0.0f;
-
+    
+    // Camera settings
     float MouseSensitivity = 0.1f;
-    Vec3 Up{0,1,0};
-
     float FOV = 60.0f;
     float Aspect = 1.0f;
     float Near = 0.1f;
     float Far = 100.0f;
 
+    // Setters
     void SetPerspective(float fovDegrees, float aspect, float nearPlane, float farPlane)
     {
         FOV = fovDegrees;
@@ -41,13 +45,13 @@ struct Camera
     void SetTarget(const Vec3& target) { Target = target; }
     void SetUp(const Vec3& up) { Up = up; }
 
-    // Mouse input (xoffset, yoffset) in pixels
+    // Mouse input processing
     void ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch = true);
     
     // Update camera (keyboard movement)
     void Update(GLFWwindow* window, float deltaTime);
 
-    // Callbacks
+    // Event callbacks
     void OnMouseMove(double xpos, double ypos);
     void OnMouseButton(GLFWwindow* window, int button, int action, int mods);
 
@@ -55,17 +59,18 @@ struct Camera
     void Initialize(const Vec3& position, const Vec3& target, const Vec3& up,
                     float fovDegrees, float aspect, float nearPlane, float farPlane);
 
-    glm::mat4 GetViewMatrix() const;
-    glm::mat4 GetProjectionMatrix() const;
+    // Matrix getters
+    [[nodiscard]] glm::mat4 GetViewMatrix() const;
+    [[nodiscard]] glm::mat4 GetProjectionMatrix() const;
     
     // Frustum culling
-    Frustum GetFrustum() const;
-    bool IsBoxInFrustum(const Vec3& min, const Vec3& max) const;
+    [[nodiscard]] Frustum GetFrustum() const;
+    [[nodiscard]] bool IsBoxInFrustum(const Vec3& min, const Vec3& max) const;
 
 private:
-    // internal mouse state
-    float lastX = 0.0f;
-    float lastY = 0.0f;
-    bool firstMouse = true;
-    bool cursorCaptured = false;
+    // Internal mouse state
+    float m_lastX = 0.0f;
+    float m_lastY = 0.0f;
+    bool m_firstMouse = true;
+    bool m_cursorCaptured = false;
 };

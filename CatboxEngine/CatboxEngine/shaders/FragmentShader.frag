@@ -144,8 +144,8 @@ vec3 CalculateLight(int lightIndex, Light light, vec3 normal, vec3 viewDir, vec3
     // Calculate shadow
     float shadow = CalculateShadow(lightIndex, light, normal, lightDir);
     
-    // Make shadows darker/more pronounced (optional: increase multiplier for darker shadows)
-    shadow = clamp(shadow * 1.2, 0.0, 1.0);  // Slightly increase shadow strength
+    // Soften shadows for stylized look (matching reference image)
+    shadow = clamp(shadow * 0.4, 0.0, 1.0);  // Reduced from 1.2 to 0.4 for softer shadows
     
     // Diffuse
     float diff = max(dot(normal, lightDir), 0.0);
@@ -170,7 +170,16 @@ void main()
     if (u_HasDiffuseMap)
     {
         vec4 texColor = texture(u_DiffuseMap, TexCoord);
-        albedo *= texColor.rgb;
+        // If material color is black or very dark, use texture color directly
+        // Otherwise multiply (allows colored tinting of textures)
+        if (length(u_DiffuseColor) < 0.1)
+        {
+            albedo = texColor.rgb;
+        }
+        else
+        {
+            albedo *= texColor.rgb;
+        }
     }
     
     // Sample specular
@@ -198,7 +207,8 @@ void main()
     vec3 V = normalize(u_CameraPos - FragPos);
     
     // Ambient lighting (global illumination approximation)
-    vec3 ambient = 0.02 * albedo;  // Reduced from 0.1 to 0.02 for darker, more visible shadows
+    // Low value for realistic darkness when no lights are present
+    vec3 ambient = 0.05 * albedo;  // Reduced to 0.05 for darker models without light
     
     // Calculate all lights
     vec3 lighting = ambient;
