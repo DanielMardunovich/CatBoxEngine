@@ -1265,6 +1265,20 @@ void Mesh::Upload()
     );
     glEnableVertexAttribArray(3);
 
+    // Bone indices (ivec4)
+    glVertexAttribIPointer(
+        4, 4, GL_INT, sizeof(Vertex),
+        (void*)offsetof(Vertex, BoneIndices)
+    );
+    glEnableVertexAttribArray(4);
+
+    // Bone weights (vec4)
+    glVertexAttribPointer(
+        5, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+        (void*)offsetof(Vertex, BoneWeights)
+    );
+    glEnableVertexAttribArray(5);
+
     glBindVertexArray(0);
 }
 
@@ -1706,6 +1720,118 @@ bool Mesh::LoadFromFBX(const std::string& path)
     std::vector<Vertex>    allVertices;
     std::vector<SubMesh>   allSubMeshes;
 
+    // -----------------------------------------------------------------------
+    // Skeleton extraction: build bone hierarchy from all skin deformers
+    // -----------------------------------------------------------------------
+    Skeleton loadedSkeleton;
+    bool hasSkin = false;
+
+    // Helper: ufbx_matrix (column-major 4x3) -> glm::mat4
+    auto ufbxToGlm = [](const ufbx_matrix& m) -> glm::mat4 {
+        glm::mat4 r(1.0f);
+        r[0][0]=(float)m.cols[0].x; r[0][1]=(float)m.cols[0].y; r[0][2]=(float)m.cols[0].z; r[0][3]=0.0f;
+        r[1][0]=(float)m.cols[1].x; r[1][1]=(float)m.cols[1].y; r[1][2]=(float)m.cols[1].z; r[1][3]=0.0f;
+        r[2][0]=(float)m.cols[2].x; r[2][1]=(float)m.cols[2].y; r[2][2]=(float)m.cols[2].z; r[2][3]=0.0f;
+        r[3][0]=(float)m.cols[3].x; r[3][1]=(float)m.cols[3].y; r[3][2]=(float)m.cols[3].z; r[3][3]=1.0f;
+        return r;
+    };
+
+    // Pass 1: collect every bone name + inverse bind pose (no parent indices yet)
+    struct RawBone {
+        std::string name;
+        glm::mat4 inverseBindPose;
+        ufbx_node* boneNode = nullptr;
+    };
+    std::vector<RawBone> rawBones;
+    std::unordered_map<std::string, size_t> rawBoneMap;
+
+    for (size_t si = 0; si < scene->skin_deformers.count; ++si)
+    {
+        ufbx_skin_deformer* skin = scene->skin_deformers.data[si];
+        for (size_t ci = 0; ci < skin->clusters.count; ++ci)
+        {
+            ufbx_skin_cluster* cluster = skin->clusters.data[ci];
+            if (!cluster->bone_node) continue;
+            const std::string boneName = cluster->bone_node->name.data;
+            if (rawBoneMap.count(boneName)) continue;
+
+            rawBoneMap[boneName] = rawBones.size();
+            rawBones.push_back({ boneName, ufbxToGlm(cluster->geometry_to_bone), cluster->bone_node });
+        }
+        hasSkin = true;
+    }
+
+    // Pass 2: resolve parent indices now that all bones are known, then
+    //         topological-sort so every parent index < child index.
+    if (hasSkin && !rawBones.empty())
+    {
+        // Build unsorted bone list with correct parent indices
+        std::vector<int> unsortedParent(rawBones.size(), -1);
+        for (size_t i = 0; i < rawBones.size(); ++i)
+        {
+            ufbx_node* p = rawBones[i].boneNode->parent;
+            while (p)
+            {
+                auto it = rawBoneMap.find(p->name.data);
+                if (it != rawBoneMap.end())
+                {
+                    unsortedParent[i] = (int)it->second;
+                    break;
+                }
+                p = p->parent;
+            }
+        }
+
+        // Topological sort (Kahn's algorithm): parents always come first
+        std::vector<int> sortOrder;
+        sortOrder.reserve(rawBones.size());
+        std::vector<bool> placed(rawBones.size(), false);
+
+        // Repeatedly pick bones whose parent is already placed (or is -1)
+        while (sortOrder.size() < rawBones.size())
+        {
+            bool progress = false;
+            for (size_t i = 0; i < rawBones.size(); ++i)
+            {
+                if (placed[i]) continue;
+                int pid = unsortedParent[i];
+                if (pid == -1 || placed[pid])
+                {
+                    sortOrder.push_back((int)i);
+                    placed[i] = true;
+                    progress = true;
+                }
+            }
+            if (!progress)
+            {
+                // Remaining bones form a cycle — just append them
+                for (size_t i = 0; i < rawBones.size(); ++i)
+                    if (!placed[i]) sortOrder.push_back((int)i);
+                break;
+            }
+        }
+
+        // Build the old->new index mapping
+        std::vector<int> oldToNew(rawBones.size(), -1);
+        for (size_t newIdx = 0; newIdx < sortOrder.size(); ++newIdx)
+            oldToNew[sortOrder[newIdx]] = (int)newIdx;
+
+        // Populate the final skeleton in sorted order
+        loadedSkeleton.Bones.resize(sortOrder.size());
+        for (size_t newIdx = 0; newIdx < sortOrder.size(); ++newIdx)
+        {
+            int oldIdx = sortOrder[newIdx];
+            Bone& b = loadedSkeleton.Bones[newIdx];
+            b.Name = rawBones[oldIdx].name;
+            b.InverseBindPose = rawBones[oldIdx].inverseBindPose;
+            int oldParent = unsortedParent[oldIdx];
+            b.ParentIndex = (oldParent >= 0) ? oldToNew[oldParent] : -1;
+            loadedSkeleton.BoneNameToIndex[b.Name] = (int)newIdx;
+        }
+
+        std::cout << "FBX: skeleton extracted with " << loadedSkeleton.Bones.size() << " bones\n";
+    }
+
     // ufbx gives us one ufbx_mesh per mesh node; iterate through mesh instances
     for (size_t ni = 0; ni < scene->nodes.count; ++ni)
     {
@@ -1716,9 +1842,19 @@ bool Mesh::LoadFromFBX(const std::string& path)
         // The node's local_transform.rotation includes pre_rotation which
         // many FBX exporters use for axis conversion (e.g. -90° X from Blender).
         // Apply it to vertices so the model stands upright at rotation (0,0,0).
+        // For SKINNED meshes, skip this — we fold the mesh node's transform
+        // into the skeleton so the bones handle the correction instead.
+        const bool isSkinned = hasSkin && fbxMesh->skin_deformers.count > 0;
         const ufbx_quat nodeRot = node->local_transform.rotation;
-        const bool hasRotation = !(std::abs(nodeRot.x) < 1e-6 && std::abs(nodeRot.y) < 1e-6 &&
-                                   std::abs(nodeRot.z) < 1e-6 && std::abs(nodeRot.w - 1.0) < 1e-6);
+        const bool hasRotation = !isSkinned &&
+            !(std::abs(nodeRot.x) < 1e-6 && std::abs(nodeRot.y) < 1e-6 &&
+              std::abs(nodeRot.z) < 1e-6 && std::abs(nodeRot.w - 1.0) < 1e-6);
+
+        // Capture the mesh node's full local transform for the skeleton
+        if (isSkinned && !loadedSkeleton.Bones.empty())
+        {
+            loadedSkeleton.MeshNodeTransform = ufbxToGlm(node->node_to_parent);
+        }
 
         // Triangulate into a flat index list (ufbx guarantees tris after this)
         const size_t maxTriIndices = fbxMesh->max_face_triangles * 3;
@@ -1792,6 +1928,41 @@ bool Mesh::LoadFromFBX(const std::string& path)
                         v.Tangent = rotVec(nodeRot, (float)t.x, (float)t.y, (float)t.z);
                     else
                         v.Tangent = {(float)t.x, (float)t.y, (float)t.z};
+                }
+
+                // Skin weights: find the vertex in each skin deformer and
+                // store up to 4 bone indices + weights.
+                if (hasSkin && fbxMesh->skin_deformers.count > 0)
+                {
+                    ufbx_skin_deformer* skin = fbxMesh->skin_deformers.data[0];
+                    // pi2 is the position-vertex index (ufbx "vertex" index)
+                    if (pi2 < skin->vertices.count)
+                    {
+                        const ufbx_skin_vertex& sv = skin->vertices.data[pi2];
+                        uint32_t count = sv.num_weights < 4 ? sv.num_weights : 4;
+                        float totalW = 0.0f;
+                        for (uint32_t wi = 0; wi < count; ++wi)
+                        {
+                            const ufbx_skin_weight& sw = skin->weights.data[sv.weight_begin + wi];
+                            // Map cluster index -> bone index in our skeleton
+                            if (sw.cluster_index < skin->clusters.count)
+                            {
+                                ufbx_skin_cluster* cl = skin->clusters.data[sw.cluster_index];
+                                if (cl->bone_node)
+                                {
+                                    auto bit = loadedSkeleton.BoneNameToIndex.find(cl->bone_node->name.data);
+                                    if (bit != loadedSkeleton.BoneNameToIndex.end())
+                                        v.BoneIndices[wi] = bit->second;
+                                }
+                            }
+                            v.BoneWeights[wi] = (float)sw.weight;
+                            totalW += v.BoneWeights[wi];
+                        }
+                        // Normalize weights
+                        if (totalW > 0.0f)
+                            for (uint32_t wi = 0; wi < count; ++wi)
+                                v.BoneWeights[wi] /= totalW;
+                    }
                 }
 
                 const uint32_t idx = (uint32_t)(allVertices.size() - sub.BaseVertex);
@@ -2013,10 +2184,19 @@ bool Mesh::LoadFromFBX(const std::string& path)
     SubMeshes = std::move(allSubMeshes);
     BaseVertices = Vertices;
 
+    if (hasSkin && !loadedSkeleton.Bones.empty())
+    {
+        MeshSkeleton = std::move(loadedSkeleton);
+        HasSkeleton = true;
+    }
+
     Upload();
     CalculateBounds();
 
     std::cout << "FBX loaded: " << Vertices.size() << " vertices, "
-              << SubMeshes.size() << " submeshes from \"" << path << "\"\n";
+              << SubMeshes.size() << " submeshes from \"" << path << "\"";
+    if (HasSkeleton)
+        std::cout << " (skinned, " << MeshSkeleton.Bones.size() << " bones)";
+    std::cout << "\n";
     return true;
 }

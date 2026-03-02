@@ -99,10 +99,14 @@ Alpha=1
 
 [Entity4]
 Name=Gigi
-Position=1.12088,-6.89495,-0.536736
-Rotation=0,43.8462,0
-Scale=0.5,0.5,0.5
+Position=1.07851,-29.4211,4.03953
+Rotation=0,722.85,0
+Scale=0.005,0.005,0.005
 MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\gigi.fbx
 Shininess=32
 Alpha=1
 IsPlayer=1
+AnimIdlePath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiIdle.fbx
+AnimWalkPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiWalk.fbx
+AnimJumpPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiJump.fbx
+AnimFallPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiFall.fbx

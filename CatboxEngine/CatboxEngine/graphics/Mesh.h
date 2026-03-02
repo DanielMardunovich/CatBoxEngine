@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include "../resources/Math/Vec3.h"
+#include "../gameplay/AnimationSystem.h"
 
 struct Vertex 
 {
@@ -9,6 +10,8 @@ struct Vertex
 	Vec3 Normal;
 	Vec3 UV;
 	Vec3 Tangent;
+	int   BoneIndices[4] = { 0, 0, 0, 0 };
+	float BoneWeights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 };
 
 // Morph target (blend shape) data
@@ -62,10 +65,14 @@ public:
 	std::vector<MorphTarget> MorphTargets;
 	std::vector<Vertex> BaseVertices;  // Original vertices for morph target blending
 
+	// Skeleton data (populated by LoadFromFBX when skinning is present)
+	Skeleton MeshSkeleton;
+	bool HasSkeleton = false;
+
 	uint32_t VAO = 0;
 	uint32_t VBO = 0;
 	uint32_t EBO = 0;  // Legacy: used when there's only 1 material
-	
+
 	// Bounding box for frustum culling
 	Vec3 BoundsMin{FLT_MAX, FLT_MAX, FLT_MAX};
 	Vec3 BoundsMax{-FLT_MAX, -FLT_MAX, -FLT_MAX};

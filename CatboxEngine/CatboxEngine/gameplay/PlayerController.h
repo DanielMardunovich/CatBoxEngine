@@ -1,7 +1,10 @@
 #pragma once
 #include "../resources/Entity.h"
 #include "../resources/Camera.h"
+#include "AnimationSystem.h"
 #include <glm/glm.hpp>
+#include <unordered_map>
+#include <memory>
 
 struct GLFWwindow;
 class EntityManager;
@@ -81,6 +84,11 @@ public:
     void SetEnabled(bool enabled) { m_enabled = enabled; }
     [[nodiscard]] bool IsEnabled() const { return m_enabled; }
 
+    // Animation: load clips from the entity's assigned FBX paths
+    void LoadAnimations();
+    // Get the animation player (for debug display)
+    [[nodiscard]] const AnimationPlayer& GetAnimationPlayer() const { return m_animPlayer; }
+
 private:
     // Core references
     Entity* m_playerEntity = nullptr;
@@ -111,7 +119,13 @@ private:
     void UpdateMovement(GLFWwindow* window, float deltaTime, EntityManager& entityManager);
     void UpdateCamera(float deltaTime);
     void UpdatePlayerState();
+    void UpdateAnimation(float deltaTime);
     glm::vec2 GetInputVector(GLFWwindow* window);
     glm::vec3 CalculateDesiredCameraPosition() const;
     float GetCurrentSpeed() const;
+
+    // Animation
+    AnimationPlayer m_animPlayer;
+    std::unordered_map<PlayerState, std::unique_ptr<AnimationClip>> m_clips;
+    PlayerState m_prevAnimState = PlayerState::Idle;
 };

@@ -128,11 +128,22 @@ void Shader::SetTexture(const std::string& name, int unit) const
 void Shader::SetMat4(const std::string& name, const glm::mat4& mat) const
 {
     if (m_shaderProgram == 0) return;
-    
+
     const GLint loc = glGetUniformLocation(m_shaderProgram, name.c_str());
     if (loc != -1)
     {
         glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mat));
+    }
+}
+
+void Shader::SetMat4Array(const std::string& name, const glm::mat4* mats, int count) const
+{
+    if (m_shaderProgram == 0 || count <= 0) return;
+
+    const GLint loc = glGetUniformLocation(m_shaderProgram, name.c_str());
+    if (loc != -1)
+    {
+        glUniformMatrix4fv(loc, count, GL_FALSE, glm::value_ptr(mats[0]));
     }
 }
 

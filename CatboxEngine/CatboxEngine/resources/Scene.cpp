@@ -352,6 +352,17 @@ bool Scene::SaveToFile(const std::string& path) const
             out << "TerrainGridWidth=" << e.TerrainGridWidth << std::endl;
             out << "TerrainGridDepth=" << e.TerrainGridDepth << std::endl;
         }
+        // Animation paths (only write non-empty)
+        if (!e.AnimIdlePath.empty())
+            out << "AnimIdlePath=" << e.AnimIdlePath << std::endl;
+        if (!e.AnimWalkPath.empty())
+            out << "AnimWalkPath=" << e.AnimWalkPath << std::endl;
+        if (!e.AnimRunPath.empty())
+            out << "AnimRunPath=" << e.AnimRunPath << std::endl;
+        if (!e.AnimJumpPath.empty())
+            out << "AnimJumpPath=" << e.AnimJumpPath << std::endl;
+        if (!e.AnimFallPath.empty())
+            out << "AnimFallPath=" << e.AnimFallPath << std::endl;
     }   // end entity loop
 
     out.close();
@@ -553,6 +564,12 @@ bool Scene::LoadFromFile(const std::string& path)
             else if (key == "TerrainHeightmapPath") currentEntity.TerrainHeightmapPath = value;
             else if (key == "TerrainGridWidth")  currentEntity.TerrainGridWidth  = std::stoi(value);
             else if (key == "TerrainGridDepth")  currentEntity.TerrainGridDepth  = std::stoi(value);
+            // Animation paths
+            else if (key == "AnimIdlePath") currentEntity.AnimIdlePath = value;
+            else if (key == "AnimWalkPath") currentEntity.AnimWalkPath = value;
+            else if (key == "AnimRunPath")  currentEntity.AnimRunPath  = value;
+            else if (key == "AnimJumpPath") currentEntity.AnimJumpPath = value;
+            else if (key == "AnimFallPath") currentEntity.AnimFallPath = value;
             else if (key == "MeshHandle" && currentEntity.MeshPath.empty())
             {
                 // Old format - try to load but it probably won't work

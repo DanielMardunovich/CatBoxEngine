@@ -42,6 +42,7 @@ void PlayerController::Update(GLFWwindow* window, float deltaTime, EntityManager
     UpdateMovement(window, deltaTime, entityManager);
     UpdateCamera(deltaTime);
     UpdatePlayerState();
+    UpdateAnimation(deltaTime);
 }
 
 void PlayerController::UpdateMovement(GLFWwindow* window, float deltaTime, EntityManager& entityManager)
@@ -244,6 +245,9 @@ void PlayerController::OnPlayModeEnter()
     m_velocity = glm::vec3(0.0f);
     m_targetVelocity = glm::vec3(0.0f);
 
+    // Load animations from the entity's assigned paths
+    LoadAnimations();
+
     // Capture mouse and snap camera to behind player immediately
     m_cursorCaptured = true;
     m_firstMouse = true;
@@ -304,7 +308,7 @@ void PlayerController::OnMouseButton(int button, int action)
 {
     if (!m_enabled)
         return;
-    
+
     if (button == GLFW_MOUSE_BUTTON_RIGHT)
     {
         if (action == GLFW_PRESS)
@@ -317,4 +321,73 @@ void PlayerController::OnMouseButton(int button, int action)
             m_cursorCaptured = false;
         }
     }
+}
+
+void PlayerController::LoadAnimations()
+{
+    if (!m_playerEntity) return;
+
+    Mesh* mesh = m_playerEntity->MeshHandle
+        ? MeshManager::Instance().GetMesh(m_playerEntity->MeshHandle)
+        : nullptr;
+    if (!mesh || !mesh->HasSkeleton) return;
+
+    const Skeleton& skeleton = mesh->MeshSkeleton;
+    m_clips.clear();
+
+    auto tryLoad = [&](PlayerState state, const std::string& path) {
+        if (path.empty()) return;
+        auto clip = std::make_unique<AnimationClip>();
+        if (clip->LoadFromFBX(path, skeleton))
+        {
+            // Jump and fall clips play once rather than loop
+            if (state == PlayerState::Jumping || state == PlayerState::Falling)
+                clip->Loop = false;
+            m_clips[state] = std::move(clip);
+        }
+    };
+
+    tryLoad(PlayerState::Idle,    m_playerEntity->AnimIdlePath);
+    tryLoad(PlayerState::Walking, m_playerEntity->AnimWalkPath);
+    tryLoad(PlayerState::Running, m_playerEntity->AnimRunPath);
+    tryLoad(PlayerState::Jumping, m_playerEntity->AnimJumpPath);
+    tryLoad(PlayerState::Falling, m_playerEntity->AnimFallPath);
+
+    // Start with idle animation if available
+    auto it = m_clips.find(PlayerState::Idle);
+    if (it != m_clips.end())
+        m_animPlayer.SetClip(it->second.get());
+
+    m_prevAnimState = PlayerState::Idle;
+}
+
+void PlayerController::UpdateAnimation(float deltaTime)
+{
+    if (!m_playerEntity) return;
+
+    Mesh* mesh = m_playerEntity->MeshHandle
+        ? MeshManager::Instance().GetMesh(m_playerEntity->MeshHandle)
+        : nullptr;
+    if (!mesh || !mesh->HasSkeleton)
+    {
+        m_playerEntity->BoneMatrices.clear();
+        return;
+    }
+
+    // Switch clip when state changes
+    if (m_state != m_prevAnimState)
+    {
+        // For running state, fall back to walk clip if no run clip assigned
+        PlayerState lookupState = m_state;
+        if (lookupState == PlayerState::Running && m_clips.find(PlayerState::Running) == m_clips.end())
+            lookupState = PlayerState::Walking;
+
+        auto it = m_clips.find(lookupState);
+        if (it != m_clips.end())
+            m_animPlayer.SetClip(it->second.get());
+        m_prevAnimState = m_state;
+    }
+
+    m_animPlayer.Update(deltaTime);
+    m_animPlayer.ComputeBoneMatrices(mesh->MeshSkeleton, m_playerEntity->BoneMatrices);
 }

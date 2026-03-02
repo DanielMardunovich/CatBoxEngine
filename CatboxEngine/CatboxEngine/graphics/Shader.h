@@ -27,6 +27,7 @@ public:
     void SetColor(float r, float g, float b) const;
     void SetTexture(const std::string& name, int unit) const;
     void SetMat4(const std::string& name, const glm::mat4& mat) const;
+    void SetMat4Array(const std::string& name, const glm::mat4* mats, int count) const;
 
 private:
     static std::string LoadShaderSource(const char* path);

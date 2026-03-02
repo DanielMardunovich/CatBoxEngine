@@ -15,6 +15,7 @@ private:
     void DrawPlayerStats(const PlayerController& playerController);
     void DrawMovementSettings(PlayerController& playerController);
     void DrawCameraSettings(PlayerController& playerController);
+    void DrawAnimationSettings(PlayerController& playerController, EntityManager& entityManager);
     void DrawControls();
 
     int m_selectedPlayerEntityIndex = -1;

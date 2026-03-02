@@ -1,5 +1,9 @@
 #include "PlayerInspector.h"
 #include "imgui.h"
+#include "../../graphics/MeshManager.h"
+#include "../../graphics/Mesh.h"
+#include "../../core/Platform.h"
+#include <cstring>
 
 void PlayerInspector::Draw(PlayerController& playerController, EntityManager& entityManager, Camera& camera)
 {
@@ -37,9 +41,17 @@ void PlayerInspector::Draw(PlayerController& playerController, EntityManager& en
     {
         DrawCameraSettings(playerController);
     }
-    
+
     ImGui::Separator();
-    
+
+    // Animation settings
+    if (ImGui::CollapsingHeader("Animation Settings"))
+    {
+        DrawAnimationSettings(playerController, entityManager);
+    }
+
+    ImGui::Separator();
+
     // Controls help
     if (ImGui::CollapsingHeader("Controls"))
     {
@@ -211,6 +223,84 @@ void PlayerInspector::DrawCameraSettings(PlayerController& playerController)
         config.MinPitch = -30.0f;
         config.MaxPitch = 60.0f;
         config.SmoothSpeed = 10.0f;
+    }
+}
+
+void PlayerInspector::DrawAnimationSettings(PlayerController& playerController, EntityManager& entityManager)
+{
+    if (!playerController.HasPlayerEntity())
+    {
+        ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.1f, 1.0f), "Assign a player entity first");
+        return;
+    }
+
+    // Find the player entity
+    Entity* player = nullptr;
+    for (auto& e : entityManager.GetAll())
+    {
+        if (e.IsPlayer) { player = &e; break; }
+    }
+    if (!player) return;
+
+    // Check if the mesh has a skeleton
+    Mesh* mesh = player->MeshHandle ? MeshManager::Instance().GetMesh(player->MeshHandle) : nullptr;
+    if (!mesh || !mesh->HasSkeleton)
+    {
+        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f),
+            "Player mesh has no skeleton.\nUse a skinned FBX model to enable animations.");
+        return;
+    }
+
+    ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f),
+        "Skeleton: %zu bones", mesh->MeshSkeleton.Bones.size());
+
+    ImGui::Text("Assign .fbx animation files for each state:");
+    ImGui::Spacing();
+
+    // Helper: draw a path input + browse button for one animation slot
+    auto DrawAnimSlot = [](const char* label, std::string& path) {
+        ImGui::PushID(label);
+        char buf[512];
+#if defined(_MSC_VER)
+        strncpy_s(buf, path.c_str(), sizeof(buf) - 1);
+#else
+        strncpy(buf, path.c_str(), sizeof(buf));
+        buf[sizeof(buf) - 1] = '\0';
+#endif
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 80.0f);
+        if (ImGui::InputText(label, buf, sizeof(buf)))
+            path = buf;
+        ImGui::SameLine();
+        if (ImGui::Button("..."))
+        {
+            char filePath[1024] = {};
+            if (Platform::OpenFileDialog(filePath, sizeof(filePath), "FBX Files\0*.fbx\0All Files\0*.*\0"))
+                path = filePath;
+        }
+        ImGui::PopID();
+    };
+
+    DrawAnimSlot("Idle",    player->AnimIdlePath);
+    DrawAnimSlot("Walk",    player->AnimWalkPath);
+    DrawAnimSlot("Run",     player->AnimRunPath);
+    DrawAnimSlot("Jump",    player->AnimJumpPath);
+    DrawAnimSlot("Fall",    player->AnimFallPath);
+
+    ImGui::Spacing();
+    if (ImGui::Button("Reload Animations"))
+    {
+        playerController.LoadAnimations();
+    }
+    ImGui::SetItemTooltip("Re-load all animation clips from the paths above.\n"
+                          "This also happens automatically when entering play mode.");
+
+    // Debug info
+    const AnimationPlayer& ap = playerController.GetAnimationPlayer();
+    if (ap.GetCurrentClip())
+    {
+        ImGui::Spacing();
+        ImGui::Text("Playing: %s", ap.GetCurrentClip()->Name.c_str());
+        ImGui::Text("Time: %.2f / %.2f s", ap.GetTime(), ap.GetCurrentClip()->Duration);
     }
 }
 

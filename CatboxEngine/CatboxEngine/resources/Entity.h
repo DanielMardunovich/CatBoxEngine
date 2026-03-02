@@ -3,6 +3,7 @@
 #include "../graphics/MeshManager.h"
 #include <string>
 #include <vector>
+#include <glm/glm.hpp>
 
 // Texture filtering modes
 enum class TextureFilter
@@ -94,4 +95,14 @@ public:
     std::vector<float> TerrainHeightData;
     int TerrainHeightDataWidth  = 0;
     int TerrainHeightDataDepth  = 0;
+
+    // Animation FBX paths per player state (persisted per scene)
+    std::string AnimIdlePath;
+    std::string AnimWalkPath;
+    std::string AnimRunPath;
+    std::string AnimJumpPath;
+    std::string AnimFallPath;
+
+    // Runtime: computed bone matrices uploaded by the animation system each frame
+    std::vector<glm::mat4> BoneMatrices;
 };

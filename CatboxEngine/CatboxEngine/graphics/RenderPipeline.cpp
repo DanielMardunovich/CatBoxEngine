@@ -4,6 +4,7 @@
 #include "Light.h"
 #include "GraphicsSettings.h"
 #include "../resources/Entity.h"
+#include "../gameplay/AnimationSystem.h"
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -223,7 +224,17 @@ void RenderPipeline::GeometryPass(EntityManager& entityManager, Camera& camera, 
         m_stats.EntitiesRendered++;
         m_mainShader.SetMat4("u_MVP", viewProj);
         m_mainShader.SetMat4("transform", model);
-        
+
+        // Upload bone matrices for skinned entities
+        bool hasSkeleton = mesh->HasSkeleton && !e.BoneMatrices.empty();
+        m_mainShader.SetBool("u_HasSkeleton", hasSkeleton);
+        if (hasSkeleton)
+        {
+            int count = (int)e.BoneMatrices.size();
+            if (count > MAX_BONES) count = MAX_BONES;
+            m_mainShader.SetMat4Array("u_BoneMatrices[0]", e.BoneMatrices.data(), count);
+        }
+
         if (!mesh->SubMeshes.empty())
         {
             glBindVertexArray(mesh->VAO);
