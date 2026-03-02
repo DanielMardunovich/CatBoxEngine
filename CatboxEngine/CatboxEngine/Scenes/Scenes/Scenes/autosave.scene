@@ -45,8 +45,8 @@ Count=6
 
 [Entity0]
 Name=Player
-Position=1.0171,0,2.2803
-Rotation=0,-135.301,0
+Position=1.09495,0,1.8188
+Rotation=0,-140.7,0
 Scale=0.5,0.5,0.5
 MeshPath=[cube]
 Shininess=32
@@ -62,24 +62,6 @@ Shininess=32
 Alpha=1
 
 [Entity2]
-Name=Teleporter A (Pair 0)
-Position=-3.9,0.2,0
-Rotation=0,0,0
-Scale=1,0.1,1
-MeshPath=[cube]
-Shininess=32
-Alpha=1
-
-[Entity3]
-Name=Teleporter B (Pair 0)
-Position=3.9,0.1,0
-Rotation=0,0,0
-Scale=1,0.1,1
-MeshPath=[cube]
-Shininess=32
-Alpha=1
-
-[Entity4]
 Name=Spawn Point
 Position=0.8,0.4,-5.2
 Rotation=0,0,0
@@ -87,12 +69,39 @@ Scale=0.5,0.5,0.5
 MeshPath=[cube]
 Shininess=32
 Alpha=1
+IsSpawnPoint=1
 
-[Entity5]
-Name=Goal
-Position=0,0,4
+[Entity3]
+Name=Teleporter A (Pair 0)
+Position=-4.6,0.2,-0.1
 Rotation=0,0,0
-Scale=1,2,1
+Scale=1,0.1,1
 MeshPath=[cube]
 Shininess=32
 Alpha=1
+IsTeleporter=1
+TeleporterPairID=0
+TeleporterRadius=2
+
+[Entity4]
+Name=Teleporter B (Pair 0)
+Position=4.3,0.1,-0.1
+Rotation=0,0,0
+Scale=1.14,0.1,1
+MeshPath=[cube]
+Shininess=32
+Alpha=1
+IsTeleporter=1
+TeleporterPairID=0
+TeleporterRadius=2
+
+[Entity5]
+Name=Goal
+Position=0.1,0.4,3.5
+Rotation=0,0,0
+Scale=1,1,1
+MeshPath=[cube]
+Shininess=32
+Alpha=1
+IsGoal=1
+GoalRadius=2

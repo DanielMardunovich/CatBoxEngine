@@ -88,7 +88,16 @@ void Scene::OnLoad(EntityManager& entityManager)
         
         entityManager.AddEntity(entity, false); // false = don't save to scene (we already have them)
     }
-}
+
+    // Ensure new teleporter pairs spawned after loading don't reuse any loaded pair ID
+    int maxPairID = -1;
+    for (const auto& e : m_entities)
+    {
+        if (e.IsTeleporter && e.TeleporterPairID > maxPairID)
+            maxPairID = e.TeleporterPairID;
+    }
+    if (maxPairID >= 0)
+        entityManager.SyncTeleporterPairID(maxPairID);}
 
 void Scene::OnUnload(EntityManager& entityManager)
 {
@@ -265,8 +274,23 @@ bool Scene::SaveToFile(const std::string& path) const
         // Material properties
         out << "Shininess=" << e.Shininess << std::endl;
         out << "Alpha=" << e.Alpha << std::endl;
-    }
-    
+
+        // Gameplay tags (only write non-default values to keep files clean)
+        if (e.IsSpawnPoint)
+            out << "IsSpawnPoint=1" << std::endl;
+        if (e.IsTeleporter)
+        {
+            out << "IsTeleporter=1" << std::endl;
+            out << "TeleporterPairID=" << e.TeleporterPairID << std::endl;
+            out << "TeleporterRadius=" << e.TeleporterRadius << std::endl;
+        }
+        if (e.IsGoal)
+        {
+            out << "IsGoal=1" << std::endl;
+            out << "GoalRadius=" << e.GoalRadius << std::endl;
+        }
+    }   // end entity loop
+
     out.close();
     std::cout << "Scene saved: " << path << std::endl;
     return true;
@@ -417,7 +441,13 @@ bool Scene::LoadFromFile(const std::string& path)
             // Material properties
             else if (key == "Shininess") currentEntity.Shininess = std::stof(value);
             else if (key == "Alpha") currentEntity.Alpha = std::stof(value);
-            // Legacy support: load by handle (deprecated)
+            // Gameplay tags
+            else if (key == "IsSpawnPoint") currentEntity.IsSpawnPoint = parseBool(value);
+            else if (key == "IsTeleporter") currentEntity.IsTeleporter = parseBool(value);
+            else if (key == "TeleporterPairID") currentEntity.TeleporterPairID = std::stoi(value);
+            else if (key == "TeleporterRadius") currentEntity.TeleporterRadius = std::stof(value);
+            else if (key == "IsGoal") currentEntity.IsGoal = parseBool(value);
+            else if (key == "GoalRadius") currentEntity.GoalRadius = std::stof(value);
             else if (key == "MeshHandle" && currentEntity.MeshPath.empty())
             {
                 // Old format - try to load but it probably won't work

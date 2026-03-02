@@ -44,6 +44,13 @@ public:
     // Returns a unique pair ID for a new teleporter pair
     int GetNextTeleporterPairID() { return m_nextTeleporterPairID++; }
 
+    // After loading a scene, ensure new pairs don't reuse any loaded pair ID
+    void SyncTeleporterPairID(int loadedMaxPairID)
+    {
+        if (loadedMaxPairID >= m_nextTeleporterPairID)
+            m_nextTeleporterPairID = loadedMaxPairID + 1;
+    }
+
 private:
     std::vector<Entity> m_entities;
     int m_nextTeleporterPairID = 0;
