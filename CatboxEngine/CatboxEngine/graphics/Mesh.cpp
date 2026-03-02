@@ -19,6 +19,9 @@
 #define JSON_NOEXCEPTION
 #include "../Dependencies/tiny_gltf.h"
 
+// FBX support via ufbx — implementation lives in ufbx_impl.cpp
+#include "../Dependencies/ufbx.h"
+
 // Minimal OBJ loader supporting positions, normals and triangular faces
 bool Mesh::LoadFromOBJ(const std::string& path)
 {
@@ -1659,6 +1662,361 @@ size_t Mesh::GetGPUMemoryUsage() const
         total += estimateTextureSize(sub.SpecularTexture);
         total += estimateTextureSize(sub.NormalTexture);
     }
-    
+
     return total;
+}
+
+// ---- FBX loader (ufbx) -------------------------------------------------------
+
+bool Mesh::LoadFromFBX(const std::string& path)
+{
+    // Load with Y-up right-handed axes to match OpenGL, and convert units to metres.
+    ufbx_load_opts opts = {};
+    opts.target_axes            = ufbx_axes_right_handed_y_up;
+    opts.target_unit_meters     = 1.0f;
+    opts.generate_missing_normals = true;
+
+    ufbx_error error;
+    ufbx_scene* scene = ufbx_load_file(path.c_str(), &opts, &error);
+    if (!scene)
+    {
+        std::cerr << "FBX load failed for \"" << path << "\": "
+                  << error.description.data << "\n";
+        return false;
+    }
+
+    // Directory for resolving relative texture paths
+    std::string dir;
+    const size_t slash = path.find_last_of("/\\");
+    if (slash != std::string::npos) dir = path.substr(0, slash + 1);
+
+    // Rotate a vec3 by a unit quaternion: v' = q * v * q^-1
+    auto rotVec = [](const ufbx_quat& q, float vx, float vy, float vz) -> Vec3 {
+        float qx = (float)q.x, qy = (float)q.y, qz = (float)q.z, qw = (float)q.w;
+        float tx = 2.0f * (qy * vz - qz * vy);
+        float ty = 2.0f * (qz * vx - qx * vz);
+        float tz = 2.0f * (qx * vy - qy * vx);
+        return {
+            vx + qw * tx + (qy * tz - qz * ty),
+            vy + qw * ty + (qz * tx - qx * tz),
+            vz + qw * tz + (qx * ty - qy * tx)
+        };
+    };
+
+    std::vector<Vertex>    allVertices;
+    std::vector<SubMesh>   allSubMeshes;
+
+    // ufbx gives us one ufbx_mesh per mesh node; iterate through mesh instances
+    for (size_t ni = 0; ni < scene->nodes.count; ++ni)
+    {
+        ufbx_node* node = scene->nodes.data[ni];
+        if (!node->mesh) continue;
+        ufbx_mesh* fbxMesh = node->mesh;
+
+        // The node's local_transform.rotation includes pre_rotation which
+        // many FBX exporters use for axis conversion (e.g. -90° X from Blender).
+        // Apply it to vertices so the model stands upright at rotation (0,0,0).
+        const ufbx_quat nodeRot = node->local_transform.rotation;
+        const bool hasRotation = !(std::abs(nodeRot.x) < 1e-6 && std::abs(nodeRot.y) < 1e-6 &&
+                                   std::abs(nodeRot.z) < 1e-6 && std::abs(nodeRot.w - 1.0) < 1e-6);
+
+        // Triangulate into a flat index list (ufbx guarantees tris after this)
+        const size_t maxTriIndices = fbxMesh->max_face_triangles * 3;
+        std::vector<uint32_t> triIndices(maxTriIndices);
+
+        // One SubMesh per material slot (or one if there are no materials)
+        const size_t numParts = fbxMesh->material_parts.count > 0
+                              ? fbxMesh->material_parts.count : 1;
+
+        for (size_t pi = 0; pi < numParts; ++pi)
+        {
+            SubMesh sub;
+            sub.BaseVertex = (uint32_t)allVertices.size();
+
+            // Gather the face range for this material part
+            uint32_t faceBegin = 0, faceEnd = (uint32_t)fbxMesh->faces.count;
+            if (fbxMesh->material_parts.count > 0)
+            {
+                const ufbx_mesh_part& part = fbxMesh->material_parts.data[pi];
+                // part.face_indices lists which faces belong to this part
+                // We iterate over them below
+                (void)part;
+            }
+
+            // Deduplication: key = (pos_idx << 40) | (nrm_idx << 20) | uv_idx
+            std::unordered_map<uint64_t, uint32_t> cache;
+
+            auto AddVertex = [&](uint32_t faceVertIdx) -> uint32_t
+            {
+                const uint32_t pi2 = fbxMesh->vertex_position.indices.data[faceVertIdx];
+                const uint32_t ni2 = fbxMesh->vertex_normal.exists
+                                   ? fbxMesh->vertex_normal.indices.data[faceVertIdx] : 0;
+                const uint32_t ui2 = fbxMesh->vertex_uv.exists
+                                   ? fbxMesh->vertex_uv.indices.data[faceVertIdx] : 0;
+
+                const uint64_t key = ((uint64_t)pi2 << 40) | ((uint64_t)ni2 << 20) | ui2;
+                auto it = cache.find(key);
+                if (it != cache.end()) return it->second;
+
+                Vertex v;
+                const ufbx_vec3& p = fbxMesh->vertex_position.values.data[pi2];
+                if (hasRotation)
+                    v.Position = rotVec(nodeRot, (float)p.x, (float)p.y, (float)p.z);
+                else
+                    v.Position = {(float)p.x, (float)p.y, (float)p.z};
+
+                if (fbxMesh->vertex_normal.exists)
+                {
+                    const ufbx_vec3& n = fbxMesh->vertex_normal.values.data[ni2];
+                    if (hasRotation)
+                        v.Normal = rotVec(nodeRot, (float)n.x, (float)n.y, (float)n.z);
+                    else
+                        v.Normal = {(float)n.x, (float)n.y, (float)n.z};
+                }
+                else
+                {
+                    v.Normal = {0.0f, 1.0f, 0.0f};
+                }
+
+                if (fbxMesh->vertex_uv.exists)
+                {
+                    const ufbx_vec2& uv = fbxMesh->vertex_uv.values.data[ui2];
+                    v.UV = {(float)uv.x, 1.0f - (float)uv.y, 0.0f};
+                }
+
+                if (fbxMesh->vertex_tangent.exists)
+                {
+                    const uint32_t ti2 = fbxMesh->vertex_tangent.indices.data[faceVertIdx];
+                    const ufbx_vec3& t = fbxMesh->vertex_tangent.values.data[ti2];
+                    if (hasRotation)
+                        v.Tangent = rotVec(nodeRot, (float)t.x, (float)t.y, (float)t.z);
+                    else
+                        v.Tangent = {(float)t.x, (float)t.y, (float)t.z};
+                }
+
+                const uint32_t idx = (uint32_t)(allVertices.size() - sub.BaseVertex);
+                allVertices.push_back(v);
+                cache[key] = idx;
+                return idx;
+            };
+
+            // Triangulate each face and emit indices
+            if (fbxMesh->material_parts.count > 0)
+            {
+                const ufbx_mesh_part& part = fbxMesh->material_parts.data[pi];
+                for (size_t fi = 0; fi < part.face_indices.count; ++fi)
+                {
+                    const ufbx_face& face = fbxMesh->faces.data[part.face_indices.data[fi]];
+                    const uint32_t nTris  = ufbx_triangulate_face(
+                        triIndices.data(), maxTriIndices, fbxMesh, face);
+                    for (uint32_t t = 0; t < nTris * 3; ++t)
+                        sub.Indices.push_back(AddVertex(triIndices[t]) + sub.BaseVertex);
+                }
+            }
+            else
+            {
+                for (size_t fi = faceBegin; fi < faceEnd; ++fi)
+                {
+                    const ufbx_face& face = fbxMesh->faces.data[fi];
+                    const uint32_t nTris  = ufbx_triangulate_face(
+                        triIndices.data(), maxTriIndices, fbxMesh, face);
+                    for (uint32_t t = 0; t < nTris * 3; ++t)
+                        sub.Indices.push_back(AddVertex(triIndices[t]) + sub.BaseVertex);
+                }
+            }
+
+            if (sub.Indices.empty()) continue;
+
+            // Helper: try every reasonable path to resolve an FBX texture reference,
+            // including embedded content blobs (GLB-style FBX) as a last resort.
+            auto LoadFBXTexture = [&](ufbx_texture* tex) -> unsigned int
+            {
+                if (!tex) return 0;
+
+                // Build a list of candidate paths, from most to least reliable.
+                std::vector<std::string> candidates;
+
+                // 1. ufbx-resolved path (relative to loaded file)
+                if (tex->filename.length > 0)
+                {
+                    candidates.push_back(tex->filename.data);
+
+                    // Also try just the basename combined with the FBX directory.
+                    // FBX files commonly embed absolute paths from the artist's machine
+                    // (e.g. "C:\Users\artist\textures\rock.png") which won't resolve on
+                    // another machine, but the texture sits next to the .fbx file.
+                    std::string absPath = tex->filename.data;
+                    size_t sl = absPath.find_last_of("/\\");
+                    if (sl != std::string::npos)
+                        candidates.push_back(dir + absPath.substr(sl + 1));
+                }
+
+                // 2. Directory of FBX + relative_filename as stored in the file
+                if (tex->relative_filename.length > 0)
+                {
+                    candidates.push_back(dir + tex->relative_filename.data);
+
+                    // 3. Just the basename — handles absolute artist-machine paths
+                    //    like "C:\Users\artist\textures\rock.png"
+                    std::string rel = tex->relative_filename.data;
+                    size_t slash = rel.find_last_of("/\\");
+                    if (slash != std::string::npos)
+                        candidates.push_back(dir + rel.substr(slash + 1));
+                }
+
+                for (const auto& p : candidates)
+                {
+                    unsigned int id = LoadTextureFromFile(p);
+                    if (id != 0)
+                    {
+                        std::cout << "FBX: loaded texture from: " << p << "\n";
+                        return id;
+                    }
+                }
+
+                // 4. Embedded content blob (textures packed inside the FBX/GLB)
+                if (tex->content.size > 0)
+                {
+                    int w, h, c;
+                    unsigned char* data = stbi_load_from_memory(
+                        reinterpret_cast<const unsigned char*>(tex->content.data),
+                        static_cast<int>(tex->content.size), &w, &h, &c, 4);
+                    if (data)
+                    {
+                        unsigned int texID;
+                        glGenTextures(1, &texID);
+                        glBindTexture(GL_TEXTURE_2D, texID);
+                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                        glGenerateMipmap(GL_TEXTURE_2D);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                        stbi_image_free(data);
+                        std::cout << "FBX: loaded embedded texture (" << w << "x" << h << ")\n";
+                        return texID;
+                    }
+                }
+
+                std::cerr << "FBX: could not load texture '"
+                          << (tex->filename.length > 0 ? tex->filename.data : tex->relative_filename.data)
+                          << "'\n";
+                return 0;
+            };
+
+                    // Material / texture
+                    if (fbxMesh->material_parts.count > 0)
+                    {
+                        ufbx_material* mat = nullptr;
+                        if (pi < node->materials.count)
+                            mat = node->materials.data[pi];
+                        else if (pi < fbxMesh->materials.count)
+                            mat = fbxMesh->materials.data[pi];
+
+                        if (mat)
+                        {
+                            sub.MaterialName = mat->name.data;
+
+                            // Prefer whichever channel actually has a texture attached;
+                            // fall back to a plain colour value.  Many DCC exporters set
+                            // pbr.base_color.has_value to true with a black default while
+                            // the real texture lives on fbx.diffuse_color — so we must
+                            // check for textures first across both channels.
+                            const ufbx_material_map* diffMap  = nullptr;
+                            const ufbx_material_map* colorMap = nullptr;
+                            if (mat->pbr.base_color.texture)
+                                diffMap = &mat->pbr.base_color;
+                            else if (mat->fbx.diffuse_color.texture)
+                                diffMap = &mat->fbx.diffuse_color;
+                            else if (mat->pbr.base_color.has_value)
+                                colorMap = &mat->pbr.base_color;
+                            else if (mat->fbx.diffuse_color.has_value)
+                                colorMap = &mat->fbx.diffuse_color;
+
+                            // Use the colour from whichever map is available
+                            const ufbx_material_map* valSrc = diffMap ? diffMap : colorMap;
+                            if (valSrc && valSrc->has_value)
+                                sub.DiffuseColor = {(float)valSrc->value_vec4.x,
+                                                    (float)valSrc->value_vec4.y,
+                                                    (float)valSrc->value_vec4.z};
+
+                            if (diffMap && diffMap->texture)
+                            {
+                                unsigned int texID = LoadFBXTexture(diffMap->texture);
+                                if (texID != 0)
+                                {
+                                    sub.DiffuseTexture     = texID;
+                                    sub.HasDiffuseTexture  = true;
+                                    sub.DiffuseTexturePath = diffMap->texture->filename.data;
+                                }
+                            }
+
+                            // Fallback: scan all textures connected to this material
+                            // for any diffuse-like property (handles custom shaders and
+                            // non-standard property names).
+                            if (!sub.HasDiffuseTexture)
+                            {
+                                for (size_t ti = 0; ti < mat->textures.count; ++ti)
+                                {
+                                    const ufbx_material_texture& mt = mat->textures.data[ti];
+                                    std::string prop(mt.material_prop.data, mt.material_prop.length);
+                                    if (prop.find("Diffuse") != std::string::npos ||
+                                        prop.find("diffuse") != std::string::npos ||
+                                        prop.find("BaseColor") != std::string::npos ||
+                                        prop.find("base_color") != std::string::npos ||
+                                        prop.find("Color") != std::string::npos ||
+                                        prop.find("Albedo") != std::string::npos)
+                                    {
+                                        unsigned int texID = LoadFBXTexture(mt.texture);
+                                        if (texID != 0)
+                                        {
+                                            sub.DiffuseTexture     = texID;
+                                            sub.HasDiffuseTexture  = true;
+                                            sub.DiffuseTexturePath = mt.texture->filename.data;
+                                            std::cout << "FBX: found diffuse via material prop '"
+                                                      << prop << "'\n";
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Last resort: use the very first texture on the material
+                            if (!sub.HasDiffuseTexture && mat->textures.count > 0)
+                            {
+                                const ufbx_material_texture& mt = mat->textures.data[0];
+                                unsigned int texID = LoadFBXTexture(mt.texture);
+                                if (texID != 0)
+                                {
+                                    sub.DiffuseTexture     = texID;
+                                    sub.HasDiffuseTexture  = true;
+                                    sub.DiffuseTexturePath = mt.texture->filename.data;
+                                    std::cout << "FBX: used first available texture as diffuse\n";
+                                }
+                            }
+                        }
+                    }
+
+            allSubMeshes.push_back(std::move(sub));
+        }
+    }
+
+    ufbx_free_scene(scene);
+
+    if (allVertices.empty())
+    {
+        std::cerr << "FBX: no geometry loaded from \"" << path << "\"\n";
+        return false;
+    }
+
+    Vertices  = std::move(allVertices);
+    SubMeshes = std::move(allSubMeshes);
+    BaseVertices = Vertices;
+
+    Upload();
+    CalculateBounds();
+
+    std::cout << "FBX loaded: " << Vertices.size() << " vertices, "
+              << SubMeshes.size() << " submeshes from \"" << path << "\"\n";
+    return true;
 }

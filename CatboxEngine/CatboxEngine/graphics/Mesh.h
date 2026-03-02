@@ -72,8 +72,9 @@ public:
 
 	void Upload();
 	void Draw() const;
-    bool LoadFromOBJ(const std::string& path);
-    bool LoadFromGLTF(const std::string& path);
+	bool LoadFromOBJ(const std::string& path);
+	bool LoadFromGLTF(const std::string& path);
+	bool LoadFromFBX(const std::string& path);
     
     // Morph target control
     void SetMorphTargetWeight(size_t index, float weight);

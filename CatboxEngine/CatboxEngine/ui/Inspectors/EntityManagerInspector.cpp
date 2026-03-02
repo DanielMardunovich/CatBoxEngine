@@ -68,7 +68,7 @@ void EntityManagerInspector::DrawSpawnControls(EntityManager& entityManager, Vec
     {
         char szFile[260] = {0};
         if (Platform::OpenFileDialog(szFile, sizeof(szFile),
-            "3D Models\0*.obj;*.gltf;*.glb\0OBJ Files\0*.obj\0GLTF Files\0*.gltf;*.glb\0All\0*.*\0"))
+            "3D Models\0*.obj;*.gltf;*.glb;*.fbx\0OBJ Files\0*.obj\0GLTF Files\0*.gltf;*.glb\0FBX Files\0*.fbx\0All\0*.*\0"))
         {
             strncpy_s(m_modelPath, szFile, sizeof(m_modelPath));
         }
@@ -485,14 +485,15 @@ void EntityManagerInspector::DrawEntityMesh(Entity& entity)
     if (!mesh)
         return;
 
-    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Loaded: [Cube]");
+    std::string meshDisplayName = entity.MeshPath.empty() ? "[Cube]" : entity.MeshPath.substr(entity.MeshPath.find_last_of("/\\") + 1);
+    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "Loaded: [%s]", meshDisplayName.c_str());
     ImGui::Text("Vertices: %zu", mesh->Vertices.size());
 
     if (ImGui::Button("Change Mesh"))
     {
         char buf[1024] = {0};
         if (Platform::OpenFileDialog(buf, sizeof(buf),
-            "3D Models\0*.obj;*.gltf;*.glb\0OBJ Files\0*.obj\0GLTF Files\0*.gltf;*.glb\0All\0*.*\0"))
+            "3D Models\0*.obj;*.gltf;*.glb;*.fbx\0OBJ Files\0*.obj\0GLTF Files\0*.gltf;*.glb\0FBX Files\0*.fbx\0All\0*.*\0"))
         {
             MeshHandle newHandle = MeshManager::Instance().LoadMeshSync(buf);
             if (newHandle != 0)

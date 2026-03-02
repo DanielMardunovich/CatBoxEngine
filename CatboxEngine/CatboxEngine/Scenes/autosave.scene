@@ -89,16 +89,6 @@ Alpha=1
 IsSpawnPoint=1
 
 [Entity3]
-Name=Player
-Position=1.50369,-6.89495,-0.467181
-Rotation=-360,-1433.55,0
-Scale=0.5,0.5,0.5
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\scene.gltf
-Shininess=32
-Alpha=1
-IsPlayer=1
-
-[Entity4]
 Name=SpawnIsland
 Position=0.5,-6.94496,-0.7
 Rotation=0,0,0
@@ -106,3 +96,13 @@ Scale=5,0.1,5
 MeshPath=[cube]
 Shininess=32
 Alpha=1
+
+[Entity4]
+Name=Gigi
+Position=1.12088,-6.89495,-0.536736
+Rotation=0,43.8462,0
+Scale=0.5,0.5,0.5
+MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\gigi.fbx
+Shininess=32
+Alpha=1
+IsPlayer=1

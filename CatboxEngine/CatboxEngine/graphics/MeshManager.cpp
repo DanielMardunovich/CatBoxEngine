@@ -58,6 +58,7 @@ MeshHandle MeshManager::LoadMeshSync(const std::string& path)
             for (auto &c : ext) c = (char)tolower(c);
             if (ext == "obj") ok = m.LoadFromOBJ(path);
             else if (ext == "gltf" || ext == "glb") ok = m.LoadFromGLTF(path);
+            else if (ext == "fbx") ok = m.LoadFromFBX(path);
             else
             {
                 std::cerr << "Unsupported file format: " << ext << std::endl;
@@ -103,6 +104,7 @@ MeshHandle MeshManager::LoadMeshAsync(const std::string& path)
             for (auto &c : ext) c = (char)tolower(c);
             if (ext == "obj") ok = m.LoadFromOBJ(path);
             else if (ext == "gltf" || ext == "glb") ok = m.LoadFromGLTF(path);
+            else if (ext == "fbx") ok = m.LoadFromFBX(path);
             else
             {
                 std::cerr << "Unsupported file format: " << ext << std::endl;

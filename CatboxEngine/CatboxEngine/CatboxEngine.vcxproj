@@ -148,6 +148,7 @@
     <ClCompile Include="core\Platform.cpp" />
     <ClCompile Include="core\Time.cpp" />
     <ClCompile Include="core\UIManager.cpp" />
+    <ClCompile Include="Dependencies\ufbx_impl.cpp" />
     <ClCompile Include="gameplay\CollisionSystem.cpp" />
     <ClCompile Include="gameplay\EnemySystem.cpp" />
     <ClCompile Include="gameplay\GoalSystem.cpp" />
