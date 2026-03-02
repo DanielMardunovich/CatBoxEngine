@@ -41,12 +41,12 @@ ShadowFOV=120
 Enabled=1
 
 [Entities]
-Count=2
+Count=3
 
 [Entity0]
 Name=Player
-Position=-0.0104238,0,-1.85062
-Rotation=0,-96.7501,0
+Position=0.975269,0,-1.58346
+Rotation=0,1254.75,0
 Scale=0.5,0.5,0.5
 MeshPath=[cube]
 Shininess=32
@@ -57,6 +57,15 @@ Name=Floor
 Position=0,0,-0.9
 Rotation=0,0,0
 Scale=10,0.1,10
+MeshPath=[cube]
+Shininess=32
+Alpha=1
+
+[Entity2]
+Name=Spawn Point
+Position=4.3,0,0
+Rotation=0,0,0
+Scale=0.01,0.01,0.01
 MeshPath=[cube]
 Shininess=32
 Alpha=1

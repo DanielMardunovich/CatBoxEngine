@@ -263,6 +263,17 @@ void PlayerController::OnPlayModeEnter()
     UpdateCamera(0.0f);
 }
 
+void PlayerController::TeleportTo(const Vec3& position)
+{
+    if (!m_playerEntity)
+        return;
+    m_playerEntity->Transform.Position = position;
+    m_velocity = glm::vec3(0.0f);
+    m_targetVelocity = glm::vec3(0.0f);
+    // Snap current camera position so it doesn't lerp from the old spot
+    m_currentCameraPos = CalculateDesiredCameraPosition();
+}
+
 void PlayerController::OnPlayModeExit()
 {
     m_cursorCaptured = false;
@@ -283,7 +294,7 @@ void PlayerController::OnMouseMove(double xpos, double ypos)
     }
     
     float xoffset = static_cast<float>(xpos) - m_lastMouseX;
-    float yoffset = m_lastMouseY - static_cast<float>(ypos); // Reversed since y-coordinates go from bottom to top
+    float yoffset = static_cast<float>(ypos) - m_lastMouseY;
     
     m_lastMouseX = static_cast<float>(xpos);
     m_lastMouseY = static_cast<float>(ypos);

@@ -315,6 +315,15 @@ void Engine::EnterPlayMode()
     m_editorCamYaw      = m_camera.Yaw;
     m_editorCamPitch    = m_camera.Pitch;
 
+    // Teleport player to spawn point before the camera snaps
+    Entity* spawnPoint = m_entityManager.FindSpawnPoint();
+    if (spawnPoint && m_playerController.HasPlayerEntity())
+    {
+        m_playerController.TeleportTo(spawnPoint->Transform.Position);
+        std::cout << "Player teleported to spawn point: "
+                  << spawnPoint->name << std::endl;
+    }
+
     // Lock cursor and hand off to player controller
     glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     m_playerController.OnPlayModeEnter();

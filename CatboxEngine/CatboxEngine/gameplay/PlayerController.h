@@ -60,6 +60,8 @@ public:
     // Play mode transitions
     void OnPlayModeEnter();
     void OnPlayModeExit();
+    // Instantly move player to position and reset velocity
+    void TeleportTo(const Vec3& position);
 
     // Getters
     [[nodiscard]] PlayerState GetState() const { return m_state; }

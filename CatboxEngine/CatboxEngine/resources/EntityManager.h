@@ -33,6 +33,14 @@ public:
     void Clear() { m_entities.clear(); }
     size_t Size() const { return m_entities.size(); }
 
+    // Returns the first entity tagged as a spawn point, or nullptr
+    Entity* FindSpawnPoint()
+    {
+        for (auto& e : m_entities)
+            if (e.IsSpawnPoint) return &e;
+        return nullptr;
+    }
+
 private:
     std::vector<Entity> m_entities;
 };

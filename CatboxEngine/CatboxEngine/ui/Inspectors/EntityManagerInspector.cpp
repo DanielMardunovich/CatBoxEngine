@@ -83,6 +83,17 @@ void EntityManagerInspector::DrawSpawnControls(EntityManager& entityManager, Vec
     {
         ApplyModelToSelected(entityManager, selectedIndex);
     }
+    ImGui::SameLine();
+    if (ImGui::Button("Create Spawn Point"))
+    {
+        Entity sp;
+        sp.name = "Spawn Point";
+        sp.Transform.Position = spawnPosition;
+        sp.Transform.Scale = Vec3(0.5f, 0.5f, 0.5f);
+        sp.IsSpawnPoint = true;
+        entityManager.AddEntity(sp, true);
+    }
+    ImGui::SetItemTooltip("Creates a marker entity. The player will spawn here when Play Mode starts.");
 
     // Options
     ImGui::Checkbox("Use shared cube mesh", &useSharedCube);
@@ -172,6 +183,8 @@ void EntityManagerInspector::DrawEntityList(EntityManager& entityManager, int& s
         // Icon based on mesh status
         const char* icon = entity.MeshHandle != 0 ? "(Rendered) " : "(NotRendered) ";
         std::string displayName = icon + entity.name;
+        if (entity.IsSpawnPoint)
+            displayName = "[SP] " + displayName;
 
         if (ImGui::Selectable(displayName.c_str(), isSelected))
         {
@@ -226,6 +239,20 @@ void EntityManagerInspector::DrawEntityInfo(Entity& entity)
     {
         entity.name = nameBuf;
     }
+
+    // Spawn point tag
+    ImGui::Spacing();
+    if (entity.IsSpawnPoint)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 1.0f, 0.3f, 1.0f));
+        ImGui::Text("[SP] This entity is a Spawn Point");
+        ImGui::PopStyleColor();
+    }
+    if (ImGui::Checkbox("Spawn Point", &entity.IsSpawnPoint))
+    {
+        // If marking as spawn point, log for awareness
+    }
+    ImGui::SetItemTooltip("When Play Mode starts, the player spawns at this entity's position.");
 }
 
 void EntityManagerInspector::DrawEntityTransform(Entity& entity)

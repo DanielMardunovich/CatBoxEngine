@@ -48,7 +48,7 @@ public:
     // Material properties
     float Shininess = 32.0f;
     float Alpha = 1.0f;
-    
+
     // MipMap and texture settings
     TextureFilter MinFilter = TextureFilter::LinearMipmapLinear;
     TextureFilter MagFilter = TextureFilter::Linear;
@@ -56,4 +56,7 @@ public:
     TextureWrap WrapT = TextureWrap::Repeat;
     float Anisotropy = 4.0f;  // Anisotropic filtering level (1.0 = off, 16.0 = max)
     bool UseCustomTextureSettings = false;
+
+    // Gameplay tags
+    bool IsSpawnPoint = false;
 };
