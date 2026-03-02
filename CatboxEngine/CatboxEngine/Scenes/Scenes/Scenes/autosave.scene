@@ -15,6 +15,12 @@ Far=100
 [Environment]
 Ambient=0.1,0.1,0.1
 Background=0.4,0.3,0.2
+SkyboxEnabled=1
+SkyboxProcedural=0
+SkyColorTop=0.1,0.4,0.8
+SkyColorHorizon=0.5,0.7,0.9
+SkyColorBottom=0.3,0.25,0.15
+SkyboxFilePath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\FantasySkyBox\scene.gltf
 
 [Lights]
 Count=1

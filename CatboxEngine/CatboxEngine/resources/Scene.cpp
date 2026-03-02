@@ -3,6 +3,7 @@
 #include "../graphics/MeshManager.h"
 #include "../graphics/Mesh.h"
 #include "../graphics/LightManager.h"
+#include "../graphics/GraphicsSettings.h"
 #include "../gameplay/TerrainSystem.h"
 #include "../core/MessageQueue.h"
 #include <fstream>
@@ -105,7 +106,19 @@ void Scene::OnLoad(EntityManager& entityManager)
             maxPairID = e.TeleporterPairID;
     }
     if (maxPairID >= 0)
-        entityManager.SyncTeleporterPairID(maxPairID);}
+        entityManager.SyncTeleporterPairID(maxPairID);
+
+    // Apply skybox settings to GraphicsSettings
+    auto& gs = GraphicsSettings::Instance();
+    gs.SkyboxEnabled    = SkyboxEnabled;
+    gs.SkyboxProcedural = SkyboxProcedural;
+    gs.SkyColorTop[0]     = SkyColorTop[0];     gs.SkyColorTop[1]     = SkyColorTop[1];     gs.SkyColorTop[2]     = SkyColorTop[2];
+    gs.SkyColorHorizon[0] = SkyColorHorizon[0]; gs.SkyColorHorizon[1] = SkyColorHorizon[1]; gs.SkyColorHorizon[2] = SkyColorHorizon[2];
+    gs.SkyColorBottom[0]  = SkyColorBottom[0];  gs.SkyColorBottom[1]  = SkyColorBottom[1];  gs.SkyColorBottom[2]  = SkyColorBottom[2];
+    gs.SkyboxFilePath = SkyboxFilePath;
+    if (!SkyboxProcedural && !SkyboxFilePath.empty())
+        gs.SkyboxFileDirty = true;
+}
 
 void Scene::OnUnload(EntityManager& entityManager)
 {
@@ -139,6 +152,15 @@ void Scene::CaptureFromEntityManager(EntityManager& entityManager)
     // ALSO capture lights from LightManager
     auto& lightMgr = LightManager::Instance();
     m_lights = lightMgr.GetAllLights();
+
+    // Capture skybox settings from GraphicsSettings
+    auto& gs = GraphicsSettings::Instance();
+    SkyboxEnabled    = gs.SkyboxEnabled;
+    SkyboxProcedural = gs.SkyboxProcedural;
+    SkyColorTop[0]     = gs.SkyColorTop[0];     SkyColorTop[1]     = gs.SkyColorTop[1];     SkyColorTop[2]     = gs.SkyColorTop[2];
+    SkyColorHorizon[0] = gs.SkyColorHorizon[0]; SkyColorHorizon[1] = gs.SkyColorHorizon[1]; SkyColorHorizon[2] = gs.SkyColorHorizon[2];
+    SkyColorBottom[0]  = gs.SkyColorBottom[0];  SkyColorBottom[1]  = gs.SkyColorBottom[1];  SkyColorBottom[2]  = gs.SkyColorBottom[2];
+    SkyboxFilePath = gs.SkyboxFilePath;
     
     // Update modified time
     auto now = std::chrono::system_clock::now();
@@ -228,6 +250,13 @@ bool Scene::SaveToFile(const std::string& path) const
     out << "\n[Environment]" << std::endl;
     out << "Ambient=" << AmbientColor.x << "," << AmbientColor.y << "," << AmbientColor.z << std::endl;
     out << "Background=" << BackgroundColor.x << "," << BackgroundColor.y << "," << BackgroundColor.z << std::endl;
+    out << "SkyboxEnabled=" << SkyboxEnabled << std::endl;
+    out << "SkyboxProcedural=" << SkyboxProcedural << std::endl;
+    out << "SkyColorTop=" << SkyColorTop[0] << "," << SkyColorTop[1] << "," << SkyColorTop[2] << std::endl;
+    out << "SkyColorHorizon=" << SkyColorHorizon[0] << "," << SkyColorHorizon[1] << "," << SkyColorHorizon[2] << std::endl;
+    out << "SkyColorBottom=" << SkyColorBottom[0] << "," << SkyColorBottom[1] << "," << SkyColorBottom[2] << std::endl;
+    if (!SkyboxFilePath.empty())
+        out << "SkyboxFilePath=" << SkyboxFilePath << std::endl;
     
     // Save lights
     out << "\n[Lights]" << std::endl;
@@ -437,6 +466,24 @@ bool Scene::LoadFromFile(const std::string& path)
         {
             if (key == "Ambient") AmbientColor = parseVec3(value);
             else if (key == "Background") BackgroundColor = parseVec3(value);
+            else if (key == "SkyboxEnabled")   SkyboxEnabled   = parseBool(value);
+            else if (key == "SkyboxProcedural") SkyboxProcedural = parseBool(value);
+            else if (key == "SkyColorTop")
+            {
+                Vec3 v = parseVec3(value);
+                SkyColorTop[0] = v.x; SkyColorTop[1] = v.y; SkyColorTop[2] = v.z;
+            }
+            else if (key == "SkyColorHorizon")
+            {
+                Vec3 v = parseVec3(value);
+                SkyColorHorizon[0] = v.x; SkyColorHorizon[1] = v.y; SkyColorHorizon[2] = v.z;
+            }
+            else if (key == "SkyColorBottom")
+            {
+                Vec3 v = parseVec3(value);
+                SkyColorBottom[0] = v.x; SkyColorBottom[1] = v.y; SkyColorBottom[2] = v.z;
+            }
+            else if (key == "SkyboxFilePath") SkyboxFilePath = value;
         }
         else if (inEntity)
         {

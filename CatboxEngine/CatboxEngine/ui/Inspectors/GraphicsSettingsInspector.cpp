@@ -1,4 +1,5 @@
 #include "GraphicsSettingsInspector.h"
+#include "../../core/Platform.h"
 #include "imgui.h"
 #include <cstring>
 
@@ -127,15 +128,25 @@ void GraphicsSettingsInspector::Draw()
                 if (m_skyboxPath[0] == '\0' && !settings.SkyboxFilePath.empty())
                     strncpy_s(m_skyboxPath, settings.SkyboxFilePath.c_str(), k_pathBufSize - 1);
 
-                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 80.0f);
-                bool changed = ImGui::InputText("Path", m_skyboxPath, k_pathBufSize);
-
-                if (changed)
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 95.0f);
+                if (ImGui::InputText("##SkyboxPath", m_skyboxPath, k_pathBufSize))
+                {
                     settings.SkyboxFilePath = m_skyboxPath;
+                    settings.SkyboxFileDirty = true;
+                }
 
                 ImGui::SameLine();
-                if (ImGui::Button("Load") || changed)
-                    settings.SkyboxFileDirty = true;
+                if (ImGui::Button("Browse..."))
+                {
+                    char szFile[256] = {};
+                    if (Platform::OpenFileDialog(szFile, sizeof(szFile),
+                        "Sky Models\0*.gltf;*.glb;*.obj\0GLTF Files\0*.gltf;*.glb\0OBJ Files\0*.obj\0All Files\0*.*\0"))
+                    {
+                        strncpy_s(m_skyboxPath, szFile, k_pathBufSize - 1);
+                        settings.SkyboxFilePath = m_skyboxPath;
+                        settings.SkyboxFileDirty = true;
+                    }
+                }
 
                 ImGui::TextDisabled("(GLTF / GLB / OBJ)");
             }

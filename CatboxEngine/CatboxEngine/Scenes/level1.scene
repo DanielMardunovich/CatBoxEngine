@@ -15,6 +15,12 @@ Far=100
 [Environment]
 Ambient=0.1,0.1,0.1
 Background=0.4,0.3,0.2
+SkyboxEnabled=1
+SkyboxProcedural=0
+SkyColorTop=0.1,0.4,0.8
+SkyColorHorizon=0.5,0.7,0.9
+SkyColorBottom=0.3,0.25,0.15
+SkyboxFilePath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\FantasySkyBox\scene.gltf
 
 [Lights]
 Count=1
@@ -84,8 +90,8 @@ IsSpawnPoint=1
 
 [Entity3]
 Name=Player
-Position=0.82802,-6.98692,-0.606702
-Rotation=-360,-47.3971,0
+Position=0.943947,-6.89495,-0.280656
+Rotation=-360,-0,0
 Scale=0.5,0.5,0.5
 MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\scene.gltf
 Shininess=32
@@ -94,11 +100,9 @@ IsPlayer=1
 
 [Entity4]
 Name=SpawnIsland
-Position=0.5,-7.6,0
+Position=0.5,-6.94496,-0.7
 Rotation=0,0,0
-Scale=0.3,0.3,0.3
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\scene.gltf
-DiffuseTexturePath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\textures\material_0_diffuse.png
-SpecularTexturePath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\textures\material_0_specularGlossiness.png
+Scale=5,0.1,5
+MeshPath=[cube]
 Shininess=32
 Alpha=1

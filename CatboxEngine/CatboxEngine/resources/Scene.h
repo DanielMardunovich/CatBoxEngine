@@ -58,6 +58,14 @@ public:
     // Environment
     Vec3 AmbientColor{0.1f, 0.1f, 0.1f};
     Vec3 BackgroundColor{0.4f, 0.3f, 0.2f};
+
+    // Skybox settings (mirrored from GraphicsSettings for serialization)
+    bool  SkyboxEnabled    = true;
+    bool  SkyboxProcedural = true;
+    float SkyColorTop[3]     = { 0.10f, 0.40f, 0.80f };
+    float SkyColorHorizon[3] = { 0.50f, 0.70f, 0.90f };
+    float SkyColorBottom[3]  = { 0.30f, 0.25f, 0.15f };
+    std::string SkyboxFilePath;
     
     // Serialization
     bool SaveToFile(const std::string& path) const;
