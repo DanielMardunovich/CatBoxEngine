@@ -9,6 +9,7 @@
 #include "../gameplay/TeleporterSystem.h"
 #include "../gameplay/GoalSystem.h"
 #include "../gameplay/RecordTimeSystem.h"
+#include "../gameplay/EnemySystem.h"
 #include "UIManager.h"
 #include "InputHandler.h"
 #include <vector>
@@ -71,6 +72,7 @@ private:
     TeleporterSystem m_teleporterSystem;
     GoalSystem       m_goalSystem;
     RecordTimeSystem m_recordSystem;
+    EnemySystem      m_enemySystem;
 
     // Play mode
     bool m_isPlayMode        = false;

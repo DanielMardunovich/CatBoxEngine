@@ -132,6 +132,20 @@ void EntityManagerInspector::DrawSpawnControls(EntityManager& entityManager, Vec
     }
     ImGui::SetItemTooltip("Spawns a goal entity. When the player reaches it in Play Mode, the level is complete.");
 
+    if (ImGui::Button("Spawn Enemy"))
+    {
+        Entity enemy;
+        enemy.name = "Enemy";
+        enemy.Transform.Position = spawnPosition;
+        enemy.Transform.Scale = Vec3(0.8f, 1.0f, 0.8f);
+        enemy.IsEnemy = true;
+        enemy.CollidesWithPlayer = false;
+        enemy.PatrolWaypoints.push_back(spawnPosition);
+        enemy.PatrolWaypoints.push_back(Vec3(spawnPosition.x + 4.0f, spawnPosition.y, spawnPosition.z));
+        entityManager.AddEntity(enemy, true);
+    }
+    ImGui::SetItemTooltip("Spawns a patrol enemy with two starter waypoints. Add more waypoints in the inspector.");
+
     // Options
     ImGui::Checkbox("Use shared cube mesh", &useSharedCube);
 }
@@ -226,6 +240,8 @@ void EntityManagerInspector::DrawEntityList(EntityManager& entityManager, int& s
             displayName = "[TP] " + displayName;
         if (entity.IsGoal)
             displayName = "[GOAL] " + displayName;
+        if (entity.IsEnemy)
+            displayName = "[ENEMY] " + displayName;
 
         if (ImGui::Selectable(displayName.c_str(), isSelected))
         {
@@ -323,6 +339,55 @@ void EntityManagerInspector::DrawEntityInfo(Entity& entity)
     {
         ImGui::SliderFloat("Goal Radius", &entity.GoalRadius, 0.5f, 15.0f);
         ImGui::SetItemTooltip("Player must be within this distance to trigger the goal.");
+    }
+
+    // Enemy
+    ImGui::Spacing();
+    if (entity.IsEnemy)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+        ImGui::Text("[ENEMY] Patrol Enemy");
+        ImGui::PopStyleColor();
+    }
+    if (ImGui::Checkbox("Enemy", &entity.IsEnemy))
+    {
+        if (entity.IsEnemy)
+            entity.CollidesWithPlayer = false;
+    }
+    ImGui::SetItemTooltip("This entity patrols between waypoints and sends the player back to spawn on contact.");
+    if (entity.IsEnemy)
+    {
+        ImGui::SliderFloat("Enemy Speed", &entity.EnemySpeed, 0.5f, 20.0f);
+        ImGui::SliderFloat("Collision Radius", &entity.EnemyCollisionRadius, 0.1f, 10.0f);
+        ImGui::SetItemTooltip("Player is sent to spawn when within this distance of the enemy.");
+
+        const char* patrolModes[] = { "Loop", "Ping-Pong" };
+        int modeIdx = static_cast<int>(entity.EnemyPatrolMode);
+        if (ImGui::Combo("Patrol Mode", &modeIdx, patrolModes, 2))
+            entity.EnemyPatrolMode = static_cast<PatrolMode>(modeIdx);
+        ImGui::SetItemTooltip("Loop: jumps back to waypoint 0 after the last. Ping-Pong: reverses direction.");
+
+        ImGui::Spacing();
+        ImGui::Text("Waypoints (%zu):", entity.PatrolWaypoints.size());
+        for (int w = 0; w < static_cast<int>(entity.PatrolWaypoints.size()); ++w)
+        {
+            ImGui::PushID(w);
+            ImGui::Text("  %d:", w);
+            ImGui::SameLine();
+            std::string dragLabel = "##WP" + std::to_string(w);
+            ImGui::DragFloat3(dragLabel.c_str(), &entity.PatrolWaypoints[w].x, 0.1f);
+            ImGui::SameLine();
+            if (ImGui::SmallButton("X"))
+            {
+                entity.PatrolWaypoints.erase(entity.PatrolWaypoints.begin() + w);
+                ImGui::PopID();
+                break;
+            }
+            ImGui::PopID();
+        }
+        if (ImGui::Button("Add Waypoint"))
+            entity.PatrolWaypoints.push_back(entity.Transform.Position);
+        ImGui::SetItemTooltip("Adds a waypoint at the enemy's current position.");
     }
 
     // Collision

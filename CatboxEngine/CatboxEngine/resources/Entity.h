@@ -2,6 +2,7 @@
 #include "Transform.h"
 #include "../graphics/MeshManager.h"
 #include <string>
+#include <vector>
 
 // Texture filtering modes
 enum class TextureFilter
@@ -20,6 +21,12 @@ enum class TextureWrap
     MirroredRepeat,  // GL_MIRRORED_REPEAT
     ClampToEdge,     // GL_CLAMP_TO_EDGE
     ClampToBorder    // GL_CLAMP_TO_BORDER
+};
+
+enum class PatrolMode
+{
+    Loop,      // After the last waypoint, jump back to the first
+    PingPong   // After the last waypoint, reverse direction
 };
 
 class Entity
@@ -69,4 +76,11 @@ public:
 
     // Collision
     bool CollidesWithPlayer = true;  // When false, the player can walk through this entity
+
+    // Enemy patrol
+    bool IsEnemy = false;
+    std::vector<Vec3> PatrolWaypoints;
+    PatrolMode EnemyPatrolMode = PatrolMode::Loop;
+    float EnemySpeed = 3.0f;
+    float EnemyCollisionRadius = 1.0f;  // Radius within which the player is sent back to spawn
 };

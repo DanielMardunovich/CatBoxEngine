@@ -22,6 +22,9 @@ uniform bool u_HasSpecularMap;
 uniform float u_Shininess;
 uniform float u_Alpha;
 
+// Unlit mode (for editor debug overlays)
+uniform bool u_IsUnlit;
+
 uniform sampler2D u_NormalMap;
 uniform bool u_HasNormalMap;
 
@@ -165,6 +168,13 @@ vec3 CalculateLight(int lightIndex, Light light, vec3 normal, vec3 viewDir, vec3
 
 void main()
 {
+    // Unlit early-out: output the diffuse color directly with no lighting
+    if (u_IsUnlit)
+    {
+        FragColor = vec4(u_DiffuseColor, u_Alpha);
+        return;
+    }
+
     // Sample albedo/diffuse color
     vec3 albedo = u_DiffuseColor;
     if (u_HasDiffuseMap)

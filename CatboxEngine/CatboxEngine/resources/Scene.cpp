@@ -292,6 +292,21 @@ bool Scene::SaveToFile(const std::string& path) const
         }
         if (!e.CollidesWithPlayer)
             out << "CollidesWithPlayer=0" << std::endl;
+        if (e.IsEnemy)
+        {
+            out << "IsEnemy=1" << std::endl;
+            out << "EnemySpeed=" << e.EnemySpeed << std::endl;
+            out << "EnemyCollisionRadius=" << e.EnemyCollisionRadius << std::endl;
+            out << "EnemyPatrolMode=" << static_cast<int>(e.EnemyPatrolMode) << std::endl;
+            out << "EnemyWaypointCount=" << e.PatrolWaypoints.size() << std::endl;
+            for (size_t w = 0; w < e.PatrolWaypoints.size(); ++w)
+            {
+                out << "EnemyWaypoint" << w << "="
+                    << e.PatrolWaypoints[w].x << ","
+                    << e.PatrolWaypoints[w].y << ","
+                    << e.PatrolWaypoints[w].z << std::endl;
+            }
+        }
     }   // end entity loop
 
     out.close();
@@ -456,6 +471,15 @@ bool Scene::LoadFromFile(const std::string& path)
             else if (key == "IsGoal") currentEntity.IsGoal = parseBool(value);
             else if (key == "GoalRadius") currentEntity.GoalRadius = std::stof(value);
             else if (key == "CollidesWithPlayer") currentEntity.CollidesWithPlayer = parseBool(value);
+            else if (key == "IsEnemy") currentEntity.IsEnemy = parseBool(value);
+            else if (key == "EnemySpeed") currentEntity.EnemySpeed = std::stof(value);
+            else if (key == "EnemyCollisionRadius") currentEntity.EnemyCollisionRadius = std::stof(value);
+            else if (key == "EnemyPatrolMode") currentEntity.EnemyPatrolMode = static_cast<PatrolMode>(std::stoi(value));
+            else if (key == "EnemyWaypointCount") { /* count is informational; waypoints are loaded individually */ }
+            else if (key.rfind("EnemyWaypoint", 0) == 0)
+            {
+                currentEntity.PatrolWaypoints.push_back(parseVec3(value));
+            }
             else if (key == "MeshHandle" && currentEntity.MeshPath.empty())
             {
                 // Old format - try to load but it probably won't work

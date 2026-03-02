@@ -4,6 +4,7 @@
 #include "../resources/Camera.h"
 #include "LightManager.h"
 #include <glm/glm.hpp>
+#include <vector>
 
 // Render statistics for debugging
 struct RenderStats
@@ -48,6 +49,10 @@ public:
     // Debug rendering
     void RenderLightIndicators(const glm::mat4& viewProj);
     void RenderDebugInfo();
+
+    // Editor-only overlay: patrol waypoint nodes and connecting lines
+    // Call this only when NOT in play mode.
+    void RenderWaypointOverlay(EntityManager& entityManager, Camera& camera, int displayWidth, int displayHeight);
     
     // Settings
     void SetEnableShadows(bool enable) { m_enableShadows = enable; }
@@ -73,7 +78,14 @@ private:
     
     // Stats
     RenderStats m_stats;
-    
+
+    // Line renderer for debug overlays
+    unsigned int m_lineVAO = 0;
+    unsigned int m_lineVBO = 0;
+    static constexpr int MAX_LINE_VERTS = 2048;
+    void InitLineRenderer();
+    void DrawLines(const std::vector<glm::vec3>& linePoints, const glm::mat4& viewProj, float r, float g, float b);
+
     // Helper functions
     void SetupLightUniforms(const glm::mat4& viewProj);
     bool FrustumCullEntity(const class Entity& entity, class Mesh* mesh, const glm::mat4& model, Camera& camera);

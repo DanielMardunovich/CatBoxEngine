@@ -15,6 +15,8 @@ RenderPipeline::RenderPipeline()
 
 RenderPipeline::~RenderPipeline()
 {
+    if (m_lineVAO != 0) { glDeleteVertexArrays(1, &m_lineVAO); m_lineVAO = 0; }
+    if (m_lineVBO != 0) { glDeleteBuffers(1, &m_lineVBO); m_lineVBO = 0; }
 }
 
 bool RenderPipeline::Initialize()
@@ -24,7 +26,9 @@ bool RenderPipeline::Initialize()
     
     // Initialize shadow shader
     m_shadowShader.Initialize("./shaders/ShadowMap.vert", "./shaders/ShadowMap.frag");
-    
+
+    InitLineRenderer();
+
     return true;
 }
 
@@ -168,6 +172,7 @@ void RenderPipeline::ShadowPass(EntityManager& entityManager)
 void RenderPipeline::GeometryPass(EntityManager& entityManager, Camera& camera, const glm::mat4& viewProj)
 {
     m_mainShader.Use();
+    m_mainShader.SetBool("u_IsUnlit", false);  // safety: clear any leftover overlay state
     m_mainShader.SetVec3("u_CameraPos", camera.Position.x, camera.Position.y, camera.Position.z);
     SetupLightUniforms(viewProj);
     
@@ -361,6 +366,113 @@ void RenderPipeline::RenderLightIndicators(const glm::mat4& viewProj)
         
         if (cubeMesh->VAO != 0) cubeMesh->Draw();
     }
+}
+
+void RenderPipeline::InitLineRenderer()
+{
+    glGenVertexArrays(1, &m_lineVAO);
+    glGenBuffers(1, &m_lineVBO);
+
+    glBindVertexArray(m_lineVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_lineVBO);
+    glBufferData(GL_ARRAY_BUFFER, MAX_LINE_VERTS * sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW);
+
+    // Only position attribute (location 0); normals/UVs/tangents default to 0, which is fine
+    // for unlit rendering.
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), nullptr);
+
+    glBindVertexArray(0);
+}
+
+void RenderPipeline::DrawLines(const std::vector<glm::vec3>& linePoints,
+                               const glm::mat4& viewProj, float r, float g, float b)
+{
+    if (linePoints.empty() || m_lineVAO == 0) return;
+
+    const size_t count = std::min(linePoints.size(), static_cast<size_t>(MAX_LINE_VERTS));
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_lineVBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0,
+                    static_cast<GLsizeiptr>(count * sizeof(glm::vec3)), linePoints.data());
+
+    m_mainShader.SetMat4("u_MVP", viewProj);
+    m_mainShader.SetMat4("transform", glm::mat4(1.0f));
+    m_mainShader.SetVec3("u_DiffuseColor", r, g, b);
+
+    glLineWidth(2.0f);
+    glBindVertexArray(m_lineVAO);
+    glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(count));
+    glBindVertexArray(0);
+    glLineWidth(1.0f);
+}
+
+void RenderPipeline::RenderWaypointOverlay(EntityManager& entityManager,
+                                           Camera& camera, int displayWidth, int displayHeight)
+{
+    camera.Aspect = static_cast<float>(displayWidth) / static_cast<float>(displayHeight);
+    const glm::mat4 viewProj = camera.GetProjectionMatrix() * camera.GetViewMatrix();
+
+    static MeshHandle s_cubeMesh = 0;
+    if (s_cubeMesh == 0)
+        s_cubeMesh = MeshManager::Instance().GetSharedCubeHandle();
+    Mesh* cube = MeshManager::Instance().GetMesh(s_cubeMesh);
+    if (!cube || cube->VAO == 0) return;
+
+    m_mainShader.Use();
+    m_mainShader.SetBool("u_IsUnlit", true);
+    m_mainShader.SetBool("u_HasDiffuseMap", false);
+    m_mainShader.SetBool("u_HasSpecularMap", false);
+    m_mainShader.SetBool("u_HasNormalMap", false);
+    m_mainShader.SetFloat("u_Alpha", 1.0f);
+    m_mainShader.SetMat4("u_MVP", viewProj);
+
+    for (const auto& entity : entityManager.GetAll())
+    {
+        if (!entity.IsEnemy || entity.PatrolWaypoints.empty())
+            continue;
+
+        const size_t count = entity.PatrolWaypoints.size();
+
+        // --- Waypoint nodes ---
+        for (size_t w = 0; w < count; ++w)
+        {
+            const Vec3& wp = entity.PatrolWaypoints[w];
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(wp.x, wp.y, wp.z));
+            model = glm::scale(model, glm::vec3(0.3f));
+            m_mainShader.SetMat4("transform", model);
+
+            // First waypoint (start) is green, rest are orange
+            if (w == 0)
+                m_mainShader.SetVec3("u_DiffuseColor", 0.1f, 1.0f, 0.1f);
+            else
+                m_mainShader.SetVec3("u_DiffuseColor", 1.0f, 0.5f, 0.0f);
+
+            cube->Draw();
+        }
+
+        // --- Connecting lines ---
+        std::vector<glm::vec3> lineVerts;
+        lineVerts.reserve(count * 2);
+
+        for (size_t w = 0; w + 1 < count; ++w)
+        {
+            lineVerts.emplace_back(entity.PatrolWaypoints[w].x,   entity.PatrolWaypoints[w].y,   entity.PatrolWaypoints[w].z);
+            lineVerts.emplace_back(entity.PatrolWaypoints[w+1].x, entity.PatrolWaypoints[w+1].y, entity.PatrolWaypoints[w+1].z);
+        }
+
+        // Loop mode: also connect last waypoint back to first
+        if (entity.EnemyPatrolMode == PatrolMode::Loop && count > 1)
+        {
+            lineVerts.emplace_back(entity.PatrolWaypoints[count - 1].x, entity.PatrolWaypoints[count - 1].y, entity.PatrolWaypoints[count - 1].z);
+            lineVerts.emplace_back(entity.PatrolWaypoints[0].x,         entity.PatrolWaypoints[0].y,         entity.PatrolWaypoints[0].z);
+        }
+
+        if (!lineVerts.empty())
+            DrawLines(lineVerts, viewProj, 1.0f, 1.0f, 1.0f);  // white
+    }
+
+    m_mainShader.SetBool("u_IsUnlit", false);
 }
 
 void RenderPipeline::LightingPass() {}

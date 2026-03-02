@@ -157,6 +157,7 @@ void Engine::Update(float deltaTime)
         {
             m_playerController.Update(window, deltaTime, m_entityManager);
             m_teleporterSystem.Update(m_entityManager, m_playerController, deltaTime);
+            m_enemySystem.Update(m_entityManager, m_playerController, deltaTime);
         }
         m_goalSystem.Update(m_entityManager, m_playerController);
 
@@ -223,7 +224,11 @@ void Engine::Render()
     
     // Render scene using RenderPipeline
     m_renderPipeline.Render(m_entityManager, m_camera, display_w, display_h);
-    
+
+    // Draw patrol waypoint overlay only while in the editor
+    if (!m_isPlayMode)
+        m_renderPipeline.RenderWaypointOverlay(m_entityManager, m_camera, display_w, display_h);
+
     // Render UI
     m_uiManager.Render();
 
@@ -352,6 +357,7 @@ void Engine::EnterPlayMode()
     // Lock cursor and hand off to player controller
     glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     m_playerController.OnPlayModeEnter();
+    m_enemySystem.EnterPlayMode(m_entityManager);
 
     // Start the run timer
     m_recordSystem.Start();
@@ -369,6 +375,7 @@ void Engine::ExitPlayMode()
     m_playerController.OnPlayModeExit();
     m_teleporterSystem.Reset();
     m_goalSystem.Reset();
+    m_enemySystem.ExitPlayMode(m_entityManager);
     m_recordSystem.Stop();
 
     // Restore editor camera

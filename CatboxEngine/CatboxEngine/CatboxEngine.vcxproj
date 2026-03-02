@@ -149,6 +149,7 @@
     <ClCompile Include="core\Time.cpp" />
     <ClCompile Include="core\UIManager.cpp" />
     <ClCompile Include="gameplay\CollisionSystem.cpp" />
+    <ClCompile Include="gameplay\EnemySystem.cpp" />
     <ClCompile Include="gameplay\GoalSystem.cpp" />
     <ClCompile Include="gameplay\PlayerController.cpp" />
     <ClCompile Include="gameplay\RecordTimeSystem.cpp" />
@@ -197,6 +198,7 @@
     <ClInclude Include="Dependencies\stb_image_write.h" />
     <ClInclude Include="Dependencies\tiny_gltf.h" />
     <ClInclude Include="gameplay\CollisionSystem.h" />
+    <ClInclude Include="gameplay\EnemySystem.h" />
     <ClInclude Include="gameplay\GoalSystem.h" />
     <ClInclude Include="gameplay\PlayerController.h" />
     <ClInclude Include="gameplay\RecordTimeSystem.h" />
