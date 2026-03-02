@@ -89,17 +89,12 @@ void Scene::OnLoad(EntityManager& entityManager)
         }
         else if (entity.MeshPath == "[terrain]")
         {
-            // Terrain mesh is generated below after all entities are added
+            // Generate the terrain mesh now so AddEntity sees a non-zero handle
+            // and does not replace it with the shared cube.
+            TerrainSystem::GenerateTerrainMesh(entity);
         }
 
         entityManager.AddEntity(entity, false); // false = don't save to scene (we already have them)
-    }
-
-    // Generate terrain meshes now that all entities are in the manager
-    for (auto& e : entityManager.GetAll())
-    {
-        if (e.IsTerrain)
-            TerrainSystem::GenerateTerrainMesh(e);
     }
 
     // Ensure new teleporter pairs spawned after loading don't reuse any loaded pair ID

@@ -55,7 +55,7 @@ public:
     } MovementConfig;
     
     // Input handling
-    void OnMouseMove(double xpos, double ypos);
+    void OnMouseMove(double xpos, double ypos); 
     void OnMouseButton(int button, int action);
 
     // Play mode transitions

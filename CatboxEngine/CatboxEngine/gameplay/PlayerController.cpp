@@ -20,7 +20,7 @@ void PlayerController::Initialize(Entity* playerEntity, Camera* camera)
     {
         // Initialize player yaw to face forward (-Z)
         m_playerYaw = 0.0f;
-        m_playerEntity->Transform.Rotation.y = m_playerYaw;
+        m_playerEntity->Transform.Rotation.y = -m_playerYaw;
     }
     
     if (m_camera)
@@ -71,7 +71,7 @@ void PlayerController::UpdateMovement(GLFWwindow* window, float deltaTime, Entit
         moveDirection = glm::normalize(cameraForward * input.y + cameraRight * input.x);
 
         // Update player rotation to face movement direction
-        float targetYaw = glm::degrees(atan2(moveDirection.x, -moveDirection.z));
+        float targetYaw = glm::degrees(atan2(-moveDirection.x, moveDirection.z));
 
         // Smoothly rotate player towards target
         float yawDiff = targetYaw - m_playerYaw;
@@ -84,7 +84,7 @@ void PlayerController::UpdateMovement(GLFWwindow* window, float deltaTime, Entit
         float turnAmount = glm::clamp(yawDiff, -maxTurn, maxTurn);
 
         m_playerYaw += turnAmount;
-        m_playerEntity->Transform.Rotation.y = m_playerYaw;
+        m_playerEntity->Transform.Rotation.y = -m_playerYaw;
     }
 
     // Determine target speed

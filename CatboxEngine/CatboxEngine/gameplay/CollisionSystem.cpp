@@ -2,6 +2,8 @@
 #include "TerrainSystem.h"
 #include "../resources/EntityManager.h"
 #include "../resources/Entity.h"
+#include "../graphics/MeshManager.h"
+#include "../graphics/Mesh.h"
 #include <algorithm>
 
 CollisionSystem::AABB CollisionSystem::ComputeAABB(const Entity& entity)
@@ -9,6 +11,28 @@ CollisionSystem::AABB CollisionSystem::ComputeAABB(const Entity& entity)
     glm::vec3 pos(entity.Transform.Position.x,
                   entity.Transform.Position.y,
                   entity.Transform.Position.z);
+
+    // Use the mesh's real bounding box when available.
+    // This ensures foot-origin models (origin at y=0) sit flush on surfaces
+    // instead of floating half a scale-unit above them.
+    if (entity.MeshHandle != 0)
+    {
+        const Mesh* mesh = MeshManager::Instance().GetMesh(entity.MeshHandle);
+        if (mesh && mesh->BoundsMin.x != FLT_MAX && mesh->BoundsMax.x != -FLT_MAX)
+        {
+            glm::vec3 scaledMin(mesh->BoundsMin.x * entity.Transform.Scale.x,
+                                mesh->BoundsMin.y * entity.Transform.Scale.y,
+                                mesh->BoundsMin.z * entity.Transform.Scale.z);
+            glm::vec3 scaledMax(mesh->BoundsMax.x * entity.Transform.Scale.x,
+                                mesh->BoundsMax.y * entity.Transform.Scale.y,
+                                mesh->BoundsMax.z * entity.Transform.Scale.z);
+            // glm::min/max handles negative scales gracefully
+            return { pos + glm::min(scaledMin, scaledMax),
+                     pos + glm::max(scaledMin, scaledMax) };
+        }
+    }
+
+    // Fallback: assume a unit cube centred at the origin
     glm::vec3 half(entity.Transform.Scale.x * 0.5f,
                    entity.Transform.Scale.y * 0.5f,
                    entity.Transform.Scale.z * 0.5f);
@@ -160,7 +184,16 @@ bool CollisionSystem::ResolveTerrainCollisions(Entity& player, glm::vec3& veloci
                                                const EntityManager& entityManager)
 {
     bool isGrounded = false;
-    const float playerHalfH = player.Transform.Scale.y * 0.5f;
+
+    // Work out where the player's feet are relative to their Position origin.
+    // For a unit-cube player the offset is -Scale.y/2; for a foot-origin model it is 0.
+    float feetOffset = -player.Transform.Scale.y * 0.5f;  // fallback
+    if (player.MeshHandle != 0)
+    {
+        const Mesh* mesh = MeshManager::Instance().GetMesh(player.MeshHandle);
+        if (mesh && mesh->BoundsMin.y != FLT_MAX)
+            feetOffset = mesh->BoundsMin.y * player.Transform.Scale.y;
+    }
 
     for (const auto& entity : entityManager.GetAll())
     {
@@ -173,15 +206,15 @@ bool CollisionSystem::ResolveTerrainCollisions(Entity& player, glm::vec3& veloci
         if (terrainY < -1e10f)  // -FLT_MAX sentinel: player outside terrain XZ bounds
             continue;
 
-        const float playerFeetY = player.Transform.Position.y - playerHalfH;
+        const float playerFeetY = player.Transform.Position.y + feetOffset;
         static constexpr float k_groundProbe = 0.12f;
 
         if (playerFeetY <= terrainY + k_groundProbe)
         {
             if (playerFeetY < terrainY)
             {
-                // Push player above terrain surface
-                player.Transform.Position.y = terrainY + playerHalfH;
+                // Push player up so their feet land exactly on the surface
+                player.Transform.Position.y = terrainY - feetOffset;
                 if (velocity.y < 0.0f)
                     velocity.y = 0.0f;
             }
