@@ -90,8 +90,10 @@ MeshHandle MeshManager::LoadMeshAsync(const std::string& path)
     auto e = m_entries[h];
     if (e->loaded) return h;
 
-    // spawn background thread to load
-    std::thread([this, h, path]() {
+    // Capture the shared_ptr now (under the lock held by CreateEntryForPath) so
+    // the background thread never needs to touch m_entries or m_mutex for the
+    // actual mesh write, eliminating a data race on the map.
+    std::thread([this, h, path, e]() {
         Mesh m;
         bool ok = false;
         auto extpos = path.find_last_of('.');
@@ -117,7 +119,6 @@ MeshHandle MeshManager::LoadMeshAsync(const std::string& path)
             return;
         }
         m.Upload();
-        auto e = m_entries[h];
         e->mesh = std::move(m);
         e->loaded = true;
         // notify main thread by pushing into queue

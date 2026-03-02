@@ -298,12 +298,12 @@ int Engine::Initialize()
     
     // Try to load autosave scene
     auto& sceneMgr = SceneManager::Instance();
-    std::ifstream checkFile("autosave.scene");
+    std::ifstream checkFile("Scenes/autosave.scene");
     if (checkFile.good())
     {
         checkFile.close();
         std::cout << "Loading autosave scene..." << std::endl;
-        SceneID id = sceneMgr.LoadScene("autosave.scene");
+        SceneID id = sceneMgr.LoadScene("Scenes/autosave.scene");
         if (id != 0)
         {
             sceneMgr.SetActiveScene(id, m_entityManager);

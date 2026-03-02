@@ -86,7 +86,7 @@ CollidesWithPlayer=0
 [Entity3]
 Name=Player
 Position=0.194783,-6.89495,0.0407992
-Rotation=-360,3.29935,0
+Rotation=-360,-0,0
 Scale=0.5,0.5,0.5
 MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\scene.gltf
 Shininess=32

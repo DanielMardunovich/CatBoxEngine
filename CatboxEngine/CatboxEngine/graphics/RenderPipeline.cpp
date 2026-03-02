@@ -474,7 +474,3 @@ void RenderPipeline::RenderWaypointOverlay(EntityManager& entityManager,
 
     m_mainShader.SetBool("u_IsUnlit", false);
 }
-
-void RenderPipeline::LightingPass() {}
-void RenderPipeline::PostProcessPass() {}
-void RenderPipeline::RenderDebugInfo() {}

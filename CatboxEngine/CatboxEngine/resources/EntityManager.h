@@ -30,7 +30,12 @@ public:
         }
     }
     
-    void Clear() { m_entities.clear(); }
+    void Clear()
+    {
+        for (auto& e : m_entities)
+            if (e.MeshHandle != 0) MeshManager::Instance().Release(e.MeshHandle);
+        m_entities.clear();
+    }
     size_t Size() const { return m_entities.size(); }
 
     // Returns the first entity tagged as a spawn point, or nullptr

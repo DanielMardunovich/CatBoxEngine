@@ -43,12 +43,9 @@ public:
     // Individual render passes
     void ShadowPass(EntityManager& entityManager);
     void GeometryPass(EntityManager& entityManager, Camera& camera, const glm::mat4& viewProj);
-    void LightingPass();
-    void PostProcessPass();
     
     // Debug rendering
     void RenderLightIndicators(const glm::mat4& viewProj);
-    void RenderDebugInfo();
 
     // Editor-only overlay: patrol waypoint nodes and connecting lines
     // Call this only when NOT in play mode.
