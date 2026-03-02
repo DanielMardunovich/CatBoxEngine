@@ -63,4 +63,7 @@ public:
     bool IsTeleporter = false;
     int TeleporterPairID = -1;      // Two entities sharing the same ID are linked
     float TeleporterRadius = 2.0f;  // Activation distance
+
+    bool IsGoal = false;
+    float GoalRadius = 2.0f;        // Activation distance
 };

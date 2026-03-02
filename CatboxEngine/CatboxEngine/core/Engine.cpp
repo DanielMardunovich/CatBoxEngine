@@ -150,8 +150,13 @@ void Engine::Update(float deltaTime)
     // Update player or free camera
     if (m_isPlayMode)
     {
-        m_playerController.Update(window, deltaTime);
-        m_teleporterSystem.Update(m_entityManager, m_playerController, deltaTime);
+        // Freeze player input once the goal is reached
+        if (!m_goalSystem.IsGoalReached())
+        {
+            m_playerController.Update(window, deltaTime);
+            m_teleporterSystem.Update(m_entityManager, m_playerController, deltaTime);
+        }
+        m_goalSystem.Update(m_entityManager, m_playerController);
     }
     else
     {
@@ -165,7 +170,7 @@ void Engine::Update(float deltaTime)
     m_uiManager.NewFrame();
     m_uiManager.Draw(m_entityManager, m_spawnPosition, m_spawnScale, deltaTime,
                      m_selectedEntityIndex, m_camera, m_useSharedCube,
-                     &m_playerController, m_isPlayMode);
+                     &m_playerController, m_isPlayMode, m_goalSystem.IsGoalReached());
 
     // React to play mode toggle from the Stop/Play toolbar button
     if (!prevPlayMode && m_isPlayMode)
@@ -338,6 +343,7 @@ void Engine::ExitPlayMode()
     glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     m_playerController.OnPlayModeExit();
     m_teleporterSystem.Reset();
+    m_goalSystem.Reset();
 
     // Restore editor camera
     m_camera.Position = m_editorCamPosition;

@@ -53,11 +53,17 @@ void UIManager::NewFrame()
 
 void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, 
                     float deltaTime, int& selectedIndex, Camera& camera, bool& useSharedCube,
-                    PlayerController* playerController, bool& isPlayMode)
+                    PlayerController* playerController, bool& isPlayMode, bool goalReached)
 {
     // Play / Stop toolbar (always on top, center of screen)
     bool playerReady = playerController && playerController->HasPlayerEntity();
     DrawPlayModeToolbar(isPlayMode, playerReady);
+
+    // Goal reached overlay (drawn over everything else in play mode)
+    if (isPlayMode && goalReached)
+    {
+        DrawGoalOverlay();
+    }
 
     // Hide editor windows while in play mode
     if (!isPlayMode)
@@ -77,6 +83,74 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
     {
         m_playerInspector->Draw(*playerController, entityManager, camera);
     }
+}
+
+void UIManager::DrawGoalOverlay()
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    // Semi-transparent full-screen dim layer
+    ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(io.DisplaySize, ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.55f);
+    ImGui::Begin("##GoalDim", nullptr,
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoInputs    | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::End();
+
+    // Centred goal card
+    const float cardW = 420.0f;
+    const float cardH = 200.0f;
+    ImGui::SetNextWindowPos(
+        ImVec2((io.DisplaySize.x - cardW) * 0.5f, (io.DisplaySize.y - cardH) * 0.5f),
+        ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(cardW, cardH), ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.97f);
+    ImGui::Begin("##GoalCard", nullptr,
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoScrollbar  | ImGuiWindowFlags_NoSavedSettings);
+
+    // Star row
+    ImGui::Spacing();
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.85f, 0.1f, 1.0f));
+    const char* stars = "  * * * * * * *";
+    float starsW = ImGui::CalcTextSize(stars).x;
+    ImGui::SetCursorPosX((cardW - starsW) * 0.5f);
+    ImGui::Text("%s", stars);
+    ImGui::PopStyleColor();
+
+    // Main message
+    ImGui::Spacing();
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.9f, 0.2f, 1.0f));
+    const char* heading = "GOAL REACHED!";
+    float headW = ImGui::CalcTextSize(heading).x * 2.0f; // approximate after font scale
+    ImGui::SetWindowFontScale(2.0f);
+    float realHeadW = ImGui::CalcTextSize(heading).x;
+    ImGui::SetCursorPosX((cardW - realHeadW) * 0.5f);
+    ImGui::Text("%s", heading);
+    ImGui::SetWindowFontScale(1.0f);
+    ImGui::PopStyleColor();
+    (void)headW;
+
+    // Sub-message
+    ImGui::Spacing();
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.85f, 0.85f, 0.85f, 1.0f));
+    const char* sub = "You reached the goal!";
+    float subW = ImGui::CalcTextSize(sub).x;
+    ImGui::SetCursorPosX((cardW - subW) * 0.5f);
+    ImGui::Text("%s", sub);
+    ImGui::PopStyleColor();
+
+    // Exit hint
+    ImGui::Spacing();
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+    const char* hint = "Press ESC or Stop to return to the editor";
+    float hintW = ImGui::CalcTextSize(hint).x;
+    ImGui::SetCursorPosX((cardW - hintW) * 0.5f);
+    ImGui::Text("%s", hint);
+    ImGui::PopStyleColor();
+
+    ImGui::End();
 }
 
 void UIManager::Render()

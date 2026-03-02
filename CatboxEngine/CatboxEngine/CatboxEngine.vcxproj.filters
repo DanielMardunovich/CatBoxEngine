@@ -159,6 +159,9 @@
     <ClCompile Include="gameplay\TeleporterSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="gameplay\GoalSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Dependencies\imgui\imgui.h">
@@ -291,6 +294,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gameplay\TeleporterSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gameplay\GoalSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

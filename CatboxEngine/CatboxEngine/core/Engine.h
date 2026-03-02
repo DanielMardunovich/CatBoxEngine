@@ -7,6 +7,7 @@
 #include "../resources/SceneManager.h"
 #include "../gameplay/PlayerController.h"
 #include "../gameplay/TeleporterSystem.h"
+#include "../gameplay/GoalSystem.h"
 #include "UIManager.h"
 #include "InputHandler.h"
 #include <vector>
@@ -67,6 +68,7 @@ private:
     InputHandler m_inputHandler;
     PlayerController m_playerController;
     TeleporterSystem m_teleporterSystem;
+    GoalSystem m_goalSystem;
 
     // Play mode
     bool m_isPlayMode = false;

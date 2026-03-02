@@ -118,6 +118,17 @@ void EntityManagerInspector::DrawSpawnControls(EntityManager& entityManager, Vec
     }
     ImGui::SetItemTooltip("Spawns two linked teleporters. Move them apart, then enter Play Mode to test.");
 
+    if (ImGui::Button("Spawn Goal"))
+    {
+        Entity goal;
+        goal.name = "Goal";
+        goal.Transform.Position = spawnPosition;
+        goal.Transform.Scale = Vec3(1.0f, 2.0f, 1.0f);
+        goal.IsGoal = true;
+        entityManager.AddEntity(goal, true);
+    }
+    ImGui::SetItemTooltip("Spawns a goal entity. When the player reaches it in Play Mode, the level is complete.");
+
     // Options
     ImGui::Checkbox("Use shared cube mesh", &useSharedCube);
 }
@@ -210,6 +221,8 @@ void EntityManagerInspector::DrawEntityList(EntityManager& entityManager, int& s
             displayName = "[SP] " + displayName;
         if (entity.IsTeleporter)
             displayName = "[TP] " + displayName;
+        if (entity.IsGoal)
+            displayName = "[GOAL] " + displayName;
 
         if (ImGui::Selectable(displayName.c_str(), isSelected))
         {
@@ -288,6 +301,24 @@ void EntityManagerInspector::DrawEntityInfo(Entity& entity)
         ImGui::PopStyleColor();
         ImGui::SliderFloat("Teleport Radius", &entity.TeleporterRadius, 0.5f, 10.0f);
         ImGui::SetItemTooltip("Player must be within this distance to trigger the teleport.");
+    }
+
+    // Goal tag
+    ImGui::Spacing();
+    if (entity.IsGoal)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.85f, 0.1f, 1.0f));
+        ImGui::Text("[GOAL] This entity is a Goal");
+        ImGui::PopStyleColor();
+    }
+    if (ImGui::Checkbox("Goal", &entity.IsGoal))
+    {
+    }
+    ImGui::SetItemTooltip("Player reaching this entity in Play Mode triggers the Goal Reached screen.");
+    if (entity.IsGoal)
+    {
+        ImGui::SliderFloat("Goal Radius", &entity.GoalRadius, 0.5f, 15.0f);
+        ImGui::SetItemTooltip("Player must be within this distance to trigger the goal.");
     }
 }
 

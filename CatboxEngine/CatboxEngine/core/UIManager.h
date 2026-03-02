@@ -30,7 +30,7 @@ public:
     // Build UI (manages all inspectors)
     void Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, 
              float deltaTime, int& selectedIndex, Camera& camera, bool& useSharedCube,
-             PlayerController* playerController, bool& isPlayMode);
+             PlayerController* playerController, bool& isPlayMode, bool goalReached = false);
 
     // Render ImGui draw data
     void Render();
@@ -40,6 +40,8 @@ private:
     void DrawSceneManager(EntityManager& entityManager);
     // Draw centered play/stop toolbar
     void DrawPlayModeToolbar(bool& isPlayMode, bool playerReady);
+    // Draw goal reached overlay
+    void DrawGoalOverlay();
 
     // Inspectors (owned by UIManager)
     CameraInspector* m_cameraInspector = nullptr;
