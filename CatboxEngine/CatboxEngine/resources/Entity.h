@@ -66,4 +66,7 @@ public:
 
     bool IsGoal = false;
     float GoalRadius = 2.0f;        // Activation distance
+
+    // Collision
+    bool CollidesWithPlayer = true;  // When false, the player can walk through this entity
 };

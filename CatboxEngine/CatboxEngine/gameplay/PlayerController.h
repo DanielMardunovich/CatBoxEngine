@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 
 struct GLFWwindow;
+class EntityManager;
 
 // Player movement state
 enum class PlayerState
@@ -26,7 +27,7 @@ public:
     void Initialize(Entity* playerEntity, Camera* camera);
     
     // Update player movement and camera
-    void Update(GLFWwindow* window, float deltaTime);
+    void Update(GLFWwindow* window, float deltaTime, EntityManager& entityManager);
     
     // Camera settings
     struct CameraSettings
@@ -107,10 +108,9 @@ private:
     bool m_enabled = true;
     
     // Internal methods
-    void UpdateMovement(GLFWwindow* window, float deltaTime);
+    void UpdateMovement(GLFWwindow* window, float deltaTime, EntityManager& entityManager);
     void UpdateCamera(float deltaTime);
     void UpdatePlayerState();
-    void CheckGroundCollision();
     glm::vec2 GetInputVector(GLFWwindow* window);
     glm::vec3 CalculateDesiredCameraPosition() const;
     float GetCurrentSpeed() const;

@@ -289,6 +289,8 @@ bool Scene::SaveToFile(const std::string& path) const
             out << "IsGoal=1" << std::endl;
             out << "GoalRadius=" << e.GoalRadius << std::endl;
         }
+        if (!e.CollidesWithPlayer)
+            out << "CollidesWithPlayer=0" << std::endl;
     }   // end entity loop
 
     out.close();
@@ -448,6 +450,7 @@ bool Scene::LoadFromFile(const std::string& path)
             else if (key == "TeleporterRadius") currentEntity.TeleporterRadius = std::stof(value);
             else if (key == "IsGoal") currentEntity.IsGoal = parseBool(value);
             else if (key == "GoalRadius") currentEntity.GoalRadius = std::stof(value);
+            else if (key == "CollidesWithPlayer") currentEntity.CollidesWithPlayer = parseBool(value);
             else if (key == "MeshHandle" && currentEntity.MeshPath.empty())
             {
                 // Old format - try to load but it probably won't work

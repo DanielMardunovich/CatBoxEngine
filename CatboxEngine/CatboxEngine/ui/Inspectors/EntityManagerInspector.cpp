@@ -106,6 +106,7 @@ void EntityManagerInspector::DrawSpawnControls(EntityManager& entityManager, Vec
         tpA.Transform.Scale = Vec3(1.0f, 1.5f, 1.0f);
         tpA.IsTeleporter = true;
         tpA.TeleporterPairID = pairID;
+        tpA.CollidesWithPlayer = false;
         entityManager.AddEntity(tpA, true);
 
         Entity tpB;
@@ -114,6 +115,7 @@ void EntityManagerInspector::DrawSpawnControls(EntityManager& entityManager, Vec
         tpB.Transform.Scale = Vec3(1.0f, 1.5f, 1.0f);
         tpB.IsTeleporter = true;
         tpB.TeleporterPairID = pairID;
+        tpB.CollidesWithPlayer = false;
         entityManager.AddEntity(tpB, true);
     }
     ImGui::SetItemTooltip("Spawns two linked teleporters. Move them apart, then enter Play Mode to test.");
@@ -125,6 +127,7 @@ void EntityManagerInspector::DrawSpawnControls(EntityManager& entityManager, Vec
         goal.Transform.Position = spawnPosition;
         goal.Transform.Scale = Vec3(1.0f, 2.0f, 1.0f);
         goal.IsGoal = true;
+        goal.CollidesWithPlayer = false;
         entityManager.AddEntity(goal, true);
     }
     ImGui::SetItemTooltip("Spawns a goal entity. When the player reaches it in Play Mode, the level is complete.");
@@ -288,7 +291,8 @@ void EntityManagerInspector::DrawEntityInfo(Entity& entity)
     }
     if (ImGui::Checkbox("Spawn Point", &entity.IsSpawnPoint))
     {
-        // If marking as spawn point, log for awareness
+        if (entity.IsSpawnPoint)
+            entity.CollidesWithPlayer = false;
     }
     ImGui::SetItemTooltip("When Play Mode starts, the player spawns at this entity's position.");
 
@@ -320,6 +324,12 @@ void EntityManagerInspector::DrawEntityInfo(Entity& entity)
         ImGui::SliderFloat("Goal Radius", &entity.GoalRadius, 0.5f, 15.0f);
         ImGui::SetItemTooltip("Player must be within this distance to trigger the goal.");
     }
+
+    // Collision
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Checkbox("Collides With Player", &entity.CollidesWithPlayer);
+    ImGui::SetItemTooltip("When unchecked, the player passes through this entity. Disable for spawn points, teleporters, and goals.");
 }
 
 void EntityManagerInspector::DrawEntityTransform(Entity& entity)

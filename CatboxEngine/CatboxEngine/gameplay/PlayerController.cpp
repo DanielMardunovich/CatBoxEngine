@@ -1,4 +1,6 @@
 #include "PlayerController.h"
+#include "CollisionSystem.h"
+#include "../resources/EntityManager.h"
 #include <glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -32,111 +34,102 @@ void PlayerController::Initialize(Entity* playerEntity, Camera* camera)
     std::cout << "PlayerController initialized" << std::endl;
 }
 
-void PlayerController::Update(GLFWwindow* window, float deltaTime)
+void PlayerController::Update(GLFWwindow* window, float deltaTime, EntityManager& entityManager)
 {
     if (!m_enabled || !m_playerEntity || !m_camera)
         return;
-    
-    UpdateMovement(window, deltaTime);
+
+    UpdateMovement(window, deltaTime, entityManager);
     UpdateCamera(deltaTime);
     UpdatePlayerState();
 }
 
-void PlayerController::UpdateMovement(GLFWwindow* window, float deltaTime)
+void PlayerController::UpdateMovement(GLFWwindow* window, float deltaTime, EntityManager& entityManager)
 {
     // Get input direction
     glm::vec2 input = GetInputVector(window);
-    
-    // Check ground collision
-    CheckGroundCollision();
-    
+
+    // m_isGrounded reflects the result of last frame's collision resolution.
+    // Use it to gate jumping so the player cannot jump mid-air.
+    if (m_isGrounded && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    {
+        m_velocity.y = MovementConfig.JumpForce;
+        m_isGrounded = false;
+    }
+
     // Calculate camera-relative movement direction
     glm::vec3 moveDirection(0.0f);
-    
+
     if (glm::length(input) > 0.01f)
     {
         // Get camera forward and right vectors (projected on XZ plane)
         float yawRad = glm::radians(m_cameraYaw);
         glm::vec3 cameraForward(-sin(yawRad), 0.0f, cos(yawRad));
         glm::vec3 cameraRight(-cos(yawRad), 0.0f, -sin(yawRad));
-        
+
         // Calculate movement direction relative to camera
         moveDirection = glm::normalize(cameraForward * input.y + cameraRight * input.x);
-        
+
         // Update player rotation to face movement direction
         float targetYaw = glm::degrees(atan2(moveDirection.x, -moveDirection.z));
-        
+
         // Smoothly rotate player towards target
         float yawDiff = targetYaw - m_playerYaw;
-        
+
         // Normalize angle difference to [-180, 180]
-        while (yawDiff > 180.0f) yawDiff -= 360.0f;
+        while (yawDiff > 180.0f)  yawDiff -= 360.0f;
         while (yawDiff < -180.0f) yawDiff += 360.0f;
 
-        float maxTurn = MovementConfig.TurnSpeed * deltaTime;
+        float maxTurn    = MovementConfig.TurnSpeed * deltaTime;
         float turnAmount = glm::clamp(yawDiff, -maxTurn, maxTurn);
-        
+
         m_playerYaw += turnAmount;
         m_playerEntity->Transform.Rotation.y = m_playerYaw;
     }
-    
-    // Handle jumping
-    if (m_isGrounded && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-    {
-        m_velocity.y = MovementConfig.JumpForce;
-        m_isGrounded = false;
-    }
-    
+
     // Determine target speed
-    bool isRunning = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
+    bool  isRunning   = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
     float targetSpeed = isRunning ? MovementConfig.RunSpeed : MovementConfig.WalkSpeed;
-    
+
     // Calculate target velocity
     if (glm::length(input) > 0.01f)
-    {
         m_targetVelocity = moveDirection * targetSpeed;
-    }
     else
-    {
         m_targetVelocity = glm::vec3(0.0f);
-    }
-    
-    // Apply acceleration/deceleration
+
+    // Apply acceleration / deceleration
     float accel = (glm::length(input) > 0.01f) ? MovementConfig.Acceleration : MovementConfig.Deceleration;
-    
-    // Horizontal velocity interpolation
+
     glm::vec3 horizontalVel(m_velocity.x, 0.0f, m_velocity.z);
     glm::vec3 targetHorizontalVel(m_targetVelocity.x, 0.0f, m_targetVelocity.z);
-    
     horizontalVel = glm::mix(horizontalVel, targetHorizontalVel, accel * deltaTime);
-    
-    m_velocity.x = horizontalVel.x;
-    m_velocity.z = horizontalVel.z;
-    
-    // Apply gravity
+    m_velocity.x  = horizontalVel.x;
+    m_velocity.z  = horizontalVel.z;
+
+    // Gravity / ground-probe velocity
     if (!m_isGrounded)
     {
         m_velocity.y -= MovementConfig.Gravity * deltaTime;
     }
     else
     {
-        // Keep slight downward velocity when grounded
-        m_velocity.y = -0.1f;
+        // Keep a small downward velocity so the collision ground probe triggers
+        // every frame while standing, preventing the player from floating off
+        // surfaces when moving horizontally.
+        if (m_velocity.y <= 0.0f)
+            m_velocity.y = -1.0f;
     }
-    
+
     // Apply velocity to position
     glm::vec3 displacement = m_velocity * deltaTime;
     m_playerEntity->Transform.Position.x += displacement.x;
     m_playerEntity->Transform.Position.y += displacement.y;
     m_playerEntity->Transform.Position.z += displacement.z;
-    
-    // Simple ground clamping (replace with proper collision later)
-    if (m_playerEntity->Transform.Position.y < 0.0f)
-    {
-        m_playerEntity->Transform.Position.y = 0.0f;
-        m_velocity.y = 0.0f;
-        m_isGrounded = true;
-    }
+
+    // Resolve AABB collisions against all collidable scene entities and update
+    // the grounded flag for the next frame's jump check.
+    m_isGrounded = CollisionSystem::ResolvePlayerCollisions(
+        *m_playerEntity, m_velocity, entityManager);
 }
 
 void PlayerController::UpdateCamera(float deltaTime)
@@ -195,16 +188,6 @@ void PlayerController::UpdatePlayerState()
     {
         m_state = PlayerState::Idle;
     }
-}
-
-void PlayerController::CheckGroundCollision()
-{
-    // Simple ground check - player is grounded if on or below y=0
-    // You can extend this to raycast down for proper collision
-    float groundY = 0.0f;
-    float playerY = m_playerEntity->Transform.Position.y;
-    
-    m_isGrounded = (playerY <= groundY + MovementConfig.GroundCheckDistance);
 }
 
 glm::vec2 PlayerController::GetInputVector(GLFWwindow* window)

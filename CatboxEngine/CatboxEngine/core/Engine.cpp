@@ -153,7 +153,7 @@ void Engine::Update(float deltaTime)
         // Freeze player input once the goal is reached
         if (!m_goalSystem.IsGoalReached())
         {
-            m_playerController.Update(window, deltaTime);
+            m_playerController.Update(window, deltaTime, m_entityManager);
             m_teleporterSystem.Update(m_entityManager, m_playerController, deltaTime);
         }
         m_goalSystem.Update(m_entityManager, m_playerController);
