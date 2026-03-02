@@ -18,6 +18,9 @@
 #include "../graphics/LightManager.h"
 #include "../resources/SceneManager.h"
 
+static constexpr const char* k_autosaveDir  = "F:\\EngineSpecialization\\CatBoxEngine\\CatboxEngine\\CatboxEngine\\Scenes";
+static constexpr const char* k_autosavePath = "F:\\EngineSpecialization\\CatBoxEngine\\CatboxEngine\\CatboxEngine\\Scenes\\autosave.scene";
+
 Engine::Engine(float windowWidth, float windowHeight, const char* name)
     : m_window(nullptr)
     , m_width(windowWidth)
@@ -62,13 +65,10 @@ Engine::~Engine()
     auto* activeScene = sceneMgr.GetActiveScene();
     if (activeScene)
     {
-        // Create Scenes directory if it doesn't exist
-        _mkdir("Scenes");  // Will fail silently if already exists
-        
-        std::string autosavePath = "Scenes/autosave.scene";
-        std::cout << "Auto-saving active scene: " << activeScene->GetName() 
-                  << " to " << autosavePath << std::endl;
-        sceneMgr.SaveScene(sceneMgr.GetActiveSceneID(), autosavePath, m_entityManager);
+        _mkdir(k_autosaveDir);  // Create directory if it doesn't exist (fails silently if already present)
+        std::cout << "Auto-saving active scene: " << activeScene->GetName()
+                  << " to " << k_autosavePath << std::endl;
+        sceneMgr.SaveScene(sceneMgr.GetActiveSceneID(), k_autosavePath, m_entityManager);
     }
     
     Cleanup();
@@ -298,12 +298,12 @@ int Engine::Initialize()
     
     // Try to load autosave scene
     auto& sceneMgr = SceneManager::Instance();
-    std::ifstream checkFile("Scenes/autosave.scene");
+    std::ifstream checkFile(k_autosavePath);
     if (checkFile.good())
     {
         checkFile.close();
         std::cout << "Loading autosave scene..." << std::endl;
-        SceneID id = sceneMgr.LoadScene("Scenes/autosave.scene");
+        SceneID id = sceneMgr.LoadScene(k_autosavePath);
         if (id != 0)
         {
             sceneMgr.SetActiveScene(id, m_entityManager);

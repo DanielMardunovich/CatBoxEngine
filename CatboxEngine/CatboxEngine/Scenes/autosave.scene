@@ -90,8 +90,8 @@ IsSpawnPoint=1
 
 [Entity3]
 Name=Player
-Position=0.943947,-6.89495,-0.280656
-Rotation=-360,-0,0
+Position=1.50369,-6.89495,-0.467181
+Rotation=-360,-1433.55,0
 Scale=0.5,0.5,0.5
 MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\scene.gltf
 Shininess=32
