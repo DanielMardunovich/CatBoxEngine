@@ -59,4 +59,8 @@ public:
 
     // Gameplay tags
     bool IsSpawnPoint = false;
+
+    bool IsTeleporter = false;
+    int TeleporterPairID = -1;      // Two entities sharing the same ID are linked
+    float TeleporterRadius = 2.0f;  // Activation distance
 };

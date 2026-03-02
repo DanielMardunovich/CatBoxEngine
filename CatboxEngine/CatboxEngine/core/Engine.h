@@ -6,6 +6,7 @@
 #include "../resources/EntityManager.h"
 #include "../resources/SceneManager.h"
 #include "../gameplay/PlayerController.h"
+#include "../gameplay/TeleporterSystem.h"
 #include "UIManager.h"
 #include "InputHandler.h"
 #include <vector>
@@ -65,6 +66,7 @@ private:
     Camera m_camera;
     InputHandler m_inputHandler;
     PlayerController m_playerController;
+    TeleporterSystem m_teleporterSystem;
 
     // Play mode
     bool m_isPlayMode = false;

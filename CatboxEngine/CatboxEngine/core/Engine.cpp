@@ -151,6 +151,7 @@ void Engine::Update(float deltaTime)
     if (m_isPlayMode)
     {
         m_playerController.Update(window, deltaTime);
+        m_teleporterSystem.Update(m_entityManager, m_playerController, deltaTime);
     }
     else
     {
@@ -336,6 +337,7 @@ void Engine::ExitPlayMode()
     // Release cursor
     glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     m_playerController.OnPlayModeExit();
+    m_teleporterSystem.Reset();
 
     // Restore editor camera
     m_camera.Position = m_editorCamPosition;

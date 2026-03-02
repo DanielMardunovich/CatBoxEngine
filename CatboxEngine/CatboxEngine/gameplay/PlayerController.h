@@ -70,6 +70,11 @@ public:
     [[nodiscard]] float GetCameraYaw() const { return m_cameraYaw; }
     [[nodiscard]] float GetCameraPitch() const { return m_cameraPitch; }
     [[nodiscard]] bool HasPlayerEntity() const { return m_playerEntity != nullptr; }
+    [[nodiscard]] Vec3 GetPlayerPosition() const
+    {
+        if (!m_playerEntity) return Vec3(0.0f, 0.0f, 0.0f);
+        return m_playerEntity->Transform.Position;
+    }
 
     // Enable/disable controller
     void SetEnabled(bool enabled) { m_enabled = enabled; }

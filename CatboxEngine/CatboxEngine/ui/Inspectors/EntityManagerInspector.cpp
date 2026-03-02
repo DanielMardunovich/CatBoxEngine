@@ -95,6 +95,29 @@ void EntityManagerInspector::DrawSpawnControls(EntityManager& entityManager, Vec
     }
     ImGui::SetItemTooltip("Creates a marker entity. The player will spawn here when Play Mode starts.");
 
+    if (ImGui::Button("Spawn Teleporter Pair"))
+    {
+        int pairID = entityManager.GetNextTeleporterPairID();
+        std::string pairLabel = std::to_string(pairID);
+
+        Entity tpA;
+        tpA.name = "Teleporter A (Pair " + pairLabel + ")";
+        tpA.Transform.Position = spawnPosition;
+        tpA.Transform.Scale = Vec3(1.0f, 1.5f, 1.0f);
+        tpA.IsTeleporter = true;
+        tpA.TeleporterPairID = pairID;
+        entityManager.AddEntity(tpA, true);
+
+        Entity tpB;
+        tpB.name = "Teleporter B (Pair " + pairLabel + ")";
+        tpB.Transform.Position = Vec3(spawnPosition.x + 8.0f, spawnPosition.y, spawnPosition.z);
+        tpB.Transform.Scale = Vec3(1.0f, 1.5f, 1.0f);
+        tpB.IsTeleporter = true;
+        tpB.TeleporterPairID = pairID;
+        entityManager.AddEntity(tpB, true);
+    }
+    ImGui::SetItemTooltip("Spawns two linked teleporters. Move them apart, then enter Play Mode to test.");
+
     // Options
     ImGui::Checkbox("Use shared cube mesh", &useSharedCube);
 }
@@ -185,6 +208,8 @@ void EntityManagerInspector::DrawEntityList(EntityManager& entityManager, int& s
         std::string displayName = icon + entity.name;
         if (entity.IsSpawnPoint)
             displayName = "[SP] " + displayName;
+        if (entity.IsTeleporter)
+            displayName = "[TP] " + displayName;
 
         if (ImGui::Selectable(displayName.c_str(), isSelected))
         {
@@ -253,6 +278,17 @@ void EntityManagerInspector::DrawEntityInfo(Entity& entity)
         // If marking as spawn point, log for awareness
     }
     ImGui::SetItemTooltip("When Play Mode starts, the player spawns at this entity's position.");
+
+    // Teleporter tag
+    ImGui::Spacing();
+    if (entity.IsTeleporter)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.8f, 1.0f, 1.0f));
+        ImGui::Text("[TP] Teleporter  |  Pair ID: %d", entity.TeleporterPairID);
+        ImGui::PopStyleColor();
+        ImGui::SliderFloat("Teleport Radius", &entity.TeleporterRadius, 0.5f, 10.0f);
+        ImGui::SetItemTooltip("Player must be within this distance to trigger the teleport.");
+    }
 }
 
 void EntityManagerInspector::DrawEntityTransform(Entity& entity)

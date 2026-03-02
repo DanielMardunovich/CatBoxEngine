@@ -41,7 +41,11 @@ public:
         return nullptr;
     }
 
+    // Returns a unique pair ID for a new teleporter pair
+    int GetNextTeleporterPairID() { return m_nextTeleporterPairID++; }
+
 private:
     std::vector<Entity> m_entities;
+    int m_nextTeleporterPairID = 0;
 };
 
