@@ -30,7 +30,14 @@ Engine::Engine(float windowWidth, float windowHeight, const char* name)
 
 void Engine::OnMouseMove(double xpos, double ypos)
 {
-    m_inputHandler.HandleMouseMove(xpos, ypos, m_camera);
+    if (m_isPlayMode)
+    {
+        m_playerController.OnMouseMove(xpos, ypos);
+    }
+    else
+    {
+        m_inputHandler.HandleMouseMove(xpos, ypos, m_camera);
+    }
 }
 
 void Engine::OnDrop(const std::vector<std::string>& paths)
@@ -40,6 +47,11 @@ void Engine::OnDrop(const std::vector<std::string>& paths)
 
 void Engine::OnMouseButton(GLFWwindow* window, int button, int action, int mods)
 {
+    if (m_isPlayMode)
+    {
+        // In play mode the cursor is always locked; ignore button-driven cursor toggling
+        return;
+    }
     m_inputHandler.HandleMouseButton(window, button, action, mods, m_camera);
 }
 
@@ -117,24 +129,52 @@ void Engine::app()
 void Engine::Update(float deltaTime)
 {
     GLFWwindow* window = GetWindow();
-    
-    // Handle window-level input
-    if (m_inputHandler.ShouldCloseWindow(window))
+
+    // Single debounced ESC handler — behaviour depends on current mode
+    bool escDown = glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS;
+    if (escDown && !m_escapeWasPressed)
     {
-        glfwSetWindowShouldClose(window, true);
+        if (m_isPlayMode)
+        {
+            // Exit play mode; do NOT close the window
+            m_isPlayMode = false;
+            ExitPlayMode();
+        }
+        else
+        {
+            glfwSetWindowShouldClose(window, true);
+        }
+    }
+    m_escapeWasPressed = escDown;
+
+    // Update player or free camera
+    if (m_isPlayMode)
+    {
+        m_playerController.Update(window, deltaTime);
+    }
+    else
+    {
+        m_camera.Update(window, deltaTime);
     }
 
-    // Let camera handle inputs
-    m_camera.Update(window, deltaTime);
     glfwPollEvents();
 
     // UI frame and draw
+    bool prevPlayMode = m_isPlayMode;
     m_uiManager.NewFrame();
-    m_uiManager.Draw(m_entityManager, m_spawnPosition, m_spawnScale, deltaTime, m_selectedEntityIndex, m_camera, m_useSharedCube);
+    m_uiManager.Draw(m_entityManager, m_spawnPosition, m_spawnScale, deltaTime,
+                     m_selectedEntityIndex, m_camera, m_useSharedCube,
+                     &m_playerController, m_isPlayMode);
+
+    // React to play mode toggle from the Stop/Play toolbar button
+    if (!prevPlayMode && m_isPlayMode)
+        EnterPlayMode();
+    else if (prevPlayMode && !m_isPlayMode)
+        ExitPlayMode();
 
     // Poll mesh manager for completed async loads and invoke callbacks
     MeshManager::Instance().PollCompleted();
-    
+
     // Process message queue
     MessageQueue::Instance().ProcessMessages();
 
@@ -233,7 +273,69 @@ int Engine::Initialize()
         sceneMgr.SetActiveScene(defaultScene, m_entityManager);
     }
 
+    // ===== PLAYER CONTROLLER SETUP (OPTIONAL) =====
+    // Uncomment this section to enable 3rd person player controller
+    // See PLAYER_CONTROLLER_GUIDE.md for full documentation
+    /*
+    // Create a player entity if none exists
+    if (m_entityManager.Size() == 0)
+    {
+        Entity playerEntity;
+        playerEntity.name = "Player";
+        playerEntity.Transform.Position = Vec3(0.0f, 2.0f, 0.0f);
+        playerEntity.Transform.Scale = Vec3(0.5f, 1.0f, 0.5f);
+        m_entityManager.AddEntity(playerEntity, true);  // true = use shared cube mesh
+    }
+
+    // Initialize player controller with first entity
+    Entity* player = &m_entityManager.GetAll()[0];
+    m_playerController.Initialize(player, &m_camera);
+
+    // Optional: Configure movement and camera settings
+    m_playerController.MovementConfig.WalkSpeed = 6.0f;
+    m_playerController.MovementConfig.RunSpeed = 12.0f;
+    m_playerController.CameraConfig.Distance = 10.0f;
+
+    // Enable the controller (set to false to start in free camera mode)
+    m_playerController.SetEnabled(false);  // Start disabled, enable via UI
+
+    std::cout << "Player controller ready! Enable in Player Controller window." << std::endl;
+    */
+    // ===== END PLAYER CONTROLLER SETUP =====
+
     return 0;
+}
+
+void Engine::EnterPlayMode()
+{
+    // Save editor camera state so we can restore it on exit
+    m_editorCamPosition = m_camera.Position;
+    m_editorCamFront    = m_camera.Front;
+    m_editorCamUp       = m_camera.Up;
+    m_editorCamYaw      = m_camera.Yaw;
+    m_editorCamPitch    = m_camera.Pitch;
+
+    // Lock cursor and hand off to player controller
+    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    m_playerController.OnPlayModeEnter();
+
+    std::cout << "Entered Play Mode" << std::endl;
+}
+
+void Engine::ExitPlayMode()
+{
+    // Release cursor
+    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    m_playerController.OnPlayModeExit();
+
+    // Restore editor camera
+    m_camera.Position = m_editorCamPosition;
+    m_camera.Front    = m_editorCamFront;
+    m_camera.Up       = m_editorCamUp;
+    m_camera.Yaw      = m_editorCamYaw;
+    m_camera.Pitch    = m_editorCamPitch;
+
+    std::cout << "Exited Play Mode" << std::endl;
 }
 
 void Engine::SetupMessageSubscriptions()

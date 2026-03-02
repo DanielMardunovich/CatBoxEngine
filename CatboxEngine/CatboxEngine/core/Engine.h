@@ -5,6 +5,7 @@
 #include "../resources/Camera.h"
 #include "../resources/EntityManager.h"
 #include "../resources/SceneManager.h"
+#include "../gameplay/PlayerController.h"
 #include "UIManager.h"
 #include "InputHandler.h"
 #include <vector>
@@ -34,11 +35,13 @@ public:
 private:
     void Update(float deltaTime);
     void Render();
-    
+
     int Initialize();
     int InitImGui();
     void SetupMessageSubscriptions();
     void Cleanup();
+    void EnterPlayMode();
+    void ExitPlayMode();
 
     [[nodiscard]] GLFWwindow* GetWindow() const noexcept { return m_window; }
     
@@ -61,6 +64,18 @@ private:
     UIManager m_uiManager;
     Camera m_camera;
     InputHandler m_inputHandler;
+    PlayerController m_playerController;
+
+    // Play mode
+    bool m_isPlayMode = false;
+    bool m_escapeWasPressed = false;
+
+    // Saved editor camera state (restored when leaving play mode)
+    Vec3 m_editorCamPosition;
+    Vec3 m_editorCamFront;
+    Vec3 m_editorCamUp;
+    float m_editorCamYaw = -90.0f;
+    float m_editorCamPitch = 0.0f;
     
     // UI state
     Vec3 m_spawnPosition { 0.0f, 0.0f, 0.0f };

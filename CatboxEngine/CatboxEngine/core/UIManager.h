@@ -4,11 +4,13 @@
 class EntityManager;
 class Camera;
 class SceneManager;
+class PlayerController;
 class CameraInspector;
 class EntityManagerInspector;
 class StatsInspector;
 class LightInspector;
 class GraphicsSettingsInspector;
+class PlayerInspector;
 
 class UIManager
 {
@@ -27,14 +29,17 @@ public:
 
     // Build UI (manages all inspectors)
     void Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, 
-             float deltaTime, int& selectedIndex, Camera& camera, bool& useSharedCube);
-    
+             float deltaTime, int& selectedIndex, Camera& camera, bool& useSharedCube,
+             PlayerController* playerController, bool& isPlayMode);
+
     // Render ImGui draw data
     void Render();
 
 private:
     // Draw scene manager window
     void DrawSceneManager(EntityManager& entityManager);
+    // Draw centered play/stop toolbar
+    void DrawPlayModeToolbar(bool& isPlayMode, bool playerReady);
 
     // Inspectors (owned by UIManager)
     CameraInspector* m_cameraInspector = nullptr;
@@ -42,4 +47,5 @@ private:
     StatsInspector* m_statsInspector = nullptr;
     LightInspector* m_lightInspector = nullptr;
     GraphicsSettingsInspector* m_graphicsSettingsInspector = nullptr;
+    PlayerInspector* m_playerInspector = nullptr;
 };
