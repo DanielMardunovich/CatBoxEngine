@@ -130,6 +130,10 @@ void PlayerController::UpdateMovement(GLFWwindow* window, float deltaTime, Entit
     // the grounded flag for the next frame's jump check.
     m_isGrounded = CollisionSystem::ResolvePlayerCollisions(
         *m_playerEntity, m_velocity, entityManager);
+
+    // Also resolve against heightmap terrain (separate collision path)
+    m_isGrounded |= CollisionSystem::ResolveTerrainCollisions(
+        *m_playerEntity, m_velocity, entityManager);
 }
 
 void PlayerController::UpdateCamera(float deltaTime)

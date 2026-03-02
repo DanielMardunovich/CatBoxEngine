@@ -5,6 +5,7 @@
 #include "../../graphics/MeshManager.h"
 #include "../../graphics/Mesh.h"
 #include "../../graphics/GraphicsSettings.h"
+#include "../../gameplay/TerrainSystem.h"
 #include "../../Dependencies/stb_image.h"
 #include "imgui.h"
 #include <glad/glad.h>
@@ -146,6 +147,22 @@ void EntityManagerInspector::DrawSpawnControls(EntityManager& entityManager, Vec
     }
     ImGui::SetItemTooltip("Spawns a patrol enemy with two starter waypoints. Add more waypoints in the inspector.");
 
+    if (ImGui::Button("Spawn Terrain"))
+    {
+        Entity terrain;
+        terrain.name = "Terrain";
+        terrain.Transform.Position = spawnPosition;
+        terrain.Transform.Scale    = Vec3(60.0f, 8.0f, 60.0f);
+        terrain.IsTerrain          = true;
+        terrain.TerrainGridWidth   = 64;
+        terrain.TerrainGridDepth   = 64;
+        terrain.CollidesWithPlayer = false;
+        // Generate mesh before adding so AddEntity won't assign the shared cube
+        TerrainSystem::GenerateTerrainMesh(terrain);
+        entityManager.AddEntity(terrain, false);
+    }
+    ImGui::SetItemTooltip("Spawns a 60x60 heightmap terrain. Configure the heightmap PNG in the inspector, then Regenerate.");
+
     // Options
     ImGui::Checkbox("Use shared cube mesh", &useSharedCube);
 }
@@ -242,6 +259,8 @@ void EntityManagerInspector::DrawEntityList(EntityManager& entityManager, int& s
             displayName = "[GOAL] " + displayName;
         if (entity.IsEnemy)
             displayName = "[ENEMY] " + displayName;
+        if (entity.IsTerrain)
+            displayName = "[TERRAIN] " + displayName;
 
         if (ImGui::Selectable(displayName.c_str(), isSelected))
         {
@@ -388,6 +407,50 @@ void EntityManagerInspector::DrawEntityInfo(Entity& entity)
         if (ImGui::Button("Add Waypoint"))
             entity.PatrolWaypoints.push_back(entity.Transform.Position);
         ImGui::SetItemTooltip("Adds a waypoint at the enemy's current position.");
+    }
+
+    // Terrain
+    ImGui::Spacing();
+    if (entity.IsTerrain)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.3f, 0.9f, 0.4f, 1.0f));
+        ImGui::Text("[TERRAIN] Heightmap Terrain");
+        ImGui::PopStyleColor();
+    }
+    if (ImGui::Checkbox("Terrain", &entity.IsTerrain))
+    {
+        if (entity.IsTerrain)
+        {
+            entity.CollidesWithPlayer = false;
+            if (entity.TerrainGridWidth  < 2) entity.TerrainGridWidth  = 64;
+            if (entity.TerrainGridDepth  < 2) entity.TerrainGridDepth  = 64;
+        }
+    }
+    ImGui::SetItemTooltip("Turns this entity into a heightmap terrain with height-accurate collisions.");
+    if (entity.IsTerrain)
+    {
+        // Heightmap PNG picker
+        static char s_hmPath[260] = "";
+        strncpy_s(s_hmPath, entity.TerrainHeightmapPath.c_str(), sizeof(s_hmPath));
+        if (ImGui::InputText("Heightmap PNG", s_hmPath, sizeof(s_hmPath)))
+            entity.TerrainHeightmapPath = s_hmPath;
+        ImGui::SameLine();
+        if (ImGui::Button("Browse##HM"))
+        {
+            char buf[1024] = {0};
+            if (Platform::OpenFileDialog(buf, sizeof(buf),
+                "Images\0*.png;*.jpg;*.bmp\0All\0*.*\0"))
+                entity.TerrainHeightmapPath = buf;
+        }
+        ImGui::SetItemTooltip("Greyscale PNG used as heightmap. Leave empty for procedural rolling hills.");
+
+        ImGui::SliderInt("Grid Width",  &entity.TerrainGridWidth,  4, 256);
+        ImGui::SliderInt("Grid Depth",  &entity.TerrainGridDepth,  4, 256);
+        ImGui::SetItemTooltip("Mesh subdivision count. Higher = more detail but more vertices.");
+
+        if (ImGui::Button("Regenerate Terrain"))
+            TerrainSystem::GenerateTerrainMesh(entity);
+        ImGui::SetItemTooltip("Rebuild the terrain mesh from the current heightmap / settings.");
     }
 
     // Collision

@@ -16,6 +16,11 @@ public:
     static bool ResolvePlayerCollisions(Entity& player, glm::vec3& velocity,
                                         const EntityManager& entityManager);
 
+    // Resolves the player standing on (or falling into) terrain entities.
+    // Returns true when the player is grounded on terrain.
+    static bool ResolveTerrainCollisions(Entity& player, glm::vec3& velocity,
+                                         const EntityManager& entityManager);
+
 private:
     struct AABB
     {

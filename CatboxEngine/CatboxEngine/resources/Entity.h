@@ -83,4 +83,14 @@ public:
     PatrolMode EnemyPatrolMode = PatrolMode::Loop;
     float EnemySpeed = 3.0f;
     float EnemyCollisionRadius = 1.0f;  // Radius within which the player is sent back to spawn
+
+    // Heightmap terrain (distinct from static meshes)
+    bool IsTerrain = false;
+    std::string TerrainHeightmapPath = "";  // Optional greyscale PNG; empty = procedural hills
+    int TerrainGridWidth = 64;              // Mesh subdivisions along X
+    int TerrainGridDepth = 64;              // Mesh subdivisions along Z
+    // Runtime: normalised [0,1] height samples rebuilt from heightmap on load — NOT serialised
+    std::vector<float> TerrainHeightData;
+    int TerrainHeightDataWidth  = 0;
+    int TerrainHeightDataDepth  = 0;
 };

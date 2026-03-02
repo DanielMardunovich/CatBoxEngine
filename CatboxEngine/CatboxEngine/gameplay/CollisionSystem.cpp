@@ -1,4 +1,5 @@
 #include "CollisionSystem.h"
+#include "TerrainSystem.h"
 #include "../resources/EntityManager.h"
 #include "../resources/Entity.h"
 #include <algorithm>
@@ -149,6 +150,42 @@ bool CollisionSystem::ResolvePlayerCollisions(Entity& player, glm::vec3& velocit
                     break;
                 }
             }
+        }
+    }
+
+    return isGrounded;
+}
+
+bool CollisionSystem::ResolveTerrainCollisions(Entity& player, glm::vec3& velocity,
+                                               const EntityManager& entityManager)
+{
+    bool isGrounded = false;
+    const float playerHalfH = player.Transform.Scale.y * 0.5f;
+
+    for (const auto& entity : entityManager.GetAll())
+    {
+        if (!entity.IsTerrain || entity.TerrainHeightData.empty())
+            continue;
+
+        const float terrainY = TerrainSystem::SampleHeight(
+            entity, player.Transform.Position.x, player.Transform.Position.z);
+
+        if (terrainY < -1e10f)  // -FLT_MAX sentinel: player outside terrain XZ bounds
+            continue;
+
+        const float playerFeetY = player.Transform.Position.y - playerHalfH;
+        static constexpr float k_groundProbe = 0.12f;
+
+        if (playerFeetY <= terrainY + k_groundProbe)
+        {
+            if (playerFeetY < terrainY)
+            {
+                // Push player above terrain surface
+                player.Transform.Position.y = terrainY + playerHalfH;
+                if (velocity.y < 0.0f)
+                    velocity.y = 0.0f;
+            }
+            isGrounded = true;
         }
     }
 

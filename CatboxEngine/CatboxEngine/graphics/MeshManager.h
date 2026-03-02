@@ -24,6 +24,11 @@ public:
     // asynchronous load: returns a handle immediately; mesh may not be available yet
     MeshHandle LoadMeshAsync(const std::string& path);
 
+    // Register an already-created and uploaded Mesh under a given key.
+    // Use this for procedurally generated meshes (e.g. terrain).
+    // If the key already exists the existing entry is reused.
+    MeshHandle RegisterMesh(const std::string& key, Mesh&& mesh);
+
     // get mesh pointer for a handle (returns nullptr if not loaded or invalid)
     Mesh* GetMesh(MeshHandle h);
 

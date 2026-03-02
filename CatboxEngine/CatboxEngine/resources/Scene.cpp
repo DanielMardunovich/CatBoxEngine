@@ -3,6 +3,7 @@
 #include "../graphics/MeshManager.h"
 #include "../graphics/Mesh.h"
 #include "../graphics/LightManager.h"
+#include "../gameplay/TerrainSystem.h"
 #include "../core/MessageQueue.h"
 #include <fstream>
 #include <sstream>
@@ -51,7 +52,7 @@ void Scene::OnLoad(EntityManager& entityManager)
     for (auto& entity : m_entities)
     {
         // Ensure mesh is loaded with correct handle
-        if (!entity.MeshPath.empty() && entity.MeshPath != "[cube]")
+        if (!entity.MeshPath.empty() && entity.MeshPath != "[cube]" && entity.MeshPath != "[terrain]")
         {
             // Reload mesh to ensure it's in memory
             MeshHandle newHandle = MeshManager::Instance().LoadMeshSync(entity.MeshPath);
@@ -86,8 +87,19 @@ void Scene::OnLoad(EntityManager& entityManager)
             // Use shared cube
             entity.MeshHandle = MeshManager::Instance().GetSharedCubeHandle();
         }
-        
+        else if (entity.MeshPath == "[terrain]")
+        {
+            // Terrain mesh is generated below after all entities are added
+        }
+
         entityManager.AddEntity(entity, false); // false = don't save to scene (we already have them)
+    }
+
+    // Generate terrain meshes now that all entities are in the manager
+    for (auto& e : entityManager.GetAll())
+    {
+        if (e.IsTerrain)
+            TerrainSystem::GenerateTerrainMesh(e);
     }
 
     // Ensure new teleporter pairs spawned after loading don't reuse any loaded pair ID
@@ -307,6 +319,13 @@ bool Scene::SaveToFile(const std::string& path) const
                     << e.PatrolWaypoints[w].z << std::endl;
             }
         }
+        if (e.IsTerrain)
+        {
+            out << "IsTerrain=1" << std::endl;
+            out << "TerrainHeightmapPath=" << e.TerrainHeightmapPath << std::endl;
+            out << "TerrainGridWidth=" << e.TerrainGridWidth << std::endl;
+            out << "TerrainGridDepth=" << e.TerrainGridDepth << std::endl;
+        }
     }   // end entity loop
 
     out.close();
@@ -436,6 +455,11 @@ bool Scene::LoadFromFile(const std::string& path)
                 {
                     currentEntity.MeshHandle = MeshManager::Instance().GetSharedCubeHandle();
                 }
+                else if (value == "[terrain]")
+                {
+                    currentEntity.MeshPath = "[terrain]";
+                    // Terrain mesh is generated in Scene::OnLoad after all parameters are read
+                }
                 else if (!value.empty())
                 {
                     currentEntity.MeshHandle = MeshManager::Instance().LoadMeshSync(value);
@@ -480,6 +504,10 @@ bool Scene::LoadFromFile(const std::string& path)
             {
                 currentEntity.PatrolWaypoints.push_back(parseVec3(value));
             }
+            else if (key == "IsTerrain") currentEntity.IsTerrain = parseBool(value);
+            else if (key == "TerrainHeightmapPath") currentEntity.TerrainHeightmapPath = value;
+            else if (key == "TerrainGridWidth")  currentEntity.TerrainGridWidth  = std::stoi(value);
+            else if (key == "TerrainGridDepth")  currentEntity.TerrainGridDepth  = std::stoi(value);
             else if (key == "MeshHandle" && currentEntity.MeshPath.empty())
             {
                 // Old format - try to load but it probably won't work

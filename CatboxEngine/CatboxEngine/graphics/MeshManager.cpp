@@ -181,6 +181,34 @@ void MeshManager::PollCompleted()
     }
 }
 
+MeshHandle MeshManager::RegisterMesh(const std::string& key, Mesh&& mesh)
+{
+    std::lock_guard<std::mutex> lk(m_mutex);
+
+    // Reuse existing entry if present (e.g. terrain regeneration)
+    auto existing = m_pathToHandle.find(key);
+    if (existing != m_pathToHandle.end())
+    {
+        auto eh = m_entries.find(existing->second);
+        if (eh != m_entries.end())
+        {
+            eh->second->mesh  = std::move(mesh);
+            eh->second->loaded = true;
+            return existing->second;
+        }
+    }
+
+    MeshHandle h = m_nextHandle.fetch_add(1);
+    auto e = std::make_shared<Entry>();
+    e->path     = key;
+    e->refcount = 1;
+    e->mesh     = std::move(mesh);
+    e->loaded   = true;
+    m_entries[h]       = e;
+    m_pathToHandle[key] = h;
+    return h;
+}
+
 MeshHandle MeshManager::GetSharedCubeHandle()
 {
     static MeshHandle sharedHandle = 0;

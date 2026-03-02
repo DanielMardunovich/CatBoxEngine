@@ -154,6 +154,7 @@
     <ClCompile Include="gameplay\PlayerController.cpp" />
     <ClCompile Include="gameplay\RecordTimeSystem.cpp" />
     <ClCompile Include="gameplay\TeleporterSystem.cpp" />
+    <ClCompile Include="gameplay\TerrainSystem.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="graphics\GraphicsSettings.cpp" />
     <ClCompile Include="graphics\LightManager.cpp" />
@@ -203,6 +204,7 @@
     <ClInclude Include="gameplay\PlayerController.h" />
     <ClInclude Include="gameplay\RecordTimeSystem.h" />
     <ClInclude Include="gameplay\TeleporterSystem.h" />
+    <ClInclude Include="gameplay\TerrainSystem.h" />
     <ClInclude Include="graphics\GraphicsSettings.h" />
     <ClInclude Include="graphics\Light.h" />
     <ClInclude Include="graphics\LightManager.h" />
