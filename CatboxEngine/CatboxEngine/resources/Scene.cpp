@@ -9,6 +9,7 @@
 #include <iostream>
 #include <chrono>
 #include <cfloat>
+#include <algorithm>
 
 Scene::Scene(const std::string& name)
     : m_name(name)
@@ -294,6 +295,8 @@ bool Scene::SaveToFile(const std::string& path) const
     }   // end entity loop
 
     out.close();
+    m_filePath = path;
+    std::replace(m_filePath.begin(), m_filePath.end(), '\\', '/');
     std::cout << "Scene saved: " << path << std::endl;
     return true;
 }
@@ -306,7 +309,9 @@ bool Scene::LoadFromFile(const std::string& path)
         std::cerr << "Failed to load scene from: " << path << std::endl;
         return false;
     }
-    
+
+    m_filePath = path;
+    std::replace(m_filePath.begin(), m_filePath.end(), '\\', '/');
     ClearEntities();
     m_lights.clear();  // Clear lights too
     

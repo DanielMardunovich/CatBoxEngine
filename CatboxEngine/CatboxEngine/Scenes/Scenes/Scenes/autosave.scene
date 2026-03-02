@@ -45,8 +45,8 @@ Count=6
 
 [Entity0]
 Name=Player
-Position=-1.43791,0.3,2.23865
-Rotation=0,495,0
+Position=1.22233,0.3,1.8516
+Rotation=0,234.908,0
 Scale=0.5,0.5,0.5
 MeshPath=[cube]
 Shininess=32

@@ -150,6 +150,8 @@ void Engine::Update(float deltaTime)
     // Update player or free camera
     if (m_isPlayMode)
     {
+        m_recordSystem.Update(deltaTime);
+
         // Freeze player input once the goal is reached
         if (!m_goalSystem.IsGoalReached())
         {
@@ -157,6 +159,22 @@ void Engine::Update(float deltaTime)
             m_teleporterSystem.Update(m_entityManager, m_playerController, deltaTime);
         }
         m_goalSystem.Update(m_entityManager, m_playerController);
+
+        // On the first frame the goal is reached, stop the timer and record the time
+        if (m_goalSystem.IsGoalReached() && !m_goalTimeRecorded)
+        {
+            m_recordSystem.Stop();
+            m_completionTime = m_recordSystem.GetCurrentTime();
+
+            auto* scene = SceneManager::Instance().GetActiveScene();
+            if (scene && !scene->GetFilePath().empty())
+                m_isNewBest = m_recordSystem.SubmitTime(scene->GetFilePath(), m_completionTime);
+            else
+                m_isNewBest = false;
+
+            m_uiManager.NotifyGoalResult(m_completionTime, m_isNewBest);
+            m_goalTimeRecorded = true;
+        }
     }
     else
     {
@@ -170,7 +188,8 @@ void Engine::Update(float deltaTime)
     m_uiManager.NewFrame();
     m_uiManager.Draw(m_entityManager, m_spawnPosition, m_spawnScale, deltaTime,
                      m_selectedEntityIndex, m_camera, m_useSharedCube,
-                     &m_playerController, m_isPlayMode, m_goalSystem.IsGoalReached());
+                     &m_playerController, m_isPlayMode, m_goalSystem.IsGoalReached(),
+                     &m_recordSystem);
 
     // React to play mode toggle from the Stop/Play toolbar button
     if (!prevPlayMode && m_isPlayMode)
@@ -334,6 +353,12 @@ void Engine::EnterPlayMode()
     glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     m_playerController.OnPlayModeEnter();
 
+    // Start the run timer
+    m_recordSystem.Start();
+    m_goalTimeRecorded = false;
+    m_completionTime   = -1.0f;
+    m_isNewBest        = false;
+
     std::cout << "Entered Play Mode" << std::endl;
 }
 
@@ -344,6 +369,7 @@ void Engine::ExitPlayMode()
     m_playerController.OnPlayModeExit();
     m_teleporterSystem.Reset();
     m_goalSystem.Reset();
+    m_recordSystem.Stop();
 
     // Restore editor camera
     m_camera.Position = m_editorCamPosition;

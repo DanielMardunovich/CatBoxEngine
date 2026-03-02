@@ -8,6 +8,7 @@
 #include "../gameplay/PlayerController.h"
 #include "../gameplay/TeleporterSystem.h"
 #include "../gameplay/GoalSystem.h"
+#include "../gameplay/RecordTimeSystem.h"
 #include "UIManager.h"
 #include "InputHandler.h"
 #include <vector>
@@ -68,11 +69,15 @@ private:
     InputHandler m_inputHandler;
     PlayerController m_playerController;
     TeleporterSystem m_teleporterSystem;
-    GoalSystem m_goalSystem;
+    GoalSystem       m_goalSystem;
+    RecordTimeSystem m_recordSystem;
 
     // Play mode
-    bool m_isPlayMode = false;
-    bool m_escapeWasPressed = false;
+    bool m_isPlayMode        = false;
+    bool m_escapeWasPressed  = false;
+    bool m_goalTimeRecorded  = false;   // set true the frame goal is first reached
+    float m_completionTime   = -1.0f;   // time submitted for the last completed run
+    bool  m_isNewBest        = false;   // whether that time beat the previous record
 
     // Saved editor camera state (restored when leaving play mode)
     Vec3 m_editorCamPosition;

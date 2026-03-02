@@ -14,6 +14,8 @@
 #include "../ui/Inspectors/LightInspector.h"
 #include "../ui/Inspectors/GraphicsSettingsInspector.h"
 #include "../ui/Inspectors/PlayerInspector.h"
+#include "../ui/Inspectors/LevelSelectMenu.h"
+#include "../gameplay/RecordTimeSystem.h"
 #include "../graphics/MeshManager.h"
 #include "../graphics/LightManager.h"
 #include <glad/glad.h>
@@ -24,24 +26,24 @@
 
 UIManager::UIManager()
 {
-    // Create inspectors
-    m_cameraInspector = new CameraInspector();
-    m_entityManagerInspector = new EntityManagerInspector();
-    m_statsInspector = new StatsInspector();
-    m_lightInspector = new LightInspector();
+    m_cameraInspector           = new CameraInspector();
+    m_entityManagerInspector    = new EntityManagerInspector();
+    m_statsInspector            = new StatsInspector();
+    m_lightInspector            = new LightInspector();
     m_graphicsSettingsInspector = new GraphicsSettingsInspector();
-    m_playerInspector = new PlayerInspector();
+    m_playerInspector           = new PlayerInspector();
+    m_levelSelectMenu           = new LevelSelectMenu();
 }
 
 UIManager::~UIManager()
 {
-    // Clean up inspectors
     delete m_cameraInspector;
     delete m_entityManagerInspector;
     delete m_statsInspector;
     delete m_lightInspector;
     delete m_graphicsSettingsInspector;
     delete m_playerInspector;
+    delete m_levelSelectMenu;
 }
 
 void UIManager::NewFrame()
@@ -53,19 +55,18 @@ void UIManager::NewFrame()
 
 void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& spawnScale, 
                     float deltaTime, int& selectedIndex, Camera& camera, bool& useSharedCube,
-                    PlayerController* playerController, bool& isPlayMode, bool goalReached)
+                    PlayerController* playerController, bool& isPlayMode,
+                    bool goalReached, RecordTimeSystem* recordSystem)
 {
-    // Play / Stop toolbar (always on top, center of screen)
     bool playerReady = playerController && playerController->HasPlayerEntity();
     DrawPlayModeToolbar(isPlayMode, playerReady);
 
-    // Goal reached overlay (drawn over everything else in play mode)
     if (isPlayMode && goalReached)
-    {
         DrawGoalOverlay();
-    }
 
-    // Hide editor windows while in play mode
+    if (isPlayMode && recordSystem && !goalReached)
+        DrawTimerHUD(recordSystem->GetCurrentTime());
+
     if (!isPlayMode)
     {
         m_entityManagerInspector->Draw(entityManager, spawnPosition, spawnScale,
@@ -73,16 +74,19 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
         m_cameraInspector->Draw(camera);
         m_lightInspector->Draw();
         m_graphicsSettingsInspector->Draw();
-        DrawSceneManager(entityManager);
+        DrawSceneManager(entityManager, recordSystem);
     }
 
-    // Statistics and player inspector are visible in both modes
     m_statsInspector->Draw(deltaTime, entityManager);
 
     if (playerController)
-    {
         m_playerInspector->Draw(*playerController, entityManager, camera);
-    }
+}
+
+void UIManager::NotifyGoalResult(float completionTime, bool isNewBest)
+{
+    m_completionTime = completionTime;
+    m_isNewBest      = isNewBest;
 }
 
 void UIManager::DrawGoalOverlay()
@@ -98,9 +102,9 @@ void UIManager::DrawGoalOverlay()
         ImGuiWindowFlags_NoInputs    | ImGuiWindowFlags_NoSavedSettings);
     ImGui::End();
 
-    // Centred goal card
+    // Centred goal card — taller when we have a time to show
     const float cardW = 420.0f;
-    const float cardH = 200.0f;
+    const float cardH = (m_completionTime >= 0.0f) ? 270.0f : 220.0f;
     ImGui::SetNextWindowPos(
         ImVec2((io.DisplaySize.x - cardW) * 0.5f, (io.DisplaySize.y - cardH) * 0.5f),
         ImGuiCond_Always);
@@ -114,30 +118,48 @@ void UIManager::DrawGoalOverlay()
     ImGui::Spacing();
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.85f, 0.1f, 1.0f));
     const char* stars = "  * * * * * * *";
-    float starsW = ImGui::CalcTextSize(stars).x;
-    ImGui::SetCursorPosX((cardW - starsW) * 0.5f);
+    ImGui::SetCursorPosX((cardW - ImGui::CalcTextSize(stars).x) * 0.5f);
     ImGui::Text("%s", stars);
     ImGui::PopStyleColor();
 
-    // Main message
+    // Heading
     ImGui::Spacing();
+    ImGui::SetWindowFontScale(2.0f);
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.9f, 0.2f, 1.0f));
     const char* heading = "GOAL REACHED!";
-    float headW = ImGui::CalcTextSize(heading).x * 2.0f; // approximate after font scale
-    ImGui::SetWindowFontScale(2.0f);
-    float realHeadW = ImGui::CalcTextSize(heading).x;
-    ImGui::SetCursorPosX((cardW - realHeadW) * 0.5f);
+    ImGui::SetCursorPosX((cardW - ImGui::CalcTextSize(heading).x) * 0.5f);
     ImGui::Text("%s", heading);
-    ImGui::SetWindowFontScale(1.0f);
     ImGui::PopStyleColor();
-    (void)headW;
+    ImGui::SetWindowFontScale(1.0f);
+
+    // Completion time / new best
+    if (m_completionTime >= 0.0f)
+    {
+        ImGui::Spacing();
+        std::string timeStr = RecordTimeSystem::FormatTime(m_completionTime);
+        if (m_isNewBest)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 1.0f, 0.4f, 1.0f));
+            std::string label = "NEW BEST!  " + timeStr;
+            ImGui::SetCursorPosX((cardW - ImGui::CalcTextSize(label.c_str()).x) * 0.5f);
+            ImGui::Text("%s", label.c_str());
+            ImGui::PopStyleColor();
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
+            std::string label = "Time:  " + timeStr;
+            ImGui::SetCursorPosX((cardW - ImGui::CalcTextSize(label.c_str()).x) * 0.5f);
+            ImGui::Text("%s", label.c_str());
+            ImGui::PopStyleColor();
+        }
+    }
 
     // Sub-message
     ImGui::Spacing();
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.85f, 0.85f, 0.85f, 1.0f));
     const char* sub = "You reached the goal!";
-    float subW = ImGui::CalcTextSize(sub).x;
-    ImGui::SetCursorPosX((cardW - subW) * 0.5f);
+    ImGui::SetCursorPosX((cardW - ImGui::CalcTextSize(sub).x) * 0.5f);
     ImGui::Text("%s", sub);
     ImGui::PopStyleColor();
 
@@ -145,10 +167,32 @@ void UIManager::DrawGoalOverlay()
     ImGui::Spacing();
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
     const char* hint = "Press ESC or Stop to return to the editor";
-    float hintW = ImGui::CalcTextSize(hint).x;
-    ImGui::SetCursorPosX((cardW - hintW) * 0.5f);
+    ImGui::SetCursorPosX((cardW - ImGui::CalcTextSize(hint).x) * 0.5f);
     ImGui::Text("%s", hint);
     ImGui::PopStyleColor();
+
+    ImGui::End();
+}
+
+void UIManager::DrawTimerHUD(float elapsed)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    std::string timeStr = RecordTimeSystem::FormatTime(elapsed);
+
+    ImGui::SetNextWindowBgAlpha(0.55f);
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 10.0f, 40.0f),
+                            ImGuiCond_Always, ImVec2(1.0f, 0.0f));
+    ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
+    ImGui::Begin("##TimerHUD", nullptr,
+        ImGuiWindowFlags_NoDecoration     | ImGuiWindowFlags_NoMove    |
+        ImGuiWindowFlags_NoInputs         | ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_AlwaysAutoResize);
+
+    ImGui::SetWindowFontScale(1.4f);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.3f, 1.0f));
+    ImGui::Text("%s", timeStr.c_str());
+    ImGui::PopStyleColor();
+    ImGui::SetWindowFontScale(1.0f);
 
     ImGui::End();
 }
@@ -210,7 +254,7 @@ void UIManager::DrawPlayModeToolbar(bool& isPlayMode, bool playerReady)
     ImGui::End();
 }
 
-void UIManager::DrawSceneManager(EntityManager& entityManager)
+void UIManager::DrawSceneManager(EntityManager& entityManager, RecordTimeSystem* records)
 {
     auto& sceneMgr = SceneManager::Instance();
     
@@ -327,7 +371,7 @@ void UIManager::DrawSceneManager(EntityManager& entityManager)
     }
     
     ImGui::SameLine();
-    
+
     if (ImGui::Button("Save Active Scene..."))
     {
         if (activeScene)
@@ -339,6 +383,18 @@ void UIManager::DrawSceneManager(EntityManager& entityManager)
             }
         }
     }
-    
+
+    // ── Level Select ─────────────────────────────────────────────────────────
+    if (records)
+    {
+        ImGui::Separator();
+        if (ImGui::CollapsingHeader("Level Select"))
+        {
+            ImGui::Spacing();
+            m_levelSelectMenu->DrawContents(entityManager, *records);
+            ImGui::Spacing();
+        }
+    }
+
     ImGui::End();
 }

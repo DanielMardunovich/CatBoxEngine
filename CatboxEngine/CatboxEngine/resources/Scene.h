@@ -26,8 +26,11 @@ public:
     void CaptureFromEntityManager(EntityManager& entityManager);  // Save current state
     
     // Scene properties
-    const std::string& GetName() const { return m_name; }
+    const std::string& GetName()     const { return m_name; }
     void SetName(const std::string& name) { m_name = name; }
+
+    // Path this scene was last loaded from or saved to (empty for unsaved scenes)
+    const std::string& GetFilePath() const { return m_filePath; }
     
     bool IsLoaded() const { return m_isLoaded; }
     
@@ -75,6 +78,7 @@ public:
 
 private:
     std::string m_name;
+    mutable std::string m_filePath;
     bool m_isLoaded = false;
     
     std::vector<Entity> m_entities;
