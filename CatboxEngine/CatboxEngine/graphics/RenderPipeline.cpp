@@ -2,6 +2,7 @@
 #include "Mesh.h"
 #include "MeshManager.h"
 #include "Light.h"
+#include "GraphicsSettings.h"
 #include "../resources/Entity.h"
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -29,31 +30,56 @@ bool RenderPipeline::Initialize()
 
     InitLineRenderer();
 
+    if (!m_skybox.Initialize())
+        std::cerr << "RenderPipeline: skybox failed to initialize.\n";
+
     return true;
 }
 
 void RenderPipeline::Render(EntityManager& entityManager, Camera& camera, int displayWidth, int displayHeight)
 {
     m_stats.Reset();
-    
+
     // 1. Shadow Pass - Render shadow maps for all lights
     if (m_enableShadows)
     {
         ShadowPass(entityManager);
     }
-    
+
     // Reset viewport for main rendering
     glViewport(0, 0, displayWidth, displayHeight);
-    
+
     // 2. Geometry Pass - Render scene with lighting
     camera.Aspect = (float)displayWidth / (float)displayHeight;
     glm::mat4 view = camera.GetViewMatrix();
     glm::mat4 proj = camera.GetProjectionMatrix();
     glm::mat4 viewProj = proj * view;
-    
+
     GeometryPass(entityManager, camera, viewProj);
-    
-    // 3. Render light indicators (debug visualization)
+
+    // 3. Skybox Pass — drawn after opaque geometry so the depth buffer is
+    //    populated and the sky only fills pixels at maximum depth (far plane).
+    {
+        auto& gs = GraphicsSettings::Instance();
+
+        // Reload skybox mesh if requested by the inspector
+        if (gs.SkyboxFileDirty && !gs.SkyboxProcedural)
+        {
+            m_skybox.LoadFromFile(gs.SkyboxFilePath);
+            gs.SkyboxFileDirty = false;
+        }
+
+        if (gs.SkyboxEnabled)
+        {
+            m_skybox.UseProceduralSky  = gs.SkyboxProcedural;
+            m_skybox.SkyColorTop       = { gs.SkyColorTop[0],     gs.SkyColorTop[1],     gs.SkyColorTop[2]     };
+            m_skybox.SkyColorHorizon   = { gs.SkyColorHorizon[0], gs.SkyColorHorizon[1], gs.SkyColorHorizon[2] };
+            m_skybox.SkyColorBottom    = { gs.SkyColorBottom[0],  gs.SkyColorBottom[1],  gs.SkyColorBottom[2]  };
+            m_skybox.Draw(view, proj);
+        }
+    }
+
+    // 4. Render light indicators (debug visualization)
     if (m_enableLightIndicators)
     {
         RenderLightIndicators(viewProj);

@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 enum class TextureFilterMode
 {
@@ -26,6 +27,16 @@ public:
     // Get OpenGL enum for filter mode
     int GetGLMinFilter(TextureFilterMode mode, bool useMipmaps);
     int GetGLMagFilter(TextureFilterMode mode);
+
+    // Skybox settings
+    bool  SkyboxEnabled      = true;
+    bool  SkyboxProcedural   = true;   // false = use mesh file below
+    float SkyColorTop[3]     = { 0.10f, 0.40f, 0.80f };
+    float SkyColorHorizon[3] = { 0.50f, 0.70f, 0.90f };
+    float SkyColorBottom[3]  = { 0.30f, 0.25f, 0.15f };
+    // Path to a skybox mesh file (GLTF, GLB, OBJ)
+    std::string SkyboxFilePath;
+    bool  SkyboxFileDirty = false;  // set to true to trigger a reload in RenderPipeline
 
 private:
     GraphicsSettings() = default;

@@ -162,6 +162,7 @@
     <ClCompile Include="graphics\MeshManager.cpp" />
     <ClCompile Include="graphics\RenderPipeline.cpp" />
     <ClCompile Include="graphics\Shader.cpp" />
+    <ClCompile Include="graphics\Skybox.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="resources\Camera.cpp" />
     <ClCompile Include="resources\Entity.cpp" />
@@ -212,6 +213,7 @@
     <ClInclude Include="graphics\MeshManager.h" />
     <ClInclude Include="graphics\RenderPipeline.h" />
     <ClInclude Include="graphics\Shader.h" />
+    <ClInclude Include="graphics\Skybox.h" />
     <ClInclude Include="resources\Camera.h" />
     <ClInclude Include="resources\Entity.h" />
     <ClInclude Include="resources\EntityManager.h" />
@@ -253,6 +255,8 @@
     <None Include="shaders\shadow.vert" />
     <None Include="shaders\ShadowMap.frag" />
     <None Include="shaders\ShadowMap.vert" />
+    <None Include="shaders\Skybox.frag" />
+    <None Include="shaders\Skybox.vert" />
     <None Include="shaders\VertexShader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

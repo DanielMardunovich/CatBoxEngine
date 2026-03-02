@@ -1,5 +1,6 @@
 #pragma once
 #include "Shader.h"
+#include "Skybox.h"
 #include "../resources/EntityManager.h"
 #include "../resources/Camera.h"
 #include "LightManager.h"
@@ -55,10 +56,13 @@ public:
     void SetEnableShadows(bool enable) { m_enableShadows = enable; }
     void SetEnableFrustumCulling(bool enable) { m_enableFrustumCulling = enable; }
     void SetEnableLightIndicators(bool enable) { m_enableLightIndicators = enable; }
-    
+
     bool GetEnableShadows() const { return m_enableShadows; }
     bool GetEnableFrustumCulling() const { return m_enableFrustumCulling; }
     bool GetEnableLightIndicators() const { return m_enableLightIndicators; }
+
+    // Skybox access (colours / mode are edited via GraphicsSettings)
+    Skybox& GetSkybox() { return m_skybox; }
     
     // Get rendering statistics
     const RenderStats& GetStats() const { return m_stats; }
@@ -67,7 +71,10 @@ private:
     // Shaders
     Shader m_mainShader;
     Shader m_shadowShader;
-    
+
+    // Skybox
+    Skybox m_skybox;
+
     // Settings
     bool m_enableShadows = true;
     bool m_enableFrustumCulling = true;

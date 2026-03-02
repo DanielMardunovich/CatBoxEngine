@@ -1,5 +1,6 @@
 #pragma once
 #include "../../graphics/GraphicsSettings.h"
+#include <array>
 
 class GraphicsSettingsInspector
 {
@@ -17,4 +18,8 @@ public:
 
 private:
     const char* GetFilterModeName(TextureFilterMode mode);
+
+    // Skybox file path input buffer (ImGui needs mutable char array)
+    static constexpr int k_pathBufSize = 256;
+    char m_skyboxPath[256] = {};
 };

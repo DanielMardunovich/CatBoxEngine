@@ -1,5 +1,6 @@
 #include "GraphicsSettingsInspector.h"
 #include "imgui.h"
+#include <cstring>
 
 void GraphicsSettingsInspector::Draw()
 {
@@ -94,7 +95,53 @@ void GraphicsSettingsInspector::Draw()
         ImGui::Text("Anisotropic: %.0fx", settings.AnisotropicFiltering);
         ImGui::Text("Max Mip Level: %d", settings.MaxMipmapLevel);
     }
-    
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    // ---- Skybox ----
+    if (ImGui::CollapsingHeader("Skybox", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::Checkbox("Enable Skybox", &settings.SkyboxEnabled);
+
+        if (settings.SkyboxEnabled)
+        {
+            ImGui::Spacing();
+
+            int mode = settings.SkyboxProcedural ? 0 : 1;
+            ImGui::RadioButton("Procedural gradient", &mode, 0); ImGui::SameLine();
+            ImGui::RadioButton("Mesh file",           &mode, 1);
+            settings.SkyboxProcedural = (mode == 0);
+
+            ImGui::Spacing();
+
+            if (settings.SkyboxProcedural)
+            {
+                ImGui::ColorEdit3("Sky top",     settings.SkyColorTop);
+                ImGui::ColorEdit3("Horizon",     settings.SkyColorHorizon);
+                ImGui::ColorEdit3("Ground/base", settings.SkyColorBottom);
+            }
+            else
+            {
+                if (m_skyboxPath[0] == '\0' && !settings.SkyboxFilePath.empty())
+                    strncpy_s(m_skyboxPath, settings.SkyboxFilePath.c_str(), k_pathBufSize - 1);
+
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 80.0f);
+                bool changed = ImGui::InputText("Path", m_skyboxPath, k_pathBufSize);
+
+                if (changed)
+                    settings.SkyboxFilePath = m_skyboxPath;
+
+                ImGui::SameLine();
+                if (ImGui::Button("Load") || changed)
+                    settings.SkyboxFileDirty = true;
+
+                ImGui::TextDisabled("(GLTF / GLB / OBJ)");
+            }
+        }
+    }
+
     ImGui::End();
 }
 
