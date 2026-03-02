@@ -41,12 +41,12 @@ ShadowFOV=120
 Enabled=1
 
 [Entities]
-Count=6
+Count=7
 
 [Entity0]
 Name=Player
-Position=1.22233,0.3,1.8516
-Rotation=0,234.908,0
+Position=0.264044,0.3,1.5116
+Rotation=0,-182.25,0
 Scale=0.5,0.5,0.5
 MeshPath=[cube]
 Shininess=32
@@ -109,3 +109,20 @@ Alpha=1
 IsGoal=1
 GoalRadius=2
 CollidesWithPlayer=0
+
+[Entity6]
+Name=Enemy
+Position=0,0.6,0
+Rotation=0,0,0
+Scale=0.8,1,0.8
+MeshPath=[cube]
+Shininess=32
+Alpha=1
+CollidesWithPlayer=0
+IsEnemy=1
+EnemySpeed=3
+EnemyCollisionRadius=1
+EnemyPatrolMode=1
+EnemyWaypointCount=2
+EnemyWaypoint0=-3,0.3,-1.8
+EnemyWaypoint1=3,0.3,-1.9

@@ -41,6 +41,14 @@ public:
         return nullptr;
     }
 
+    // Returns the entity marked as the player entity, or nullptr
+    Entity* FindPlayerEntity()
+    {
+        for (auto& e : m_entities)
+            if (e.IsPlayer) return &e;
+        return nullptr;
+    }
+
     // Returns a unique pair ID for a new teleporter pair
     int GetNextTeleporterPairID() { return m_nextTeleporterPairID++; }
 

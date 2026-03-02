@@ -198,6 +198,20 @@ void Engine::Update(float deltaTime)
     else if (prevPlayMode && !m_isPlayMode)
         ExitPlayMode();
 
+    // Detect scene changes (level loads happen inside m_uiManager.Draw above).
+    // When the active scene ID changes, find the entity flagged IsPlayer and
+    // re-initialize the controller so the pointer is always valid.
+    {
+        SceneID currentSceneID = SceneManager::Instance().GetActiveSceneID();
+        if (currentSceneID != m_lastSceneID)
+        {
+            m_lastSceneID = currentSceneID;
+            Entity* playerEntity = m_entityManager.FindPlayerEntity();
+            if (playerEntity)
+                m_playerController.Initialize(playerEntity, &m_camera);
+        }
+    }
+
     // Poll mesh manager for completed async loads and invoke callbacks
     MeshManager::Instance().PollCompleted();
 
@@ -344,6 +358,14 @@ void Engine::EnterPlayMode()
     m_editorCamUp       = m_camera.Up;
     m_editorCamYaw      = m_camera.Yaw;
     m_editorCamPitch    = m_camera.Pitch;
+
+    // Re-resolve the player entity in case the scene was reloaded since last assignment
+    if (!m_playerController.HasPlayerEntity())
+    {
+        Entity* playerEntity = m_entityManager.FindPlayerEntity();
+        if (playerEntity)
+            m_playerController.Initialize(playerEntity, &m_camera);
+    }
 
     // Teleport player to spawn point before the camera snaps
     Entity* spawnPoint = m_entityManager.FindSpawnPoint();

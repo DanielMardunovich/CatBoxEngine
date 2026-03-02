@@ -291,6 +291,8 @@ bool Scene::SaveToFile(const std::string& path) const
         // Gameplay tags (only write non-default values to keep files clean)
         if (e.IsSpawnPoint)
             out << "IsSpawnPoint=1" << std::endl;
+        if (e.IsPlayer)
+            out << "IsPlayer=1" << std::endl;
         if (e.IsTeleporter)
         {
             out << "IsTeleporter=1" << std::endl;
@@ -489,6 +491,7 @@ bool Scene::LoadFromFile(const std::string& path)
             else if (key == "Alpha") currentEntity.Alpha = std::stof(value);
             // Gameplay tags
             else if (key == "IsSpawnPoint") currentEntity.IsSpawnPoint = parseBool(value);
+            else if (key == "IsPlayer")     currentEntity.IsPlayer     = parseBool(value);
             else if (key == "IsTeleporter") currentEntity.IsTeleporter = parseBool(value);
             else if (key == "TeleporterPairID") currentEntity.TeleporterPairID = std::stoi(value);
             else if (key == "TeleporterRadius") currentEntity.TeleporterRadius = std::stof(value);

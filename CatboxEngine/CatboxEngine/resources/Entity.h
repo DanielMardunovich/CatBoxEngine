@@ -66,6 +66,7 @@ public:
 
     // Gameplay tags
     bool IsSpawnPoint = false;
+    bool IsPlayer = false;  // Marks the entity used by the player controller (persisted per scene)
 
     bool IsTeleporter = false;
     int TeleporterPairID = -1;      // Two entities sharing the same ID are linked

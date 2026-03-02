@@ -77,9 +77,12 @@ private:
     // Play mode
     bool m_isPlayMode        = false;
     bool m_escapeWasPressed  = false;
-    bool m_goalTimeRecorded  = false;   // set true the frame goal is first reached
-    float m_completionTime   = -1.0f;   // time submitted for the last completed run
-    bool  m_isNewBest        = false;   // whether that time beat the previous record
+    bool m_goalTimeRecorded  = false;
+    float m_completionTime   = -1.0f;
+    bool  m_isNewBest        = false;
+
+    // Track active scene so we can auto-reassign the player after any level load
+    SceneID m_lastSceneID = 0;
 
     // Saved editor camera state (restored when leaving play mode)
     Vec3 m_editorCamPosition;

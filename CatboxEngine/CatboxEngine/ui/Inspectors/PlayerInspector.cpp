@@ -58,7 +58,17 @@ void PlayerInspector::DrawPlayerSelection(PlayerController& playerController, En
     // Show currently assigned player
     if (playerController.HasPlayerEntity())
     {
-        ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "Player assigned");
+        // Find which entity is currently flagged and keep the dropdown in sync
+        for (size_t i = 0; i < entities.size(); ++i)
+        {
+            if (entities[i].IsPlayer)
+            {
+                ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f),
+                                   "Player: %s", entities[i].name.c_str());
+                m_selectedPlayerEntityIndex = static_cast<int>(i);
+                break;
+            }
+        }
     }
     else
     {
@@ -112,6 +122,12 @@ void PlayerInspector::DrawPlayerSelection(PlayerController& playerController, En
     {
         if (ImGui::Button("Assign as Player"))
         {
+            // Clear IsPlayer from every entity, then mark the chosen one
+            for (auto& e : entityManager.GetAll())
+                e.IsPlayer = false;
+
+            entityManager.GetAll()[m_selectedPlayerEntityIndex].IsPlayer = true;
+
             Entity* playerEntity = &entityManager.GetAll()[m_selectedPlayerEntityIndex];
             playerController.Initialize(playerEntity, &camera);
         }
