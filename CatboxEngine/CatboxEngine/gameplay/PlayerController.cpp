@@ -127,7 +127,7 @@ void PlayerController::UpdateMovement(GLFWwindow* window, float deltaTime, Entit
     m_playerEntity->Transform.Position.y += displacement.y;
     m_playerEntity->Transform.Position.z += displacement.z;
 
-    // Resolve AABB collisions against all collidable scene entities and update
+    // Resolve collisions against all collidable scene entities and update
     // the grounded flag for the next frame's jump check.
     m_isGrounded = CollisionSystem::ResolvePlayerCollisions(
         *m_playerEntity, m_velocity, entityManager);
@@ -135,6 +135,17 @@ void PlayerController::UpdateMovement(GLFWwindow* window, float deltaTime, Entit
     // Also resolve against heightmap terrain (separate collision path)
     m_isGrounded |= CollisionSystem::ResolveTerrainCollisions(
         *m_playerEntity, m_velocity, entityManager);
+
+    // Death plane: respawn at spawn point if the player falls too far
+    static constexpr float DEATH_PLANE_Y = -1000.0f;
+    if (m_playerEntity->Transform.Position.y < DEATH_PLANE_Y)
+    {
+        Entity* spawnPoint = entityManager.FindSpawnPoint();
+        if (spawnPoint)
+            TeleportTo(spawnPoint->Transform.Position);
+        else
+            TeleportTo(Vec3(0.0f, 5.0f, 0.0f));
+    }
 }
 
 void PlayerController::UpdateCamera(float deltaTime)

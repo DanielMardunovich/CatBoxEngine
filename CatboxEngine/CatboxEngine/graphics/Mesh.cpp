@@ -720,58 +720,71 @@ bool Mesh::LoadFromGLTF(const std::string& path)
     // Helper function to load texture from GLTF image (handles both embedded and external)
     auto LoadGLTFTexture = [&](const tinygltf::Model& model, int texIndex, const std::string& dir) -> unsigned int {
         if (texIndex < 0 || texIndex >= (int)model.textures.size()) return 0;
-        
+
         const tinygltf::Texture& tex = model.textures[texIndex];
         if (tex.source < 0 || tex.source >= (int)model.images.size()) return 0;
-        
+
         const tinygltf::Image& img = model.images[tex.source];
-        unsigned char* data = nullptr;
-        int width = 0, height = 0, channels = 0;
-        
-        // Check if embedded (GLB) or external file
-        if (img.image.size() > 0)
+
+        // tinygltf decodes images during loading, so img.image already
+        // contains raw pixel data (not PNG/JPEG bytes).  Use it directly.
+        if (img.width > 0 && img.height > 0 && !img.image.empty())
         {
-            // Embedded image data
-            data = stbi_load_from_memory(img.image.data(), (int)img.image.size(), &width, &height, &channels, 4);
-            
-            // If embedded load failed but we have a URI, try external as fallback
-            if (!data && !img.uri.empty())
+            GLenum format = (img.component == 4) ? GL_RGBA : GL_RGB;
+
+            unsigned int texID;
+            glGenTextures(1, &texID);
+            glBindTexture(GL_TEXTURE_2D, texID);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width, img.height, 0,
+                         format, GL_UNSIGNED_BYTE, img.image.data());
+            glGenerateMipmap(GL_TEXTURE_2D);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            return texID;
+        }
+
+        // Fallback: load from file if tinygltf didn't decode the image
+        if (!img.uri.empty())
+        {
+            // Decode percent-encoding in the URI (e.g. %20 -> space)
+            std::string decoded;
+            decoded.reserve(img.uri.size());
+            for (size_t i = 0; i < img.uri.size(); ++i)
             {
-                std::string texPath = dir + img.uri;
-                data = stbi_load(texPath.c_str(), &width, &height, &channels, 4);
-                if (data)
+                if (img.uri[i] == '%' && i + 2 < img.uri.size())
                 {
-                    std::cout << "  Loaded texture (external fallback): " << img.uri << std::endl;
+                    char hex[3] = { img.uri[i+1], img.uri[i+2], 0 };
+                    char* end = nullptr;
+                    long val = strtol(hex, &end, 16);
+                    if (end == hex + 2) { decoded += (char)val; i += 2; continue; }
                 }
+                decoded += img.uri[i];
             }
-        }
-        else if (!img.uri.empty())
-        {
-            // External file
-            std::string texPath = dir + img.uri;
-            data = stbi_load(texPath.c_str(), &width, &height, &channels, 4);
-            
-            if (!data)
+
+            std::string texPath = dir + decoded;
+            int width = 0, height = 0, channels = 0;
+            unsigned char* data = stbi_load(texPath.c_str(), &width, &height, &channels, 4);
+            if (data)
             {
-                std::cerr << "  Failed to load texture: " << img.uri << std::endl;
+                unsigned int texID;
+                glGenTextures(1, &texID);
+                glBindTexture(GL_TEXTURE_2D, texID);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                glGenerateMipmap(GL_TEXTURE_2D);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                stbi_image_free(data);
+                return texID;
             }
+
+            std::cerr << "  Failed to load texture: " << img.uri << std::endl;
         }
-        
-        if (!data) return 0;
-        
-        // Create OpenGL texture
-        unsigned int texID;
-        glGenTextures(1, &texID);
-        glBindTexture(GL_TEXTURE_2D, texID);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        stbi_image_free(data);
-        
-        return texID;
+
+        return 0;
     };
     
     tinygltf::Model model;
@@ -932,86 +945,85 @@ bool Mesh::LoadFromGLTF(const std::string& path)
             if (!primitive.targets.empty())
             {
                 std::cout << "  Found " << primitive.targets.size() << " morph targets" << std::endl;
-                
+
+                // Helper: read a VEC3 accessor into a Vec3 vector, handling
+                // sparse-only accessors (bufferView == -1) where the base data
+                // is all zeros and only the sparse entries carry values.
+                auto ReadVec3Accessor = [&](const tinygltf::Accessor& acc) -> std::vector<Vec3> {
+                    std::vector<Vec3> result(acc.count, Vec3{0, 0, 0});
+
+                    // Load base data when a bufferView is present
+                    if (acc.bufferView >= 0 && acc.bufferView < (int)model.bufferViews.size())
+                    {
+                        const tinygltf::BufferView& bv = model.bufferViews[acc.bufferView];
+                        const tinygltf::Buffer& buf = model.buffers[bv.buffer];
+                        const float* d = reinterpret_cast<const float*>(
+                            &buf.data[bv.byteOffset + acc.byteOffset]);
+                        for (size_t i = 0; i < acc.count; ++i)
+                            result[i] = Vec3{d[i * 3], d[i * 3 + 1], d[i * 3 + 2]};
+                    }
+
+                    // Overlay sparse values (if any)
+                    if (acc.sparse.isSparse)
+                    {
+                        const auto& si = acc.sparse.indices;
+                        const tinygltf::BufferView& idxBV = model.bufferViews[si.bufferView];
+                        const uint8_t* idxRaw = &model.buffers[idxBV.buffer].data[idxBV.byteOffset + si.byteOffset];
+
+                        const auto& sv = acc.sparse.values;
+                        const tinygltf::BufferView& valBV = model.bufferViews[sv.bufferView];
+                        const float* valData = reinterpret_cast<const float*>(
+                            &model.buffers[valBV.buffer].data[valBV.byteOffset + sv.byteOffset]);
+
+                        for (int s = 0; s < acc.sparse.count; ++s)
+                        {
+                            uint32_t idx = 0;
+                            if (si.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+                                idx = reinterpret_cast<const uint16_t*>(idxRaw)[s];
+                            else if (si.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
+                                idx = reinterpret_cast<const uint32_t*>(idxRaw)[s];
+                            else
+                                idx = idxRaw[s];
+
+                            if (idx < acc.count)
+                                result[idx] = Vec3{valData[s * 3], valData[s * 3 + 1], valData[s * 3 + 2]};
+                        }
+                    }
+
+                    return result;
+                };
+
                 for (size_t targetIdx = 0; targetIdx < primitive.targets.size(); ++targetIdx)
                 {
                     const auto& target = primitive.targets[targetIdx];
-                    
+
                     MorphTarget morphTarget;
-                    
+
                     // Get morph target name from mesh extras if available
-                    if (meshIdx < gltfMesh.extras.Keys().size())
+                    auto targetNames = gltfMesh.extras.Get("targetNames");
+                    if (targetNames.IsArray() && targetIdx < targetNames.ArrayLen())
                     {
-                        auto targetWeights = gltfMesh.extras.Get("targetNames");
-                        if (targetWeights.IsArray() && targetIdx < targetWeights.ArrayLen())
-                        {
-                            morphTarget.Name = targetWeights.Get(targetIdx).Get<std::string>();
-                        }
+                        morphTarget.Name = targetNames.Get(targetIdx).Get<std::string>();
                     }
-                    
+
                     // Fallback name
                     if (morphTarget.Name.empty())
                     {
                         morphTarget.Name = "Target_" + std::to_string(targetIdx);
                     }
-                    
+
                     // Load position deltas
                     if (target.count("POSITION"))
-                    {
-                        const tinygltf::Accessor& accessor = model.accessors[target.at("POSITION")];
-                        const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-                        const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-                        
-                        const float* data = reinterpret_cast<const float*>(
-                            &buffer.data[bufferView.byteOffset + accessor.byteOffset]);
-                        
-                        morphTarget.PositionDeltas.resize(accessor.count);
-                        for (size_t i = 0; i < accessor.count; ++i)
-                        {
-                            morphTarget.PositionDeltas[i] = Vec3{
-                                data[i * 3], data[i * 3 + 1], data[i * 3 + 2]
-                            };
-                        }
-                    }
-                    
+                        morphTarget.PositionDeltas = ReadVec3Accessor(model.accessors[target.at("POSITION")]);
+
                     // Load normal deltas
                     if (target.count("NORMAL"))
-                    {
-                        const tinygltf::Accessor& accessor = model.accessors[target.at("NORMAL")];
-                        const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-                        const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-                        
-                        const float* data = reinterpret_cast<const float*>(
-                            &buffer.data[bufferView.byteOffset + accessor.byteOffset]);
-                        
-                        morphTarget.NormalDeltas.resize(accessor.count);
-                        for (size_t i = 0; i < accessor.count; ++i)
-                        {
-                            morphTarget.NormalDeltas[i] = Vec3{
-                                data[i * 3], data[i * 3 + 1], data[i * 3 + 2]
-                            };
-                        }
-                    }
-                    
+                        morphTarget.NormalDeltas = ReadVec3Accessor(model.accessors[target.at("NORMAL")]);
+
                     // Load tangent deltas
                     if (target.count("TANGENT"))
-                    {
-                        const tinygltf::Accessor& accessor = model.accessors[target.at("TANGENT")];
-                        const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-                        const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-                        
-                        const float* data = reinterpret_cast<const float*>(
-                            &buffer.data[bufferView.byteOffset + accessor.byteOffset]);
-                        
-                        morphTarget.TangentDeltas.resize(accessor.count);
-                        for (size_t i = 0; i < accessor.count; ++i)
-                        {
-                            morphTarget.TangentDeltas[i] = Vec3{
-                                data[i * 3], data[i * 3 + 1], data[i * 3 + 2]
-                            };
-                        }
-                    }
-                    
+                        morphTarget.TangentDeltas = ReadVec3Accessor(model.accessors[target.at("TANGENT")]);
+
                     MorphTargets.push_back(morphTarget);
                     std::cout << "    Loaded morph target: " << morphTarget.Name << std::endl;
                 }
@@ -1021,37 +1033,17 @@ bool Mesh::LoadFromGLTF(const std::string& path)
             if (primitive.material >= 0)
             {
                 const tinygltf::Material& mat = model.materials[primitive.material];
-                
-                // PBR metallic-roughness base color
-                if (mat.values.count("baseColorFactor"))
+
+                // PBR metallic-roughness base color factor
+                const auto& bcf = mat.pbrMetallicRoughness.baseColorFactor;
+                if (bcf.size() >= 3)
                 {
-                    auto& factor = mat.values.at("baseColorFactor");
-                    if (factor.number_array.size() >= 3)
-                    {
-                        sub.DiffuseColor = Vec3{
-                            (float)factor.number_array[0],
-                            (float)factor.number_array[1],
-                            (float)factor.number_array[2]
-                        };
-                    }
+                    sub.DiffuseColor = Vec3{(float)bcf[0], (float)bcf[1], (float)bcf[2]};
                 }
-                
-                // Base color texture (diffuse) - proper GLTF 2.0 parsing
-                int baseColorTexIndex = -1;
-                if (mat.values.count("baseColorTexture"))
-                {
-                    auto& baseColorTex = mat.values.at("baseColorTexture");
-                    if (baseColorTex.has_number_value)
-                    {
-                        baseColorTexIndex = (int)baseColorTex.number_value;
-                    }
-                    else if (!baseColorTex.json_double_value.empty() && 
-                             baseColorTex.json_double_value.count("index"))
-                    {
-                        baseColorTexIndex = (int)baseColorTex.json_double_value.at("index");
-                    }
-                }
-                
+
+                // Base color texture (diffuse)
+                int baseColorTexIndex = mat.pbrMetallicRoughness.baseColorTexture.index;
+
                 if (baseColorTexIndex >= 0)
                 {
                     sub.DiffuseTexture = LoadGLTFTexture(model, baseColorTexIndex, dir);
@@ -1066,21 +1058,8 @@ bool Mesh::LoadFromGLTF(const std::string& path)
                 else
                 {
                     // FALLBACK: Try emissive texture if baseColor is missing (for incorrectly exported models)
-                    int emissiveTexIndex = -1;
-                    if (mat.additionalValues.count("emissiveTexture"))
-                    {
-                        auto& emissiveTex = mat.additionalValues.at("emissiveTexture");
-                        if (emissiveTex.has_number_value)
-                        {
-                            emissiveTexIndex = (int)emissiveTex.number_value;
-                        }
-                        else if (!emissiveTex.json_double_value.empty() && 
-                                 emissiveTex.json_double_value.count("index"))
-                        {
-                            emissiveTexIndex = (int)emissiveTex.json_double_value.at("index");
-                        }
-                    }
-                    
+                    int emissiveTexIndex = mat.emissiveTexture.index;
+
                     if (emissiveTexIndex >= 0)
                     {
                         std::cout << "  Warning: Using emissive texture as diffuse for material '" 
@@ -1101,23 +1080,10 @@ bool Mesh::LoadFromGLTF(const std::string& path)
                         sub.DiffuseColor = Vec3{0.8f, 0.8f, 0.8f};
                     }
                 }
-                
+
                 // Normal map
-                int normalTexIndex = -1;
-                if (mat.additionalValues.count("normalTexture"))
-                {
-                    auto& normalTex = mat.additionalValues.at("normalTexture");
-                    if (normalTex.has_number_value)
-                    {
-                        normalTexIndex = (int)normalTex.number_value;
-                    }
-                    else if (!normalTex.json_double_value.empty() && 
-                             normalTex.json_double_value.count("index"))
-                    {
-                        normalTexIndex = (int)normalTex.json_double_value.at("index");
-                    }
-                }
-                
+                int normalTexIndex = mat.normalTexture.index;
+
                 if (normalTexIndex >= 0)
                 {
                     sub.NormalTexture = LoadGLTFTexture(model, normalTexIndex, dir);

@@ -4,39 +4,102 @@
 #include "../resources/Entity.h"
 #include "../graphics/MeshManager.h"
 #include "../graphics/Mesh.h"
+#include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
+#include <cmath>
 
+// ---------------------------------------------------------------------------
+// AABB (broad-phase + player box)
+// ---------------------------------------------------------------------------
 CollisionSystem::AABB CollisionSystem::ComputeAABB(const Entity& entity)
 {
     glm::vec3 pos(entity.Transform.Position.x,
                   entity.Transform.Position.y,
                   entity.Transform.Position.z);
 
-    // Use the mesh's real bounding box when available.
-    // This ensures foot-origin models (origin at y=0) sit flush on surfaces
-    // instead of floating half a scale-unit above them.
     if (entity.MeshHandle != 0)
     {
         const Mesh* mesh = MeshManager::Instance().GetMesh(entity.MeshHandle);
         if (mesh && mesh->BoundsMin.x != FLT_MAX && mesh->BoundsMax.x != -FLT_MAX)
         {
-            glm::vec3 scaledMin(mesh->BoundsMin.x * entity.Transform.Scale.x,
-                                mesh->BoundsMin.y * entity.Transform.Scale.y,
-                                mesh->BoundsMin.z * entity.Transform.Scale.z);
-            glm::vec3 scaledMax(mesh->BoundsMax.x * entity.Transform.Scale.x,
-                                mesh->BoundsMax.y * entity.Transform.Scale.y,
-                                mesh->BoundsMax.z * entity.Transform.Scale.z);
-            // glm::min/max handles negative scales gracefully
-            return { pos + glm::min(scaledMin, scaledMax),
-                     pos + glm::max(scaledMin, scaledMax) };
+            glm::mat4 rot(1.0f);
+            rot = glm::rotate(rot, glm::radians(entity.Transform.Rotation.x), glm::vec3(1,0,0));
+            rot = glm::rotate(rot, glm::radians(entity.Transform.Rotation.y), glm::vec3(0,1,0));
+            rot = glm::rotate(rot, glm::radians(entity.Transform.Rotation.z), glm::vec3(0,0,1));
+            glm::mat3 R(rot);
+
+            glm::vec3 lo(mesh->BoundsMin.x * entity.Transform.Scale.x,
+                         mesh->BoundsMin.y * entity.Transform.Scale.y,
+                         mesh->BoundsMin.z * entity.Transform.Scale.z);
+            glm::vec3 hi(mesh->BoundsMax.x * entity.Transform.Scale.x,
+                         mesh->BoundsMax.y * entity.Transform.Scale.y,
+                         mesh->BoundsMax.z * entity.Transform.Scale.z);
+            glm::vec3 sMin = glm::min(lo, hi);
+            glm::vec3 sMax = glm::max(lo, hi);
+
+            glm::vec3 center  = (sMin + sMax) * 0.5f;
+            glm::vec3 extents = (sMax - sMin) * 0.5f;
+            glm::vec3 rotCenter = R * center;
+
+            glm::vec3 newExtents;
+            for (int i = 0; i < 3; ++i)
+                newExtents[i] = std::abs(R[0][i]) * extents.x
+                              + std::abs(R[1][i]) * extents.y
+                              + std::abs(R[2][i]) * extents.z;
+
+            return { pos + rotCenter - newExtents,
+                     pos + rotCenter + newExtents };
         }
     }
 
-    // Fallback: assume a unit cube centred at the origin
     glm::vec3 half(entity.Transform.Scale.x * 0.5f,
                    entity.Transform.Scale.y * 0.5f,
                    entity.Transform.Scale.z * 0.5f);
     return { pos - half, pos + half };
+}
+
+// ---------------------------------------------------------------------------
+// OBB (oriented bounding box for scene entities)
+// ---------------------------------------------------------------------------
+CollisionSystem::OBB CollisionSystem::ComputeOBB(const Entity& entity)
+{
+    OBB obb;
+    glm::vec3 pos(entity.Transform.Position.x,
+                  entity.Transform.Position.y,
+                  entity.Transform.Position.z);
+
+    glm::mat4 rot(1.0f);
+    rot = glm::rotate(rot, glm::radians(entity.Transform.Rotation.x), glm::vec3(1,0,0));
+    rot = glm::rotate(rot, glm::radians(entity.Transform.Rotation.y), glm::vec3(0,1,0));
+    rot = glm::rotate(rot, glm::radians(entity.Transform.Rotation.z), glm::vec3(0,0,1));
+    obb.Axes = glm::mat3(rot);
+
+    if (entity.MeshHandle != 0)
+    {
+        const Mesh* mesh = MeshManager::Instance().GetMesh(entity.MeshHandle);
+        if (mesh && mesh->BoundsMin.x != FLT_MAX && mesh->BoundsMax.x != -FLT_MAX)
+        {
+            glm::vec3 lo(mesh->BoundsMin.x * entity.Transform.Scale.x,
+                         mesh->BoundsMin.y * entity.Transform.Scale.y,
+                         mesh->BoundsMin.z * entity.Transform.Scale.z);
+            glm::vec3 hi(mesh->BoundsMax.x * entity.Transform.Scale.x,
+                         mesh->BoundsMax.y * entity.Transform.Scale.y,
+                         mesh->BoundsMax.z * entity.Transform.Scale.z);
+            glm::vec3 sMin = glm::min(lo, hi);
+            glm::vec3 sMax = glm::max(lo, hi);
+
+            glm::vec3 localCenter = (sMin + sMax) * 0.5f;
+            obb.HalfExtents = (sMax - sMin) * 0.5f;
+            obb.Center = pos + obb.Axes * localCenter;
+            return obb;
+        }
+    }
+
+    obb.Center = pos;
+    obb.HalfExtents = glm::vec3(entity.Transform.Scale.x * 0.5f,
+                                 entity.Transform.Scale.y * 0.5f,
+                                 entity.Transform.Scale.z * 0.5f);
+    return obb;
 }
 
 bool CollisionSystem::TestAABBOverlap(const AABB& a, const AABB& b)
@@ -46,133 +109,183 @@ bool CollisionSystem::TestAABBOverlap(const AABB& a, const AABB& b)
            (a.Min.z <= b.Max.z && a.Max.z >= b.Min.z);
 }
 
+// ---------------------------------------------------------------------------
+// SAT test: AABB (player) vs OBB (scene entity)
+// Tests 6 face normals (3 AABB + 3 OBB).  Edge-edge cross products are
+// intentionally omitted — they are mathematically needed for exact separation
+// but in practice they produce near-degenerate axes that cause jitter on
+// irregular meshes.  The 6 face normals give stable, gameplay-friendly results.
+// ---------------------------------------------------------------------------
+bool CollisionSystem::TestAABBvsOBB(const AABB& aabb, const OBB& obb,
+                                    glm::vec3& mtv, glm::vec3& normal)
+{
+    glm::vec3 aCenter  = (aabb.Min + aabb.Max) * 0.5f;
+    glm::vec3 aExtents = (aabb.Max - aabb.Min) * 0.5f;
+
+    glm::vec3 d = obb.Center - aCenter;
+
+    // The 3 AABB axes are just the world axes
+    glm::vec3 aAxes[3] = { {1,0,0}, {0,1,0}, {0,0,1} };
+    // The 3 OBB axes
+    glm::vec3 bAxes[3] = { obb.Axes[0], obb.Axes[1], obb.Axes[2] };
+
+    float minOverlap = FLT_MAX;
+    glm::vec3 minAxis(0.0f);
+
+    auto testAxis = [&](glm::vec3 axis) -> bool {
+        float len = glm::length(axis);
+        if (len < 1e-6f) return true;
+        axis /= len;
+
+        float aProj = aExtents.x * std::abs(glm::dot(aAxes[0], axis))
+                    + aExtents.y * std::abs(glm::dot(aAxes[1], axis))
+                    + aExtents.z * std::abs(glm::dot(aAxes[2], axis));
+
+        float bProj = obb.HalfExtents.x * std::abs(glm::dot(bAxes[0], axis))
+                    + obb.HalfExtents.y * std::abs(glm::dot(bAxes[1], axis))
+                    + obb.HalfExtents.z * std::abs(glm::dot(bAxes[2], axis));
+
+        float dist = std::abs(glm::dot(d, axis));
+        float overlap = aProj + bProj - dist;
+
+        if (overlap < 0.0f) return false;
+
+        if (overlap < minOverlap)
+        {
+            minOverlap = overlap;
+            minAxis = (glm::dot(d, axis) < 0.0f) ? axis : -axis;
+        }
+        return true;
+    };
+
+    // 3 AABB face normals
+    for (int i = 0; i < 3; ++i)
+        if (!testAxis(aAxes[i])) return false;
+
+    // 3 OBB face normals
+    for (int i = 0; i < 3; ++i)
+        if (!testAxis(bAxes[i])) return false;
+
+    // Ignore collisions with negligible penetration to prevent micro-jitter
+    if (minOverlap < 0.001f) return false;
+
+    mtv = minAxis * minOverlap;
+    normal = minAxis;
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// ResolvePlayerCollisions — OBB-aware with vertical bias
+// ---------------------------------------------------------------------------
 bool CollisionSystem::ResolvePlayerCollisions(Entity& player, glm::vec3& velocity,
                                               const EntityManager& entityManager)
 {
     bool isGrounded = false;
     const auto& entities = entityManager.GetAll();
 
-    // Up to 3 resolution passes for stability when touching multiple surfaces
-    // simultaneously (e.g. a floor corner or a wall-floor junction).
-    for (int pass = 0; pass < 3; ++pass)
+    for (int pass = 0; pass < 4; ++pass)
     {
         AABB playerBox = ComputeAABB(player);
         bool hadCollision = false;
 
         for (const auto& entity : entities)
         {
-            if (&entity == &player)
-                continue;
-            if (!entity.CollidesWithPlayer)
-                continue;
+            if (&entity == &player) continue;
+            if (!entity.CollidesWithPlayer) continue;
+            if (entity.IsTerrain) continue;
 
-            AABB entityBox = ComputeAABB(entity);
-            if (!TestAABBOverlap(playerBox, entityBox))
+            // Broad-phase: AABB vs AABB
+            AABB entityAABB = ComputeAABB(entity);
+            if (!TestAABBOverlap(playerBox, entityAABB)) continue;
+
+            // Narrow-phase: AABB vs OBB
+            OBB entityOBB = ComputeOBB(entity);
+            glm::vec3 mtvVec, contactNormal;
+            if (!TestAABBvsOBB(playerBox, entityOBB, mtvVec, contactNormal))
                 continue;
 
             hadCollision = true;
 
-            // Penetration depth on each axis
-            float overlapX = std::min(playerBox.Max.x, entityBox.Max.x) -
-                             std::max(playerBox.Min.x, entityBox.Min.x);
-            float overlapY = std::min(playerBox.Max.y, entityBox.Max.y) -
-                             std::max(playerBox.Min.y, entityBox.Min.y);
-            float overlapZ = std::min(playerBox.Max.z, entityBox.Max.z) -
-                             std::max(playerBox.Min.z, entityBox.Min.z);
-
+            // Vertical bias: only when the SAT chose a nearly-horizontal push
+            // direction (|normal.y| < 0.3).  This happens on irregular unrotated
+            // meshes (e.g. an island) where the bounding box is a poor fit and
+            // the X/Z overlap is smaller than Y, causing the SAT to shove the
+            // player sideways instead of up.
+            //
+            // For rotated entities (tilted planks, ramps) the SAT correctly
+            // picks the OBB face normal which already has a Y component — so
+            // we trust it and skip this override.
             glm::vec3 playerCenter = (playerBox.Min + playerBox.Max) * 0.5f;
-            glm::vec3 entityCenter = (entityBox.Min + entityBox.Max) * 0.5f;
+            if (playerCenter.y > entityOBB.Center.y && std::abs(contactNormal.y) < 0.3f)
+            {
+                float yOverlap = entityAABB.Max.y - playerBox.Min.y;
+                float playerHeight = playerBox.Max.y - playerBox.Min.y;
 
-            // Resolve along the axis of minimum penetration (MTV)
-            if (overlapY <= overlapX && overlapY <= overlapZ)
-            {
-                // Vertical contact
-                if (playerCenter.y > entityCenter.y)
+                if (yOverlap > 0.0f && yOverlap < playerHeight)
                 {
-                    // Player is above: push up (floor/platform landing)
-                    player.Transform.Position.y += overlapY;
-                    if (velocity.y < 0.0f)
-                        velocity.y = 0.0f;
-                    isGrounded = true;
-                }
-                else
-                {
-                    // Player is below: push down (ceiling hit)
-                    player.Transform.Position.y -= overlapY;
-                    if (velocity.y > 0.0f)
-                        velocity.y = 0.0f;
-                }
-            }
-            else if (overlapX <= overlapZ)
-            {
-                // X-axis wall contact
-                if (playerCenter.x > entityCenter.x)
-                {
-                    player.Transform.Position.x += overlapX;
-                    if (velocity.x < 0.0f)
-                        velocity.x = 0.0f;
-                }
-                else
-                {
-                    player.Transform.Position.x -= overlapX;
-                    if (velocity.x > 0.0f)
-                        velocity.x = 0.0f;
-                }
-            }
-            else
-            {
-                // Z-axis wall contact
-                if (playerCenter.z > entityCenter.z)
-                {
-                    player.Transform.Position.z += overlapZ;
-                    if (velocity.z < 0.0f)
-                        velocity.z = 0.0f;
-                }
-                else
-                {
-                    player.Transform.Position.z -= overlapZ;
-                    if (velocity.z > 0.0f)
-                        velocity.z = 0.0f;
+                    mtvVec = glm::vec3(0.0f, yOverlap, 0.0f);
+                    contactNormal = glm::vec3(0.0f, 1.0f, 0.0f);
                 }
             }
 
-            // Recompute after each resolved contact so subsequent entities in
-            // the same pass use the corrected position.
+            // Push player out along the contact normal, plus a small
+            // skin width to keep the player clearly outside the surface.
+            // Without this, floating-point precision causes the next frame's
+            // SAT to land on a different axis, flipping the push direction.
+            static constexpr float k_skinWidth = 0.002f;
+            player.Transform.Position.x += mtvVec.x + contactNormal.x * k_skinWidth;
+            player.Transform.Position.y += mtvVec.y + contactNormal.y * k_skinWidth;
+            player.Transform.Position.z += mtvVec.z + contactNormal.z * k_skinWidth;
+
+            // Cancel velocity into the surface
+            float velIntoSurface = glm::dot(velocity, -contactNormal);
+            if (velIntoSurface > 0.0f)
+                velocity += contactNormal * velIntoSurface;
+
+            // Ground detection: if the contact normal points mostly upward,
+            // the player is standing on this surface.  Also treat any
+            // upward push as grounding when the player is above the entity
+            // — the SAT can pick a horizontal axis on irregular meshes even
+            // though the player is clearly on top.
+            if (contactNormal.y > 0.5f
+                || (mtvVec.y > 0.001f && playerCenter.y > entityOBB.Center.y))
+                isGrounded = true;
+
             playerBox = ComputeAABB(player);
         }
 
-        if (!hadCollision)
-            break;
+        if (!hadCollision) break;
     }
 
-    // Ground probe: detect the player standing exactly on top of a surface
-    // without needing to be penetrating it (handles the steady-state case).
+    // Ground probe (steady-state detection for flat, sloped, or irregular surfaces)
     if (!isGrounded)
     {
-        static constexpr float k_groundProbe = 0.12f;
+        static constexpr float k_groundProbe = 0.15f;
         AABB playerBox = ComputeAABB(player);
+        AABB probeBox  = playerBox;
+        probeBox.Min.y -= k_groundProbe;
 
         for (const auto& entity : entities)
         {
-            if (&entity == &player)
-                continue;
-            if (!entity.CollidesWithPlayer)
-                continue;
+            if (&entity == &player) continue;
+            if (!entity.CollidesWithPlayer) continue;
+            if (entity.IsTerrain) continue;
 
-            AABB entityBox = ComputeAABB(entity);
-            float playerBottom = playerBox.Min.y;
-            float entityTop    = entityBox.Max.y;
+            // Broad-phase with the downward-expanded probe box
+            AABB entityAABB = ComputeAABB(entity);
+            if (!TestAABBOverlap(probeBox, entityAABB)) continue;
 
-            // Entity surface must be just at or below the player's feet
-            if (entityTop <= playerBottom && entityTop >= playerBottom - k_groundProbe)
+            // Only consider entities whose center is below the player
+            OBB entityOBB = ComputeOBB(entity);
+            glm::vec3 playerCenter = (playerBox.Min + playerBox.Max) * 0.5f;
+            if (playerCenter.y <= entityOBB.Center.y) continue;
+
+            // Narrow-phase: test the probe box against the entity OBB
+            glm::vec3 probeMtv, probeNormal;
+            if (TestAABBvsOBB(probeBox, entityOBB, probeMtv, probeNormal))
             {
-                // Confirm horizontal overlap so the player is actually above it
-                if (playerBox.Min.x < entityBox.Max.x && playerBox.Max.x > entityBox.Min.x &&
-                    playerBox.Min.z < entityBox.Max.z && playerBox.Max.z > entityBox.Min.z)
-                {
-                    isGrounded = true;
-                    break;
-                }
+                isGrounded = true;
+                break;
             }
         }
     }

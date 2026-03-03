@@ -4,9 +4,9 @@
 class EntityManager;
 class Entity;
 
-// AABB-based collision system for the player character.
-// Resolves penetrations against all scene entities that have CollidesWithPlayer
-// enabled and reports whether the player is grounded after resolution.
+// Collision system for the player character.
+// Uses OBB (Oriented Bounding Box) tests so rotated entities produce correct
+// contact normals, allowing the player to walk up ramps and slide along walls.
 class CollisionSystem
 {
 public:
@@ -28,10 +28,25 @@ private:
         glm::vec3 Max;
     };
 
-    // Builds an AABB from an entity's world position and scale.
-    // Assumes the mesh origin is at the centre of the bounding box (unit-cube).
+    struct OBB
+    {
+        glm::vec3 Center;
+        glm::vec3 HalfExtents;
+        glm::mat3 Axes;  // columns are the local X, Y, Z axes in world space
+    };
+
+    // Builds an axis-aligned AABB (used for broad-phase and player box).
     static AABB ComputeAABB(const Entity& entity);
+
+    // Builds an OBB that respects the entity's rotation.
+    static OBB ComputeOBB(const Entity& entity);
 
     // Returns true when two AABBs overlap on all three axes.
     static bool TestAABBOverlap(const AABB& a, const AABB& b);
+
+    // SAT test between player AABB and entity OBB.
+    // On overlap, writes the minimum translation vector (direction * depth)
+    // into 'mtv' and the contact normal into 'normal'.
+    static bool TestAABBvsOBB(const AABB& aabb, const OBB& obb,
+                              glm::vec3& mtv, glm::vec3& normal);
 };

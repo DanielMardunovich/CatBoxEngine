@@ -79,7 +79,7 @@ void UIManager::Draw(EntityManager& entityManager, Vec3& spawnPosition, Vec3& sp
 
     m_statsInspector->Draw(deltaTime, entityManager);
 
-    if (playerController)
+    if (playerController && !isPlayMode)
         m_playerInspector->Draw(*playerController, entityManager, camera);
 }
 

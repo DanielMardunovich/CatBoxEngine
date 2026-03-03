@@ -116,6 +116,28 @@ void EnemySystem::Update(EntityManager& entityManager, PlayerController& playerC
             enemy.Transform.Position.x += (dx / dist) * step;
             enemy.Transform.Position.y += (dy / dist) * step;
             enemy.Transform.Position.z += (dz / dist) * step;
+
+            // Rotate to face the movement direction (XZ plane) using the same
+            // yaw convention as PlayerController: Rotation.y = -atan2(-dx, dz)
+            if (std::abs(dx) > 0.001f || std::abs(dz) > 0.001f)
+            {
+                constexpr float kRad2Deg  = 180.0f / 3.14159265358979f;
+                constexpr float kTurnSpeed = 360.0f; // degrees per second
+
+                float targetYaw  = -std::atan2(-dx, dz) * kRad2Deg;
+                float currentYaw = enemy.Transform.Rotation.y;
+
+                // Normalise difference to [-180, 180] to pick the shortest arc
+                float yawDiff = targetYaw - currentYaw;
+                while (yawDiff >  180.0f) yawDiff -= 360.0f;
+                while (yawDiff < -180.0f) yawDiff += 360.0f;
+
+                float maxTurn = kTurnSpeed * deltaTime;
+                float turn = yawDiff < -maxTurn ? -maxTurn
+                           : yawDiff >  maxTurn ?  maxTurn : yawDiff;
+
+                enemy.Transform.Rotation.y = currentYaw + turn;
+            }
         }
 
         // Check whether the player is within the enemy's collision radius
