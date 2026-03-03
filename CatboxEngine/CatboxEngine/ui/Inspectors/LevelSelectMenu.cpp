@@ -13,11 +13,13 @@ void LevelSelectMenu::RefreshLevelList()
     m_levelFiles.clear();
     m_needsRefresh = false;
 
+    static constexpr const char* k_scenesDir = "Scenes";
+
     std::error_code ec;
-    if (!fs::is_directory("Scenes", ec))
+    if (!fs::is_directory(k_scenesDir, ec))
         return;
 
-    for (const auto& entry : fs::directory_iterator("Scenes", ec))
+    for (const auto& entry : fs::directory_iterator(k_scenesDir, ec))
     {
         if (entry.is_regular_file() && entry.path().extension() == ".scene")
         {
@@ -45,8 +47,8 @@ void LevelSelectMenu::DrawContents(EntityManager& entityManager, RecordTimeSyste
     if (m_levelFiles.empty())
     {
         ImGui::Spacing();
-        ImGui::TextDisabled("No .scene files found in Scenes/");
-        ImGui::TextDisabled("Save a scene to the Scenes/ folder first.");
+        ImGui::TextDisabled("No .scene files found.");
+        ImGui::TextDisabled("Save a scene first.");
         return;
     }
 

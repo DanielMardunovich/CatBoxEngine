@@ -82,8 +82,6 @@ void RecordTimeSystem::LoadRecords()
 
 void RecordTimeSystem::SaveRecords() const
 {
-    _mkdir("Scenes");   // ensure directory exists (silent if already present)
-
     std::ofstream out(k_recordsPath);
     if (!out.is_open())
     {

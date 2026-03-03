@@ -71,7 +71,7 @@ bool Platform::OpenFileDialog(char* outPath, int maxLen, const char* filter)
     ofn.nMaxFile = (DWORD)sizeof(szFile);
     ofn.lpstrFilter = filter;
     ofn.nFilterIndex = 1;
-    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
     if (GetOpenFileNameA(&ofn))
     {
         #if defined(_MSC_VER)
@@ -102,7 +102,7 @@ bool Platform::SaveFileDialog(char* outPath, int maxLen, const char* filter)
     ofn.lpstrFilter = filter;
     ofn.nFilterIndex = 1;
     ofn.lpstrDefExt = "scene";
-    ofn.Flags = OFN_OVERWRITEPROMPT;
+    ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
     if (GetSaveFileNameA(&ofn))
     {
         #if defined(_MSC_VER)

@@ -441,6 +441,10 @@ int Engine::InitImGui()
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
 
+    // Always save imgui.ini in the Scenes folder regardless of working directory
+    static std::string s_iniPath = std::string(k_autosaveDir) + "\\imgui.ini";
+    io.IniFilename = s_iniPath.c_str();
+
     ImGui::StyleColorsDark();
 
     // Setup platform/renderer bindings

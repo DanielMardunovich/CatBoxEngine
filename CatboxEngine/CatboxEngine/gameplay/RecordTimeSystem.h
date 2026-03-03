@@ -37,5 +37,5 @@ private:
 
     std::unordered_map<std::string, float> m_records;
 
-    static constexpr const char* k_recordsPath = "Scenes/records.dat";
+    static constexpr const char* k_recordsPath = "records.dat";
 };
