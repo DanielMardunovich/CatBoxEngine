@@ -63,7 +63,7 @@ Name=Goal
 Position=87.3,4.2,-1.6
 Rotation=-90,0,124
 Scale=10,10,10
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\WInIsland\Flag.fbx
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\WInIsland\Flag.fbx
 Shininess=32
 Alpha=1
 IsGoal=1
@@ -72,25 +72,25 @@ CollidesWithPlayer=0
 
 [Entity2]
 Name=Gigi
-Position=85.6148,3.29014,-2.15409
-Rotation=0,-0,0
+Position=85.7258,3.20494,-2.1455
+Rotation=0,71.8504,0
 Scale=0.01,0.01,0.01
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\gigi.fbx
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\gigi.fbx
 Shininess=32
 Alpha=1
 IsPlayer=1
-AnimIdlePath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiIdle.fbx
-AnimWalkPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiWalk.fbx
-AnimRunPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiRun.fbx
-AnimJumpPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiJump.fbx
-AnimFallPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiFall.fbx
+AnimIdlePath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiIdle.fbx
+AnimWalkPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiWalk.fbx
+AnimRunPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiRun.fbx
+AnimJumpPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiJump.fbx
+AnimFallPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiFall.fbx
 
 [Entity3]
 Name=Planks
 Position=0,0.5,0
 Rotation=-90,0,0
 Scale=7,3,3
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
 Shininess=32
 Alpha=1
 
@@ -99,7 +99,7 @@ Name=Planks2
 Position=20.5,0.5,-1.6
 Rotation=-90,0,0
 Scale=7,3,3
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
 Shininess=32
 Alpha=1
 
@@ -108,7 +108,7 @@ Name=Enemy
 Position=-22.6,0,-3
 Rotation=0,90,0
 Scale=20,20,20
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Grem\grem.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Grem\grem.gltf
 Shininess=32
 Alpha=1
 CollidesWithPlayer=0
@@ -125,7 +125,7 @@ Name=Planks3
 Position=35.6,-0.9,-2
 Rotation=-90,0,0
 Scale=3,3,3
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
 Shininess=32
 Alpha=1
 
@@ -134,7 +134,7 @@ Name=Planks4
 Position=47,0.1,-1.6
 Rotation=90,0,0
 Scale=3,3,3
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
 Shininess=32
 Alpha=1
 
@@ -221,16 +221,16 @@ Name=Island
 Position=44.7,-1.9,48.1
 Rotation=0,0,0
 Scale=10,10,10
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\Floating Islands Combined.fbx
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\Floating Islands Combined.fbx
 Shininess=32
 Alpha=1
 
 [Entity15]
 Name=Enemy
 Position=39.9,0,49.8
-Rotation=0,5608.34,0
+Rotation=0,6569.21,0
 Scale=0.8,1,0.8
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Grem\grem.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Grem\grem.gltf
 Shininess=32
 Alpha=1
 CollidesWithPlayer=0
@@ -246,9 +246,9 @@ EnemyWaypoint2=45.4,-0.7,43.3
 [Entity16]
 Name=Enemy
 Position=49.2,0,49.8
-Rotation=0,4638.52,0
+Rotation=0,5718.55,0
 Scale=0.8,1,0.8
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Grem\grem.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Grem\grem.gltf
 Shininess=32
 Alpha=1
 CollidesWithPlayer=0
@@ -264,9 +264,9 @@ EnemyWaypoint2=39.9,-0.7,49.8
 [Entity17]
 Name=Enemy
 Position=45.5,0,43.4
-Rotation=0,3688.5,0
+Rotation=0,4690.04,0
 Scale=0.8,1,0.8
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Grem\grem.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Grem\grem.gltf
 Shininess=32
 Alpha=1
 CollidesWithPlayer=0
@@ -284,7 +284,7 @@ Name=Planks5
 Position=59.4,1.5,-1.5
 Rotation=-90,0,0
 Scale=3,3,3
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
 Shininess=32
 Alpha=1
 
@@ -293,7 +293,7 @@ Name=Planks6
 Position=69.4,1.5,-1.5
 Rotation=-90,0,0
 Scale=1,1,1
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
 Shininess=32
 Alpha=1
 
@@ -302,7 +302,7 @@ Name=Planks7
 Position=75.4,1.5,0.3
 Rotation=-90,0,0
 Scale=1,1,1
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
 Shininess=32
 Alpha=1
 
@@ -311,7 +311,7 @@ Name=Planks8
 Position=80.9,1.5,-4
 Rotation=-90,0,0
 Scale=1,1,1
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
 Shininess=32
 Alpha=1
 
@@ -320,6 +320,6 @@ Name=Planks9
 Position=86.8,1.5,-1.5
 Rotation=-90,0,0
 Scale=1,1,1
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
 Shininess=32
 Alpha=1

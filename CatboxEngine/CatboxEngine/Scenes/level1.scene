@@ -20,7 +20,7 @@ SkyboxProcedural=0
 SkyColorTop=0.1,0.4,0.8
 SkyColorHorizon=0.5,0.7,0.9
 SkyColorBottom=0.3,0.25,0.15
-SkyboxFilePath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\FantasySkyBox\scene.gltf
+SkyboxFilePath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\FantasySkyBox\scene.gltf
 
 [Lights]
 Count=2
@@ -85,31 +85,31 @@ Name=SpawnIsland
 Position=0.5,-6.845,-1.2
 Rotation=0,0,0
 Scale=3,3,3
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\Floating Islands Combined.fbx
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\Floating Islands Combined.fbx
 Shininess=32
 Alpha=1
 
 [Entity2]
 Name=Gigi
-Position=3.95054,-65.7915,2.90357
-Rotation=0,1055.45,0
+Position=-0.085179,-4.39007,22.3143
+Rotation=0,1.20019,0
 Scale=0.005,0.005,0.005
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\gigi.fbx
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\gigi.fbx
 Shininess=32
 Alpha=1
 IsPlayer=1
-AnimIdlePath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiIdle.fbx
-AnimWalkPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiWalk.fbx
-AnimRunPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiRun.fbx
-AnimJumpPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiJump.fbx
-AnimFallPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiFall.fbx
+AnimIdlePath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiIdle.fbx
+AnimWalkPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiWalk.fbx
+AnimRunPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiRun.fbx
+AnimJumpPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiJump.fbx
+AnimFallPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\gigi\Gigi\GigiFall.fbx
 
 [Entity3]
 Name=Island2
 Position=1.376,-6.087,4.391
 Rotation=0,3.59988,0
 Scale=2,2,2
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\Floating Islands Combined.fbx
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\Floating Islands Combined.fbx
 Shininess=32
 Alpha=1
 
@@ -118,7 +118,7 @@ Name=Planks
 Position=1,-5.7,5.9
 Rotation=63,0,0
 Scale=1,1,1
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
 Shininess=32
 Alpha=1
 
@@ -127,7 +127,7 @@ Name=Island
 Position=1.6,-7.1,1.9
 Rotation=0,0,0
 Scale=2,2,2
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\Floating Islands Combined.fbx
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\Floating Islands Combined.fbx
 Shininess=32
 Alpha=1
 
@@ -136,7 +136,7 @@ Name=Island
 Position=0.1,-6,11.8
 Rotation=0,0,0
 Scale=3,3,3
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\Floating Islands Combined.fbx
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\Floating Islands Combined.fbx
 Shininess=32
 Alpha=1
 
@@ -145,7 +145,7 @@ Name=Island
 Position=0.1,-6.2,23.9
 Rotation=0,0,0
 Scale=3,3,3
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\Floating Islands Combined.fbx
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\LowPolyIsland\Floating Islands Combined.fbx
 Shininess=32
 Alpha=1
 
@@ -154,16 +154,16 @@ Name=Plank
 Position=0.5,-6.3,17.5
 Rotation=90,0,0
 Scale=3,3.08,3
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Planks\scene.gltf
 Shininess=32
 Alpha=1
 
 [Entity9]
 Name=Model: F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Grem\grem.gltf
 Position=0,-5.6,17.6
-Rotation=0,5126.18,0
+Rotation=0,5576.61,0
 Scale=0.8,1,0.8
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Grem\grem.gltf
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\Grem\grem.gltf
 Shininess=32
 Alpha=1
 CollidesWithPlayer=0
@@ -182,7 +182,7 @@ Name=Goal
 Position=0.1,-4.5,24.3
 Rotation=-69,0,-8
 Scale=5,1,5
-MeshPath=F:\EngineSpecialization\CatBoxEngine\CatboxEngine\CatboxEngine\Model\WInIsland\Flag.fbx
+MeshPath=C:\Users\Daniel.Mardunovich\Documents\CatBoxEngine\CatboxEngine\CatboxEngine\Model\WInIsland\Flag.fbx
 Shininess=32
 Alpha=1
 IsGoal=1
