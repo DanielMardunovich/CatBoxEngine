@@ -74,6 +74,7 @@ public:
     [[nodiscard]] float GetCameraYaw() const { return m_cameraYaw; }
     [[nodiscard]] float GetCameraPitch() const { return m_cameraPitch; }
     [[nodiscard]] bool HasPlayerEntity() const { return m_playerEntity != nullptr; }
+    [[nodiscard]] Entity* GetPlayerEntity() const { return m_playerEntity; }
     [[nodiscard]] Vec3 GetPlayerPosition() const
     {
         if (!m_playerEntity) return Vec3(0.0f, 0.0f, 0.0f);

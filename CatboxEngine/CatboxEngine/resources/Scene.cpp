@@ -321,12 +321,10 @@ bool Scene::SaveToFile(const std::string& path) const
         {
             out << "IsTeleporter=1" << std::endl;
             out << "TeleporterPairID=" << e.TeleporterPairID << std::endl;
-            out << "TeleporterRadius=" << e.TeleporterRadius << std::endl;
         }
         if (e.IsGoal)
         {
             out << "IsGoal=1" << std::endl;
-            out << "GoalRadius=" << e.GoalRadius << std::endl;
         }
         if (!e.CollidesWithPlayer)
             out << "CollidesWithPlayer=0" << std::endl;
@@ -334,7 +332,6 @@ bool Scene::SaveToFile(const std::string& path) const
         {
             out << "IsEnemy=1" << std::endl;
             out << "EnemySpeed=" << e.EnemySpeed << std::endl;
-            out << "EnemyCollisionRadius=" << e.EnemyCollisionRadius << std::endl;
             out << "EnemyPatrolMode=" << static_cast<int>(e.EnemyPatrolMode) << std::endl;
             out << "EnemyWaypointCount=" << e.PatrolWaypoints.size() << std::endl;
             for (size_t w = 0; w < e.PatrolWaypoints.size(); ++w)
@@ -547,13 +544,13 @@ bool Scene::LoadFromFile(const std::string& path)
             else if (key == "IsPlayer")     currentEntity.IsPlayer     = parseBool(value);
             else if (key == "IsTeleporter") currentEntity.IsTeleporter = parseBool(value);
             else if (key == "TeleporterPairID") currentEntity.TeleporterPairID = std::stoi(value);
-            else if (key == "TeleporterRadius") currentEntity.TeleporterRadius = std::stof(value);
+            else if (key == "TeleporterRadius") { /* legacy distance-collision key ignored */ }
             else if (key == "IsGoal") currentEntity.IsGoal = parseBool(value);
-            else if (key == "GoalRadius") currentEntity.GoalRadius = std::stof(value);
+            else if (key == "GoalRadius") { /* legacy distance-collision key ignored */ }
             else if (key == "CollidesWithPlayer") currentEntity.CollidesWithPlayer = parseBool(value);
             else if (key == "IsEnemy") currentEntity.IsEnemy = parseBool(value);
             else if (key == "EnemySpeed") currentEntity.EnemySpeed = std::stof(value);
-            else if (key == "EnemyCollisionRadius") currentEntity.EnemyCollisionRadius = std::stof(value);
+            else if (key == "EnemyCollisionRadius") { /* legacy distance-collision key ignored */ }
             else if (key == "EnemyPatrolMode") currentEntity.EnemyPatrolMode = static_cast<PatrolMode>(std::stoi(value));
             else if (key == "EnemyWaypointCount") { /* count is informational; waypoints are loaded individually */ }
             else if (key.rfind("EnemyWaypoint", 0) == 0)

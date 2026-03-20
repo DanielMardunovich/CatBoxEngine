@@ -174,6 +174,24 @@ bool CollisionSystem::TestAABBvsOBB(const AABB& aabb, const OBB& obb,
     return true;
 }
 
+bool CollisionSystem::IsColliding(const Entity& a, const Entity& b)
+{
+    AABB aabbA = ComputeAABB(a);
+    AABB aabbB = ComputeAABB(b);
+    if (!TestAABBOverlap(aabbA, aabbB))
+        return false;
+
+    glm::vec3 mtv(0.0f);
+    glm::vec3 normal(0.0f);
+
+    OBB obbB = ComputeOBB(b);
+    if (TestAABBvsOBB(aabbA, obbB, mtv, normal))
+        return true;
+
+    OBB obbA = ComputeOBB(a);
+    return TestAABBvsOBB(aabbB, obbA, mtv, normal);
+}
+
 // ---------------------------------------------------------------------------
 // ResolvePlayerCollisions — OBB-aware with vertical bias
 // ---------------------------------------------------------------------------

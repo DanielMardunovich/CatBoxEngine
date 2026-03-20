@@ -71,10 +71,8 @@ public:
 
     bool IsTeleporter = false;
     int TeleporterPairID = -1;      // Two entities sharing the same ID are linked
-    float TeleporterRadius = 2.0f;  // Activation distance
 
     bool IsGoal = false;
-    float GoalRadius = 2.0f;        // Activation distance
 
     // Collision
     bool CollidesWithPlayer = true;  // When false, the player can walk through this entity
@@ -84,7 +82,6 @@ public:
     std::vector<Vec3> PatrolWaypoints;
     PatrolMode EnemyPatrolMode = PatrolMode::Loop;
     float EnemySpeed = 3.0f;
-    float EnemyCollisionRadius = 1.0f;  // Radius within which the player is sent back to spawn
 
     // Heightmap terrain (distinct from static meshes)
     bool IsTerrain = false;

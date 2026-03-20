@@ -1,18 +1,19 @@
 #include "TeleporterSystem.h"
 #include "../resources/EntityManager.h"
 #include "PlayerController.h"
+#include "CollisionSystem.h"
 #include <iostream>
 
 void TeleporterSystem::Update(EntityManager& entityManager, PlayerController& playerController, float deltaTime)
 {
-    if (!playerController.HasPlayerEntity())
+    Entity* playerEntity = playerController.GetPlayerEntity();
+    if (!playerEntity)
         return;
 
     // Tick down all cooldowns
     for (auto& kv : m_cooldowns)
         kv.second -= deltaTime;
 
-    Vec3 playerPos = playerController.GetPlayerPosition();
     auto& entities = entityManager.GetAll();
 
     for (size_t i = 0; i < entities.size(); ++i)
@@ -26,12 +27,7 @@ void TeleporterSystem::Update(EntityManager& entityManager, PlayerController& pl
         if (it != m_cooldowns.end() && it->second > 0.0f)
             continue;
 
-        // Check if player is within activation radius
-        float dx = playerPos.x - src.Transform.Position.x;
-        float dy = playerPos.y - src.Transform.Position.y;
-        float dz = playerPos.z - src.Transform.Position.z;
-        float distSq = dx * dx + dy * dy + dz * dz;
-        if (distSq > src.TeleporterRadius * src.TeleporterRadius)
+        if (!CollisionSystem::IsColliding(*playerEntity, src))
             continue;
 
         // Find the linked partner (same pair ID, different entity)

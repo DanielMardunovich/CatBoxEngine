@@ -21,6 +21,9 @@ public:
     static bool ResolveTerrainCollisions(Entity& player, glm::vec3& velocity,
                                          const EntityManager& entityManager);
 
+    // Returns true when two entities overlap according to the collision system.
+    static bool IsColliding(const Entity& a, const Entity& b);
+
 private:
     struct AABB
     {

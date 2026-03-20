@@ -338,8 +338,6 @@ void EntityManagerInspector::DrawEntityInfo(Entity& entity)
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.8f, 1.0f, 1.0f));
         ImGui::Text("[TP] Teleporter  |  Pair ID: %d", entity.TeleporterPairID);
         ImGui::PopStyleColor();
-        ImGui::SliderFloat("Teleport Radius", &entity.TeleporterRadius, 0.5f, 10.0f);
-        ImGui::SetItemTooltip("Player must be within this distance to trigger the teleport.");
     }
 
     // Goal tag
@@ -353,12 +351,7 @@ void EntityManagerInspector::DrawEntityInfo(Entity& entity)
     if (ImGui::Checkbox("Goal", &entity.IsGoal))
     {
     }
-    ImGui::SetItemTooltip("Player reaching this entity in Play Mode triggers the Goal Reached screen.");
-    if (entity.IsGoal)
-    {
-        ImGui::SliderFloat("Goal Radius", &entity.GoalRadius, 0.5f, 15.0f);
-        ImGui::SetItemTooltip("Player must be within this distance to trigger the goal.");
-    }
+    ImGui::SetItemTooltip("Player contact with this entity in Play Mode triggers the Goal Reached screen.");
 
     // Enemy
     ImGui::Spacing();
@@ -377,8 +370,6 @@ void EntityManagerInspector::DrawEntityInfo(Entity& entity)
     if (entity.IsEnemy)
     {
         ImGui::SliderFloat("Enemy Speed", &entity.EnemySpeed, 0.5f, 20.0f);
-        ImGui::SliderFloat("Collision Radius", &entity.EnemyCollisionRadius, 0.1f, 10.0f);
-        ImGui::SetItemTooltip("Player is sent to spawn when within this distance of the enemy.");
 
         const char* patrolModes[] = { "Loop", "Ping-Pong" };
         int modeIdx = static_cast<int>(entity.EnemyPatrolMode);

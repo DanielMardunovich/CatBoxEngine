@@ -2,6 +2,7 @@
 #include "../resources/EntityManager.h"
 #include "../resources/Entity.h"
 #include "PlayerController.h"
+#include "CollisionSystem.h"
 #include <cmath>
 #include <iostream>
 
@@ -47,10 +48,10 @@ void EnemySystem::ExitPlayMode(EntityManager& entityManager)
 
 void EnemySystem::Update(EntityManager& entityManager, PlayerController& playerController, float deltaTime)
 {
-    if (!playerController.HasPlayerEntity())
+    Entity* playerEntity = playerController.GetPlayerEntity();
+    if (!playerEntity)
         return;
 
-    Vec3 playerPos = playerController.GetPlayerPosition();
     auto& entities = entityManager.GetAll();
 
     for (int i = 0; i < static_cast<int>(entities.size()); ++i)
@@ -140,14 +141,7 @@ void EnemySystem::Update(EntityManager& entityManager, PlayerController& playerC
             }
         }
 
-        // Check whether the player is within the enemy's collision radius
-        float pdx = playerPos.x - enemy.Transform.Position.x;
-        float pdy = playerPos.y - enemy.Transform.Position.y;
-        float pdz = playerPos.z - enemy.Transform.Position.z;
-        float playerDistSq = pdx * pdx + pdy * pdy + pdz * pdz;
-        float radiusSq = enemy.EnemyCollisionRadius * enemy.EnemyCollisionRadius;
-
-        if (playerDistSq <= radiusSq)
+        if (CollisionSystem::IsColliding(*playerEntity, enemy))
         {
             Entity* spawnPoint = entityManager.FindSpawnPoint();
             if (spawnPoint)
