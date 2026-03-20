@@ -69,28 +69,46 @@ private:
 
 #if TRACK_MEMORY
     #define TRACKED_NEW(type) \
-        MemoryTracker::Instance().RecordAllocation( \
-            new type, sizeof(type), __FILE__, __LINE__, __FUNCTION__), \
-        new type
+        ([&]() -> type* { \
+            type* _trackedPtr = new type; \
+            MemoryTracker::Instance().RecordAllocation( \
+                _trackedPtr, sizeof(type), __FILE__, __LINE__, __FUNCTION__); \
+            return _trackedPtr; \
+        }())
+
+    #define TRACKED_NEW_ARGS(type, ...) \
+        ([&]() -> type* { \
+            type* _trackedPtr = new type(__VA_ARGS__); \
+            MemoryTracker::Instance().RecordAllocation( \
+                _trackedPtr, sizeof(type), __FILE__, __LINE__, __FUNCTION__); \
+            return _trackedPtr; \
+        }())
     
     #define TRACKED_DELETE(ptr) \
         do { \
-            MemoryTracker::Instance().RecordDeallocation(ptr); \
-            delete ptr; \
+            auto* _trackedPtr = (ptr); \
+            MemoryTracker::Instance().RecordDeallocation(_trackedPtr); \
+            delete _trackedPtr; \
         } while(0)
     
     #define TRACKED_NEW_ARRAY(type, count) \
-        MemoryTracker::Instance().RecordAllocation( \
-            new type[count], sizeof(type) * count, __FILE__, __LINE__, __FUNCTION__), \
-        new type[count]
+        ([&]() -> type* { \
+            const size_t _trackedCount = static_cast<size_t>(count); \
+            type* _trackedPtr = new type[_trackedCount]; \
+            MemoryTracker::Instance().RecordAllocation( \
+                _trackedPtr, sizeof(type) * _trackedCount, __FILE__, __LINE__, __FUNCTION__); \
+            return _trackedPtr; \
+        }())
     
     #define TRACKED_DELETE_ARRAY(ptr) \
         do { \
-            MemoryTracker::Instance().RecordDeallocation(ptr); \
-            delete[] ptr; \
+            auto* _trackedPtr = (ptr); \
+            MemoryTracker::Instance().RecordDeallocation(_trackedPtr); \
+            delete[] _trackedPtr; \
         } while(0)
 #else
     #define TRACKED_NEW(type) new type
+    #define TRACKED_NEW_ARGS(type, ...) new type(__VA_ARGS__)
     #define TRACKED_DELETE(ptr) delete ptr
     #define TRACKED_NEW_ARRAY(type, count) new type[count]
     #define TRACKED_DELETE_ARRAY(ptr) delete[] ptr

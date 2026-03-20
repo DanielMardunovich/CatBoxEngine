@@ -26,24 +26,24 @@
 
 UIManager::UIManager()
 {
-    m_cameraInspector           = new CameraInspector();
-    m_entityManagerInspector    = new EntityManagerInspector();
-    m_statsInspector            = new StatsInspector();
-    m_lightInspector            = new LightInspector();
-    m_graphicsSettingsInspector = new GraphicsSettingsInspector();
-    m_playerInspector           = new PlayerInspector();
-    m_levelSelectMenu           = new LevelSelectMenu();
+    m_cameraInspector           = TRACKED_NEW(CameraInspector);
+    m_entityManagerInspector    = TRACKED_NEW(EntityManagerInspector);
+    m_statsInspector            = TRACKED_NEW(StatsInspector);
+    m_lightInspector            = TRACKED_NEW(LightInspector);
+    m_graphicsSettingsInspector = TRACKED_NEW(GraphicsSettingsInspector);
+    m_playerInspector           = TRACKED_NEW(PlayerInspector);
+    m_levelSelectMenu           = TRACKED_NEW(LevelSelectMenu);
 }
 
 UIManager::~UIManager()
 {
-    delete m_cameraInspector;
-    delete m_entityManagerInspector;
-    delete m_statsInspector;
-    delete m_lightInspector;
-    delete m_graphicsSettingsInspector;
-    delete m_playerInspector;
-    delete m_levelSelectMenu;
+    TRACKED_DELETE(m_cameraInspector);
+    TRACKED_DELETE(m_entityManagerInspector);
+    TRACKED_DELETE(m_statsInspector);
+    TRACKED_DELETE(m_lightInspector);
+    TRACKED_DELETE(m_graphicsSettingsInspector);
+    TRACKED_DELETE(m_playerInspector);
+    TRACKED_DELETE(m_levelSelectMenu);
 }
 
 void UIManager::NewFrame()

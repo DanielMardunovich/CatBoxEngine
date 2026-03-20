@@ -165,7 +165,25 @@
     <ClCompile Include="gameplay\CollisionSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CatboxEngine\gameplay\CollisionSystem.cpp">
+    <ClCompile Include="Dependencies\ufbx_impl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gameplay\AnimationSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gameplay\EnemySystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gameplay\RecordTimeSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gameplay\TerrainSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\Skybox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ui\Inspectors\LevelSelectMenu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -308,7 +326,22 @@
     <ClInclude Include="gameplay\CollisionSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CatboxEngine\gameplay\CollisionSystem.h">
+    <ClInclude Include="gameplay\AnimationSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gameplay\EnemySystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gameplay\RecordTimeSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gameplay\TerrainSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\Skybox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ui\Inspectors\LevelSelectMenu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -346,5 +379,8 @@
     <None Include="shaders\gbuffer.frag">
       <Filter>Source Files\Shader</Filter>
     </None>
+    <None Include="shaders\Skybox.frag" />
+    <None Include="shaders\Skybox.vert" />
+    <None Include="docs\Engine_Feature_Location_And_Architecture.md" />
   </ItemGroup>
 </Project>

@@ -34,10 +34,6 @@ void MemoryTracker::RecordDeallocation(void* ptr)
         m_allocations.erase(it);
         m_deallocationCount++;
     }
-    else
-    {
-        std::cerr << "Warning: Attempted to free untracked pointer: " << ptr << std::endl;
-    }
 }
 
 void MemoryTracker::PrintMemoryReport() const
@@ -81,7 +77,7 @@ void MemoryTracker::CheckForLeaks() const
     
     if (m_allocations.empty())
     {
-        std::cout << "? No memory leaks detected!" << std::endl;
+        std::cout << "No memory leaks detected!" << std::endl;
         return;
     }
     
@@ -142,6 +138,6 @@ MemoryScope::~MemoryScope()
     
     if (allocDelta != 0)
     {
-        std::cerr << "  ? Warning: Scope leaked " << allocDelta << " allocation(s)!" << std::endl;
+        std::cerr << "  Warning: Scope leaked " << allocDelta << " allocation(s)!" << std::endl;
     }
 }
