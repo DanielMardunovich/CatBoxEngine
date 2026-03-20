@@ -17,17 +17,13 @@ struct AllocationInfo
 class MemoryTracker
 {
 public:
-    static MemoryTracker& Instance()
-    {
-        static MemoryTracker instance;
-        return instance;
-    }
+    static MemoryTracker& Instance();
 
     // Track allocation
     void RecordAllocation(void* ptr, size_t size, const char* file, int line, const char* func);
     
     // Track deallocation
-    void RecordDeallocation(void* ptr);
+    void RecordDeallocation(void* ptr, const char* file = nullptr, int line = 0, const char* func = nullptr);
     
     // Report current memory usage
     void PrintMemoryReport() const;

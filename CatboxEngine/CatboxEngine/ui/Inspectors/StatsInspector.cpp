@@ -67,10 +67,11 @@ void StatsInspector::DrawMemoryStats(EntityManager& entityManager)
         PrintMemoryReport(entityManager);
     }
     ImGui::SameLine();
-    if (ImGui::Button("Check Leaks"))
+    if (ImGui::Button("Live Allocations"))
     {
-        memTracker.CheckForLeaks();
+        memTracker.PrintMemoryReport();
     }
+    ImGui::SetItemTooltip("Runtime allocations include long-lived objects (engine/UI). Use shutdown output for true leak detection.");
 #else
     if (ImGui::Button("Print Report"))
     {

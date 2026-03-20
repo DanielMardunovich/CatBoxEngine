@@ -8,11 +8,17 @@ int main() {
 	std::cout << "   Welcome to Catbox Engine!     " << std::endl;
 	std::cout << "==================================" << std::endl;
 	
-	Engine* engine = TRACKED_NEW_ARGS(Engine, 1920, 1080);
+	Engine* engine = new Engine(1920, 1080);
+	MemoryTracker::Instance().RecordAllocation(engine, sizeof(Engine), __FILE__, __LINE__, __FUNCTION__);
 	
 	engine->app();
 	
-	TRACKED_DELETE(engine);
+	MemoryTracker::Instance().RecordDeallocation(engine, __FILE__, __LINE__, __FUNCTION__);
+	delete engine;
+
+	std::cout << "\n=== Engine Shutdown ===" << std::endl;
+	MemoryTracker::Instance().CheckForLeaks();
+
 	std::cout << "\nEngine shutdown complete. Goodbye!" << std::endl;
 	return 0;
 }

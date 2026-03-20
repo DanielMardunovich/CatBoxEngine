@@ -2,6 +2,12 @@
 #include <iostream>
 #include <iomanip>
 
+MemoryTracker& MemoryTracker::Instance()
+{
+    static MemoryTracker instance;
+    return instance;
+}
+
 void MemoryTracker::RecordAllocation(void* ptr, size_t size, const char* file, int line, const char* func)
 {
     if (!ptr) return;
@@ -21,7 +27,7 @@ void MemoryTracker::RecordAllocation(void* ptr, size_t size, const char* file, i
     m_allocationCount++;
 }
 
-void MemoryTracker::RecordDeallocation(void* ptr)
+void MemoryTracker::RecordDeallocation(void* ptr, const char* file, int line, const char* func)
 {
     if (!ptr) return;
     
@@ -33,6 +39,15 @@ void MemoryTracker::RecordDeallocation(void* ptr)
         m_currentUsage -= it->second.size;
         m_allocations.erase(it);
         m_deallocationCount++;
+    }
+    else
+    {
+        std::cerr << "[MemoryTracker] Deallocation miss for ptr " << ptr;
+        if (file)
+            std::cerr << " at " << file << ":" << line;
+        if (func)
+            std::cerr << " in " << func;
+        std::cerr << std::endl;
     }
 }
 

@@ -26,24 +26,50 @@
 
 UIManager::UIManager()
 {
-    m_cameraInspector           = TRACKED_NEW(CameraInspector);
-    m_entityManagerInspector    = TRACKED_NEW(EntityManagerInspector);
-    m_statsInspector            = TRACKED_NEW(StatsInspector);
-    m_lightInspector            = TRACKED_NEW(LightInspector);
-    m_graphicsSettingsInspector = TRACKED_NEW(GraphicsSettingsInspector);
-    m_playerInspector           = TRACKED_NEW(PlayerInspector);
-    m_levelSelectMenu           = TRACKED_NEW(LevelSelectMenu);
+    m_cameraInspector = new CameraInspector();
+    MemoryTracker::Instance().RecordAllocation(m_cameraInspector, sizeof(CameraInspector), __FILE__, __LINE__, __FUNCTION__);
+
+    m_entityManagerInspector = new EntityManagerInspector();
+    MemoryTracker::Instance().RecordAllocation(m_entityManagerInspector, sizeof(EntityManagerInspector), __FILE__, __LINE__, __FUNCTION__);
+
+    m_statsInspector = new StatsInspector();
+    MemoryTracker::Instance().RecordAllocation(m_statsInspector, sizeof(StatsInspector), __FILE__, __LINE__, __FUNCTION__);
+
+    m_lightInspector = new LightInspector();
+    MemoryTracker::Instance().RecordAllocation(m_lightInspector, sizeof(LightInspector), __FILE__, __LINE__, __FUNCTION__);
+
+    m_graphicsSettingsInspector = new GraphicsSettingsInspector();
+    MemoryTracker::Instance().RecordAllocation(m_graphicsSettingsInspector, sizeof(GraphicsSettingsInspector), __FILE__, __LINE__, __FUNCTION__);
+
+    m_playerInspector = new PlayerInspector();
+    MemoryTracker::Instance().RecordAllocation(m_playerInspector, sizeof(PlayerInspector), __FILE__, __LINE__, __FUNCTION__);
+
+    m_levelSelectMenu = new LevelSelectMenu();
+    MemoryTracker::Instance().RecordAllocation(m_levelSelectMenu, sizeof(LevelSelectMenu), __FILE__, __LINE__, __FUNCTION__);
 }
 
 UIManager::~UIManager()
 {
-    TRACKED_DELETE(m_cameraInspector);
-    TRACKED_DELETE(m_entityManagerInspector);
-    TRACKED_DELETE(m_statsInspector);
-    TRACKED_DELETE(m_lightInspector);
-    TRACKED_DELETE(m_graphicsSettingsInspector);
-    TRACKED_DELETE(m_playerInspector);
-    TRACKED_DELETE(m_levelSelectMenu);
+    MemoryTracker::Instance().RecordDeallocation(m_cameraInspector, __FILE__, __LINE__, __FUNCTION__);
+    delete m_cameraInspector;
+
+    MemoryTracker::Instance().RecordDeallocation(m_entityManagerInspector, __FILE__, __LINE__, __FUNCTION__);
+    delete m_entityManagerInspector;
+
+    MemoryTracker::Instance().RecordDeallocation(m_statsInspector, __FILE__, __LINE__, __FUNCTION__);
+    delete m_statsInspector;
+
+    MemoryTracker::Instance().RecordDeallocation(m_lightInspector, __FILE__, __LINE__, __FUNCTION__);
+    delete m_lightInspector;
+
+    MemoryTracker::Instance().RecordDeallocation(m_graphicsSettingsInspector, __FILE__, __LINE__, __FUNCTION__);
+    delete m_graphicsSettingsInspector;
+
+    MemoryTracker::Instance().RecordDeallocation(m_playerInspector, __FILE__, __LINE__, __FUNCTION__);
+    delete m_playerInspector;
+
+    MemoryTracker::Instance().RecordDeallocation(m_levelSelectMenu, __FILE__, __LINE__, __FUNCTION__);
+    delete m_levelSelectMenu;
 }
 
 void UIManager::NewFrame()

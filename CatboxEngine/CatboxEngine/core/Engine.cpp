@@ -72,10 +72,6 @@ Engine::~Engine()
     }
     
     Cleanup();
-    
-    // Check for memory leaks at shutdown
-    std::cout << "\n=== Engine Shutdown ===" << std::endl;
-    MemoryTracker::Instance().CheckForLeaks();
 }
 
 // Forward declare a static callback that will be set on the GLFW window
