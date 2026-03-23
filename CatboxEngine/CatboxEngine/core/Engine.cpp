@@ -312,37 +312,6 @@ int Engine::Initialize()
         SceneID defaultScene = sceneMgr.CreateScene("Default Scene");
         sceneMgr.SetActiveScene(defaultScene, m_entityManager);
     }
-
-    // ===== PLAYER CONTROLLER SETUP (OPTIONAL) =====
-    // Uncomment this section to enable 3rd person player controller
-    // See PLAYER_CONTROLLER_GUIDE.md for full documentation
-    /*
-    // Create a player entity if none exists
-    if (m_entityManager.Size() == 0)
-    {
-        Entity playerEntity;
-        playerEntity.name = "Player";
-        playerEntity.Transform.Position = Vec3(0.0f, 2.0f, 0.0f);
-        playerEntity.Transform.Scale = Vec3(0.5f, 1.0f, 0.5f);
-        m_entityManager.AddEntity(playerEntity, true);  // true = use shared cube mesh
-    }
-
-    // Initialize player controller with first entity
-    Entity* player = &m_entityManager.GetAll()[0];
-    m_playerController.Initialize(player, &m_camera);
-
-    // Optional: Configure movement and camera settings
-    m_playerController.MovementConfig.WalkSpeed = 6.0f;
-    m_playerController.MovementConfig.RunSpeed = 12.0f;
-    m_playerController.CameraConfig.Distance = 10.0f;
-
-    // Enable the controller (set to false to start in free camera mode)
-    m_playerController.SetEnabled(false);  // Start disabled, enable via UI
-
-    std::cout << "Player controller ready! Enable in Player Controller window." << std::endl;
-    */
-    // ===== END PLAYER CONTROLLER SETUP =====
-
     return 0;
 }
 
